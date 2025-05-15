@@ -2,9 +2,11 @@ package dev.httpmarco.polocloud.suite.platforms.factory;
 
 import dev.httpmarco.polocloud.api.platform.PlatformType;
 import dev.httpmarco.polocloud.api.services.ClusterService;
+import dev.httpmarco.polocloud.common.OS;
 import dev.httpmarco.polocloud.suite.PolocloudSuite;
-import dev.httpmarco.polocloud.suite.dependencies.pool.DependencyPool;
 import dev.httpmarco.polocloud.suite.platforms.Platform;
+import dev.httpmarco.polocloud.suite.platforms.PlatformLanguage;
+import dev.httpmarco.polocloud.suite.platforms.PlatformTable;
 import dev.httpmarco.polocloud.suite.platforms.PlatformVersion;
 import dev.httpmarco.polocloud.suite.platforms.files.FilePrepareProcess;
 import dev.httpmarco.polocloud.suite.services.ClusterLocalService;
@@ -29,7 +31,7 @@ public final class LocalPlatformFactory implements PlatformFactory {
     public void downloadPlatform(Platform platform, PlatformVersion version) {
         var platformPath = PLATFORM_PATH.resolve(platform.name())
                 .resolve(version.version())
-                .resolve(platform.name() + "-" + version.version() + "-" + version.buildId() + ".jar");
+                .resolve(platform.name() + "-" + version.version() + "-" + version.buildId() + serviceFileExtension(platform.language()));
 
         if (Files.exists(platformPath)) {
             // already downloaded -> can start
@@ -38,9 +40,18 @@ public final class LocalPlatformFactory implements PlatformFactory {
 
         platformPath.getParent().toFile().mkdirs();
 
+        //TODO find better way to map macos to darwin for gate/go.
+        var os = OS.detect().name().toLowerCase();
+        if (os.equals("macos") && platform.language() == PlatformLanguage.GO) {
+            os = "darwin";
+        }
+
         Downloader.of(platform.url()
                         .replace("%version%", version.version())
-                        .replace("%buildId%", version.buildId()))
+                        .replace("%buildId%", version.buildId() != null ? version.buildId() : "")
+                        .replace("%os%", os)
+                        .replace("%arch%", OS.getArchitecture()))
+
                 .file(platformPath.toString());
     }
 
@@ -141,5 +152,13 @@ public final class LocalPlatformFactory implements PlatformFactory {
         return content.replace("[%PORT%]", String.valueOf(service.port()))
                 .replace("[%ONLINE_MODE%]", String.valueOf(PolocloudSuite.instance().groupProvider().findAll().stream().noneMatch(it -> it.platform().type() == PlatformType.PROXY)))
                 .replace("[%PROXY_SECRET%]", "18293j21893j");
+    }
+
+    private String serviceFileExtension(PlatformLanguage language) {
+        if (!language.serviceFileExtension().isEmpty()) {
+            return language.serviceFileExtension();
+        }
+
+        return OS.detect().binaryExtension();
     }
 }

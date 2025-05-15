@@ -49,7 +49,6 @@ public final class ClusterServiceGrpcService extends ClusterServerServiceGrpc.Cl
             var group = service.group();
             var groupResponse = Utils.ClusterGroupExplanation.newBuilder();
 
-            System.out.println(group.name());
             groupResponse.setName(group.name());
             groupResponse.setPlatform(Utils.SharedPlatform.newBuilder()
                     .setName(group.platform().name())

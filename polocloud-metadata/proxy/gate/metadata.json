@@ -3,7 +3,7 @@
   "icon": "https://avatars.githubusercontent.com/u/51905918?s=512&v=4",
   "type": "PROXY",
   "language": "GO",
-  "url": "https://github.com/minekube/gate/releases/download/v%version%/gate_%version%_linux_amd64",
+  "url": "https://github.com/minekube/gate/releases/download/v%version%/gate_%version%_%os%_%arch%",
   "shutdownCommand": "^C",
   "separateClassLoader": false,
   "bridgePath": "plugins",
