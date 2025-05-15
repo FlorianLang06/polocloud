@@ -6,7 +6,6 @@ import dev.httpmarco.polocloud.common.OS;
 import dev.httpmarco.polocloud.suite.PolocloudSuite;
 import dev.httpmarco.polocloud.suite.platforms.Platform;
 import dev.httpmarco.polocloud.suite.platforms.PlatformLanguage;
-import dev.httpmarco.polocloud.suite.platforms.PlatformTable;
 import dev.httpmarco.polocloud.suite.platforms.PlatformVersion;
 import dev.httpmarco.polocloud.suite.platforms.files.FilePrepareProcess;
 import dev.httpmarco.polocloud.suite.services.ClusterLocalService;
@@ -31,7 +30,7 @@ public final class LocalPlatformFactory implements PlatformFactory {
     public void downloadPlatform(Platform platform, PlatformVersion version) {
         var platformPath = PLATFORM_PATH.resolve(platform.name())
                 .resolve(version.version())
-                .resolve(platform.name() + "-" + version.version() + "-" + version.buildId() + serviceFileExtension(platform.language()));
+                .resolve(platformFileName(platform, version));
 
         if (Files.exists(platformPath)) {
             // already downloaded -> can start
@@ -71,7 +70,7 @@ public final class LocalPlatformFactory implements PlatformFactory {
 
             this.downloadPlatform(platform, platformVersion);
 
-            var platformFileName = platform.name() + "-" + platformVersion.version() + "-" + platformVersion.buildId() + ".jar";
+            var platformFileName = platformFileName(platform, platformVersion);
             var platformPath = PLATFORM_PATH.resolve(platform.name())
                     .resolve(platformVersion.version())
                     .resolve(platformFileName);
@@ -132,7 +131,7 @@ public final class LocalPlatformFactory implements PlatformFactory {
             }
 
             // copy the bridge if needed
-            if (platform.type() == PlatformType.PROXY) {
+            if (platform.type() == PlatformType.PROXY && platform.bridgePath() != null) {
                 var bridgePath = Path.of("local/libs/polocloud-" + platform.language().name().toLowerCase() + "-bridge-2.0.0.jar");
                 var bridgeTarget = localService.path().resolve(platform.bridgePath());
 
@@ -154,11 +153,15 @@ public final class LocalPlatformFactory implements PlatformFactory {
                 .replace("[%PROXY_SECRET%]", "18293j21893j");
     }
 
-    private String serviceFileExtension(PlatformLanguage language) {
-        if (!language.serviceFileExtension().isEmpty()) {
-            return language.serviceFileExtension();
+    private String platformFileName(Platform platform, PlatformVersion version) {
+        var fileName = platform.name() + "-" + version.version();
+        if (version.buildId() != null) {
+            fileName += "-" + version.buildId();
+        }
+        if (!platform.language().serviceFileExtension().isEmpty()) {
+            return fileName + platform.language().serviceFileExtension();
         }
 
-        return OS.detect().binaryExtension();
+        return fileName + OS.detect().binaryExtension();
     }
 }

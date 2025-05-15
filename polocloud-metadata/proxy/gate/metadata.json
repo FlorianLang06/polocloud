@@ -6,7 +6,6 @@
   "url": "https://github.com/minekube/gate/releases/download/v%version%/gate_%version%_%os%_%arch%",
   "shutdownCommand": "^C",
   "separateClassLoader": false,
-  "bridgePath": "plugins",
   "filePrepareProcess": [],
   "startArguments": [],
   "versions": [
