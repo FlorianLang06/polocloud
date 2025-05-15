@@ -1,6 +1,7 @@
 {
   "availableProxies": [
-    "velocity"
+    "velocity",
+    "gate"
   ],
   "availableServers": [
     "paper"
