@@ -37,12 +37,12 @@ public final class ClusterLocalServiceImpl extends ClusterServiceImpl implements
     private EventServiceGrpc.EventServiceBlockingStub eventServiceBlockingStub;
 
     public ClusterLocalServiceImpl(int id, int port, UUID uniqueId, ClusterGroup group) {
-        super(id, uniqueId, group, "127.0.0.1", port,  ClusterServiceState.PREPARE);
+        super(id, uniqueId, group, "127.0.0.1", port, ClusterServiceState.PREPARE);
     }
 
     @Override
     public void shutdown() {
-        if(this.processTracking != null) {
+        if (this.processTracking != null) {
             this.processTracking.interrupt();
         }
         changeState(ClusterServiceState.STOPPING);

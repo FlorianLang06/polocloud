@@ -30,6 +30,10 @@ dependencies {
 
     compileOnly(libs.redis)
     compileOnly(libs.jline)
+
+    //gate
+    implementation("build.buf.gen:minekube_gate_grpc_java:1.72.0.1.20241120101512.f1a10b5029ce")
+    implementation("build.buf.gen:minekube_gate_grpc_java:1.72.0.1.20241120101512.f1a10b5029ce")
 }
 
 tasks.shadowJar {
