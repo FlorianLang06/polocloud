@@ -5,6 +5,7 @@ import dev.httpmarco.polocloud.api.services.ClusterService;
 import dev.httpmarco.polocloud.api.services.ClusterServiceState;
 import dev.httpmarco.polocloud.common.OS;
 import dev.httpmarco.polocloud.suite.PolocloudSuite;
+import dev.httpmarco.polocloud.suite.platforms.files.PlatformFileNameUtil;
 import dev.httpmarco.polocloud.suite.services.ClusterLocalServiceImpl;
 import dev.httpmarco.polocloud.suite.utils.PathUtils;
 import lombok.SneakyThrows;
@@ -14,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,9 @@ public final class LocalServiceFactory implements ServiceFactory {
                 log.error(PolocloudSuite.instance().translation().get("suite.service.platformVersion.failed", service.name(), service.group().platform()));
                 return;
             }
+
+            // download platform file
+            platformProvider.factory().bindPlatform(service);
 
             var arguments = new ArrayList<String>();
 
@@ -125,8 +130,16 @@ public final class LocalServiceFactory implements ServiceFactory {
 
                 }
                 case GO -> {
-                    //TODO
-                    //arguments.add("./" + PlatformFileNameUtil.platformBootFileName(platform, version));
+                    var fileName = PlatformFileNameUtil.platformBootFileName(platform, version);
+                    arguments.add("./" + fileName);
+
+                    var filePath = service.path().resolve(fileName);
+                    var permissions = Files.getPosixFilePermissions(filePath);
+
+                    if (OS.detect() != OS.WINDOWS && !permissions.contains(PosixFilePermission.OWNER_EXECUTE)) {
+                        permissions.add(PosixFilePermission.OWNER_EXECUTE);
+                        Files.setPosixFilePermissions(filePath, permissions);
+                    }
                 }
             }
             arguments.addAll(platform.startArguments());
@@ -138,8 +151,8 @@ public final class LocalServiceFactory implements ServiceFactory {
             environment.put(PolocloudEnvironment.POLOCLOUD_SERVICE_ID.name(), service.uniqueId().toString());
             environment.put(PolocloudEnvironment.POLOCLOUD_SERVICE_PORT.name(), String.valueOf(service.port()));
             environment.put(PolocloudEnvironment.POLOCLOUD_SERVICE_SEPARAT_CLASSLOADER.name(), platform.separateClassLoader().toString());
-            // download platform file
-            platformProvider.factory().bindPlatform(service);
+
+            System.out.println(arguments);
 
             try {
                 service.process(processBuilder.command(arguments).redirectOutput(new File(service.name())).redirectError(new File(service.name() + "-error")).start());
