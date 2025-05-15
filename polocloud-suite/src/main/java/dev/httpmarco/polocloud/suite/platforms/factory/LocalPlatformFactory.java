@@ -8,6 +8,7 @@ import dev.httpmarco.polocloud.suite.platforms.Platform;
 import dev.httpmarco.polocloud.suite.platforms.PlatformLanguage;
 import dev.httpmarco.polocloud.suite.platforms.PlatformVersion;
 import dev.httpmarco.polocloud.suite.platforms.files.FilePrepareProcess;
+import dev.httpmarco.polocloud.suite.platforms.files.PlatformFileNameUtil;
 import dev.httpmarco.polocloud.suite.services.ClusterLocalService;
 import dev.httpmarco.polocloud.suite.services.ClusterLocalServiceImpl;
 import dev.httpmarco.polocloud.suite.utils.PathUtils;
@@ -30,7 +31,7 @@ public final class LocalPlatformFactory implements PlatformFactory {
     public void downloadPlatform(Platform platform, PlatformVersion version) {
         var platformPath = PLATFORM_PATH.resolve(platform.name())
                 .resolve(version.version())
-                .resolve(platformFileName(platform, version));
+                .resolve(PlatformFileNameUtil.platformBootFileName(platform, version));
 
         if (Files.exists(platformPath)) {
             // already downloaded -> can start
@@ -70,7 +71,7 @@ public final class LocalPlatformFactory implements PlatformFactory {
 
             this.downloadPlatform(platform, platformVersion);
 
-            var platformFileName = platformFileName(platform, platformVersion);
+            var platformFileName = PlatformFileNameUtil.platformBootFileName(platform, platformVersion);
             var platformPath = PLATFORM_PATH.resolve(platform.name())
                     .resolve(platformVersion.version())
                     .resolve(platformFileName);
@@ -151,17 +152,5 @@ public final class LocalPlatformFactory implements PlatformFactory {
         return content.replace("[%PORT%]", String.valueOf(service.port()))
                 .replace("[%ONLINE_MODE%]", String.valueOf(PolocloudSuite.instance().groupProvider().findAll().stream().noneMatch(it -> it.platform().type() == PlatformType.PROXY)))
                 .replace("[%PROXY_SECRET%]", "18293j21893j");
-    }
-
-    private String platformFileName(Platform platform, PlatformVersion version) {
-        var fileName = platform.name() + "-" + version.version();
-        if (version.buildId() != null) {
-            fileName += "-" + version.buildId();
-        }
-        if (!platform.language().serviceFileExtension().isEmpty()) {
-            return fileName + platform.language().serviceFileExtension();
-        }
-
-        return fileName + OS.detect().binaryExtension();
     }
 }

@@ -60,65 +60,75 @@ public final class LocalServiceFactory implements ServiceFactory {
 
             var processBuilder = new ProcessBuilder().directory(service.path().toFile());
 
-            // if users start with a custom java location
-            var javaLocation = System.getProperty("java.home");
-
-            var arguments = new ArrayList<String>();
-            var dependencies = new ArrayList<String>();
-            dependencies.add(API_PATH);
-            dependencies.add(GRPC_PATH);
-            dependencies.addAll(PolocloudSuite.instance().dependencyProvider().original().bindDependencies().stream()
-                    .map(it -> "../../local/dependencies/" + it.file().getName())
-                    .toList());
-
-            arguments.add(javaLocation + "/bin/java");
-
-
-            arguments.add("-Dterminal.jline=false");
-            arguments.add("-Dfile.encoding=UTF-8");
-
-            arguments.addAll(List.of("-Xms10G",
-                    "-Xmx10G", "-XX:+UseG1GC",
-                    "-XX:+ParallelRefProcEnabled",
-                    "-XX:MaxGCPauseMillis=200",
-                    "-XX:+UnlockExperimentalVMOptions",
-                    "-XX:+DisableExplicitGC","-XX:+AlwaysPreTouch",
-                    "-XX:G1NewSizePercent=30",
-                    "-XX:G1MaxNewSizePercent=40",
-                    "-XX:G1HeapRegionSize=8M",
-                    "-XX:G1ReservePercent=20",
-                    "-XX:G1HeapWastePercent=5",
-                    "-XX:G1MixedGCCountTarget=4",
-                    "-XX:InitiatingHeapOccupancyPercent=15",
-                    "-XX:G1MixedGCLiveThresholdPercent=90",
-                    "-XX:G1RSetUpdatingPauseTimePercent=5",
-                    "-XX:SurvivorRatio=32",
-                    "-XX:+PerfDisableSharedMem",
-                    "-XX:MaxTenuringThreshold=1",
-                    "-Dusing.aikars.flags=https://mcflags.emc.gs",
-                    "-Daikars.new.flags=true"));
-
-            arguments.add("--enable-native-access=ALL-UNNAMED");
-            // java 24 drop a big warning here -> temp fix
-            arguments.add("--sun-misc-unsafe-memory-access=allow");
-
-            arguments.add("-Xms" + service.group().minMemory() + "M");
-            arguments.add("-Xmx" + service.group().maxMemory() + "M");
-
-            arguments.add("-javaagent:%s".formatted(INSTANCE_PATH));
-            arguments.add("-cp");
-            arguments.add(String.join(OS.detect().processSeparator(), dependencies));
-            arguments.add(INSTANCE_MAIN_CLASS);
-
             var platformProvider = PolocloudSuite.instance().platformProvider();
             var platform = platformProvider.findPlatform(service.group().platform());
             var version = platformProvider.findPlatformVersion(service.group().platform());
-
-            if (platform == null) {
+            if (platform == null || version == null) {
                 log.error(PolocloudSuite.instance().translation().get("suite.service.platformVersion.failed", service.name(), service.group().platform()));
                 return;
             }
 
+            var arguments = new ArrayList<String>();
+
+            switch (platform.language()) {
+                case JAVA -> {
+
+
+                    // if users start with a custom java location
+                    var javaLocation = System.getProperty("java.home");
+
+                    var dependencies = new ArrayList<String>();
+                    dependencies.add(API_PATH);
+                    dependencies.add(GRPC_PATH);
+                    dependencies.addAll(PolocloudSuite.instance().dependencyProvider().original().bindDependencies().stream()
+                            .map(it -> "../../local/dependencies/" + it.file().getName())
+                            .toList());
+
+                    arguments.add(javaLocation + "/bin/java");
+
+
+                    arguments.add("-Dterminal.jline=false");
+                    arguments.add("-Dfile.encoding=UTF-8");
+
+                    arguments.addAll(List.of("-Xms10G",
+                            "-Xmx10G", "-XX:+UseG1GC",
+                            "-XX:+ParallelRefProcEnabled",
+                            "-XX:MaxGCPauseMillis=200",
+                            "-XX:+UnlockExperimentalVMOptions",
+                            "-XX:+DisableExplicitGC", "-XX:+AlwaysPreTouch",
+                            "-XX:G1NewSizePercent=30",
+                            "-XX:G1MaxNewSizePercent=40",
+                            "-XX:G1HeapRegionSize=8M",
+                            "-XX:G1ReservePercent=20",
+                            "-XX:G1HeapWastePercent=5",
+                            "-XX:G1MixedGCCountTarget=4",
+                            "-XX:InitiatingHeapOccupancyPercent=15",
+                            "-XX:G1MixedGCLiveThresholdPercent=90",
+                            "-XX:G1RSetUpdatingPauseTimePercent=5",
+                            "-XX:SurvivorRatio=32",
+                            "-XX:+PerfDisableSharedMem",
+                            "-XX:MaxTenuringThreshold=1",
+                            "-Dusing.aikars.flags=https://mcflags.emc.gs",
+                            "-Daikars.new.flags=true"));
+
+                    arguments.add("--enable-native-access=ALL-UNNAMED");
+                    // java 24 drop a big warning here -> temp fix
+                    //arguments.add("--sun-misc-unsafe-memory-access=allow");
+
+                    arguments.add("-Xms" + service.group().minMemory() + "M");
+                    arguments.add("-Xmx" + service.group().maxMemory() + "M");
+
+                    arguments.add("-javaagent:%s".formatted(INSTANCE_PATH));
+                    arguments.add("-cp");
+                    arguments.add(String.join(OS.detect().processSeparator(), dependencies));
+                    arguments.add(INSTANCE_MAIN_CLASS);
+
+                }
+                case GO -> {
+                    //TODO
+                    //arguments.add("./" + PlatformFileNameUtil.platformBootFileName(platform, version));
+                }
+            }
             arguments.addAll(platform.startArguments());
 
             Map<String, String> environment = processBuilder.environment();
