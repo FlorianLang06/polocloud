@@ -11,6 +11,7 @@ import (
 type Polocloud struct {
 	conn			*grpc.ClientConn
 	GroupProvider	providers.GroupProvider
+	ServiceProvider	providers.ServiceProvider
 }
 
 func CreatePolocloudClient() (Polocloud, error) {
@@ -22,7 +23,8 @@ func CreatePolocloudClient() (Polocloud, error) {
 	conn, err := grpc.NewClient("127.0.0.1:" + port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	groupProvider := providers.NewGroupProvider(conn)
+	serviceProvider := providers.NewServiceProvider(conn)
 
-	return Polocloud { conn, groupProvider }, err
+	return Polocloud { conn, groupProvider, serviceProvider }, err
 }
 
