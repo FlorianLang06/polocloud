@@ -12,6 +12,7 @@ type Polocloud struct {
 	conn			*grpc.ClientConn
 	GroupProvider	providers.GroupProvider
 	ServiceProvider	providers.ServiceProvider
+	PlayerProvider	providers.PlayerProvider
 }
 
 func CreatePolocloudClient() (Polocloud, error) {
@@ -24,7 +25,8 @@ func CreatePolocloudClient() (Polocloud, error) {
 
 	groupProvider := providers.NewGroupProvider(conn)
 	serviceProvider := providers.NewServiceProvider(conn)
+	playerProvider := providers.NewPlayerProvider(conn)
 
-	return Polocloud { conn, groupProvider, serviceProvider }, err
+	return Polocloud { conn, groupProvider, serviceProvider, playerProvider }, err
 }
 
