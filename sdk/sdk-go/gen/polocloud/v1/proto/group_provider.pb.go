@@ -25,8 +25,7 @@ const (
 type FindGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	GroupName     string                 `protobuf:"bytes,2,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
-	Type          GroupType              `protobuf:"varint,3,opt,name=type,proto3,enum=dev.httpmarco.polocloud.v1.proto.GroupType" json:"type,omitempty"`
+	Type          GroupType              `protobuf:"varint,2,opt,name=type,proto3,enum=dev.httpmarco.polocloud.v1.proto.GroupType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -64,13 +63,6 @@ func (*FindGroupRequest) Descriptor() ([]byte, []int) {
 func (x *FindGroupRequest) GetName() string {
 	if x != nil {
 		return x.Name
-	}
-	return ""
-}
-
-func (x *FindGroupRequest) GetGroupName() string {
-	if x != nil {
-		return x.GroupName
 	}
 	return ""
 }
@@ -126,6 +118,254 @@ func (x *FindGroupResponse) GetGroups() []*GroupSnapshot {
 	return nil
 }
 
+type GroupCreateRequest struct {
+	state                       protoimpl.MessageState `protogen:"open.v1"`
+	Name                        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type                        GroupType              `protobuf:"varint,2,opt,name=type,proto3,enum=dev.httpmarco.polocloud.v1.proto.GroupType" json:"type,omitempty"`
+	Platform                    *PlatformSnapshot      `protobuf:"bytes,3,opt,name=platform,proto3" json:"platform,omitempty"`
+	MinimumMemory               int32                  `protobuf:"varint,4,opt,name=minimumMemory,proto3" json:"minimumMemory,omitempty"`
+	MaximumMemory               int32                  `protobuf:"varint,5,opt,name=maximumMemory,proto3" json:"maximumMemory,omitempty"`
+	MinimumOnline               int32                  `protobuf:"varint,6,opt,name=minimumOnline,proto3" json:"minimumOnline,omitempty"`
+	MaximumOnline               int32                  `protobuf:"varint,7,opt,name=maximumOnline,proto3" json:"maximumOnline,omitempty"`
+	PercentageToStartNewService float64                `protobuf:"fixed64,8,opt,name=percentageToStartNewService,proto3" json:"percentageToStartNewService,omitempty"`
+	Templates                   []string               `protobuf:"bytes,9,rep,name=templates,proto3" json:"templates,omitempty"`
+	Properties                  map[string]string      `protobuf:"bytes,10,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *GroupCreateRequest) Reset() {
+	*x = GroupCreateRequest{}
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupCreateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupCreateRequest) ProtoMessage() {}
+
+func (x *GroupCreateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupCreateRequest.ProtoReflect.Descriptor instead.
+func (*GroupCreateRequest) Descriptor() ([]byte, []int) {
+	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GroupCreateRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *GroupCreateRequest) GetType() GroupType {
+	if x != nil {
+		return x.Type
+	}
+	return GroupType_SERVICE
+}
+
+func (x *GroupCreateRequest) GetPlatform() *PlatformSnapshot {
+	if x != nil {
+		return x.Platform
+	}
+	return nil
+}
+
+func (x *GroupCreateRequest) GetMinimumMemory() int32 {
+	if x != nil {
+		return x.MinimumMemory
+	}
+	return 0
+}
+
+func (x *GroupCreateRequest) GetMaximumMemory() int32 {
+	if x != nil {
+		return x.MaximumMemory
+	}
+	return 0
+}
+
+func (x *GroupCreateRequest) GetMinimumOnline() int32 {
+	if x != nil {
+		return x.MinimumOnline
+	}
+	return 0
+}
+
+func (x *GroupCreateRequest) GetMaximumOnline() int32 {
+	if x != nil {
+		return x.MaximumOnline
+	}
+	return 0
+}
+
+func (x *GroupCreateRequest) GetPercentageToStartNewService() float64 {
+	if x != nil {
+		return x.PercentageToStartNewService
+	}
+	return 0
+}
+
+func (x *GroupCreateRequest) GetTemplates() []string {
+	if x != nil {
+		return x.Templates
+	}
+	return nil
+}
+
+func (x *GroupCreateRequest) GetProperties() map[string]string {
+	if x != nil {
+		return x.Properties
+	}
+	return nil
+}
+
+type GroupCreateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *GroupSnapshot         `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupCreateResponse) Reset() {
+	*x = GroupCreateResponse{}
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupCreateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupCreateResponse) ProtoMessage() {}
+
+func (x *GroupCreateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupCreateResponse.ProtoReflect.Descriptor instead.
+func (*GroupCreateResponse) Descriptor() ([]byte, []int) {
+	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *GroupCreateResponse) GetGroup() *GroupSnapshot {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
+type GroupDeleteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupDeleteRequest) Reset() {
+	*x = GroupDeleteRequest{}
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupDeleteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupDeleteRequest) ProtoMessage() {}
+
+func (x *GroupDeleteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupDeleteRequest.ProtoReflect.Descriptor instead.
+func (*GroupDeleteRequest) Descriptor() ([]byte, []int) {
+	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GroupDeleteRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type GroupDeleteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Group         *GroupSnapshot         `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GroupDeleteResponse) Reset() {
+	*x = GroupDeleteResponse{}
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupDeleteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupDeleteResponse) ProtoMessage() {}
+
+func (x *GroupDeleteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupDeleteResponse.ProtoReflect.Descriptor instead.
+func (*GroupDeleteResponse) Descriptor() ([]byte, []int) {
+	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GroupDeleteResponse) GetGroup() *GroupSnapshot {
+	if x != nil {
+		return x.Group
+	}
+	return nil
+}
+
 type GroupSnapshot struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Name                        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -144,7 +384,7 @@ type GroupSnapshot struct {
 
 func (x *GroupSnapshot) Reset() {
 	*x = GroupSnapshot{}
-	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[2]
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -156,7 +396,7 @@ func (x *GroupSnapshot) String() string {
 func (*GroupSnapshot) ProtoMessage() {}
 
 func (x *GroupSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[2]
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -169,7 +409,7 @@ func (x *GroupSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GroupSnapshot.ProtoReflect.Descriptor instead.
 func (*GroupSnapshot) Descriptor() ([]byte, []int) {
-	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{2}
+	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GroupSnapshot) GetName() string {
@@ -252,7 +492,7 @@ type PlatformSnapshot struct {
 
 func (x *PlatformSnapshot) Reset() {
 	*x = PlatformSnapshot{}
-	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[3]
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -264,7 +504,7 @@ func (x *PlatformSnapshot) String() string {
 func (*PlatformSnapshot) ProtoMessage() {}
 
 func (x *PlatformSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[3]
+	mi := &file_polocloud_v1_proto_group_provider_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -277,7 +517,7 @@ func (x *PlatformSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlatformSnapshot.ProtoReflect.Descriptor instead.
 func (*PlatformSnapshot) Descriptor() ([]byte, []int) {
-	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{3}
+	return file_polocloud_v1_proto_group_provider_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PlatformSnapshot) GetName() string {
@@ -298,14 +538,35 @@ var File_polocloud_v1_proto_group_provider_proto protoreflect.FileDescriptor
 
 const file_polocloud_v1_proto_group_provider_proto_rawDesc = "" +
 	"\n" +
-	"'polocloud/v1/proto/group_provider.proto\x12 dev.httpmarco.polocloud.v1.proto\x1a%polocloud/v1/proto/object_utils.proto\x1a\x1cgoogle/protobuf/struct.proto\"\x86\x01\n" +
+	"'polocloud/v1/proto/group_provider.proto\x12 dev.httpmarco.polocloud.v1.proto\x1a%polocloud/v1/proto/object_utils.proto\x1a\x1cgoogle/protobuf/struct.proto\"g\n" +
 	"\x10FindGroupRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
-	"\n" +
-	"group_name\x18\x02 \x01(\tR\tgroupName\x12?\n" +
-	"\x04type\x18\x03 \x01(\x0e2+.dev.httpmarco.polocloud.v1.proto.GroupTypeR\x04type\"\\\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12?\n" +
+	"\x04type\x18\x02 \x01(\x0e2+.dev.httpmarco.polocloud.v1.proto.GroupTypeR\x04type\"\\\n" +
 	"\x11FindGroupResponse\x12G\n" +
-	"\x06groups\x18\x01 \x03(\v2/.dev.httpmarco.polocloud.v1.proto.GroupSnapshotR\x06groups\"\xcc\x04\n" +
+	"\x06groups\x18\x01 \x03(\v2/.dev.httpmarco.polocloud.v1.proto.GroupSnapshotR\x06groups\"\xd6\x04\n" +
+	"\x12GroupCreateRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12?\n" +
+	"\x04type\x18\x02 \x01(\x0e2+.dev.httpmarco.polocloud.v1.proto.GroupTypeR\x04type\x12N\n" +
+	"\bplatform\x18\x03 \x01(\v22.dev.httpmarco.polocloud.v1.proto.PlatformSnapshotR\bplatform\x12$\n" +
+	"\rminimumMemory\x18\x04 \x01(\x05R\rminimumMemory\x12$\n" +
+	"\rmaximumMemory\x18\x05 \x01(\x05R\rmaximumMemory\x12$\n" +
+	"\rminimumOnline\x18\x06 \x01(\x05R\rminimumOnline\x12$\n" +
+	"\rmaximumOnline\x18\a \x01(\x05R\rmaximumOnline\x12@\n" +
+	"\x1bpercentageToStartNewService\x18\b \x01(\x01R\x1bpercentageToStartNewService\x12\x1c\n" +
+	"\ttemplates\x18\t \x03(\tR\ttemplates\x12d\n" +
+	"\n" +
+	"properties\x18\n" +
+	" \x03(\v2D.dev.httpmarco.polocloud.v1.proto.GroupCreateRequest.PropertiesEntryR\n" +
+	"properties\x1a=\n" +
+	"\x0fPropertiesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\\\n" +
+	"\x13GroupCreateResponse\x12E\n" +
+	"\x05group\x18\x01 \x01(\v2/.dev.httpmarco.polocloud.v1.proto.GroupSnapshotR\x05group\"(\n" +
+	"\x12GroupDeleteRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\\\n" +
+	"\x13GroupDeleteResponse\x12E\n" +
+	"\x05group\x18\x01 \x01(\v2/.dev.httpmarco.polocloud.v1.proto.GroupSnapshotR\x05group\"\xcc\x04\n" +
 	"\rGroupSnapshot\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12?\n" +
 	"\x04type\x18\x02 \x01(\x0e2+.dev.httpmarco.polocloud.v1.proto.GroupTypeR\x04type\x12N\n" +
@@ -325,9 +586,11 @@ const file_polocloud_v1_proto_group_provider_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
 	"\x10PlatformSnapshot\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\tR\aversion2\x82\x01\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion2\xf0\x02\n" +
 	"\x0fGroupController\x12o\n" +
-	"\x04find\x122.dev.httpmarco.polocloud.v1.proto.FindGroupRequest\x1a3.dev.httpmarco.polocloud.v1.proto.FindGroupResponseB\xa2\x02\n" +
+	"\x04find\x122.dev.httpmarco.polocloud.v1.proto.FindGroupRequest\x1a3.dev.httpmarco.polocloud.v1.proto.FindGroupResponse\x12u\n" +
+	"\x06create\x124.dev.httpmarco.polocloud.v1.proto.GroupCreateRequest\x1a5.dev.httpmarco.polocloud.v1.proto.GroupCreateResponse\x12u\n" +
+	"\x06delete\x124.dev.httpmarco.polocloud.v1.proto.GroupDeleteRequest\x1a5.dev.httpmarco.polocloud.v1.proto.GroupDeleteResponseB\xa2\x02\n" +
 	"$com.dev.httpmarco.polocloud.v1.protoB\x12GroupProviderProtoP\x01Z@github.com/HttpMarco/polocloud/sdk/sdk-go/gen/polocloud/v1/proto\xa2\x02\x05DHPVP\xaa\x02 Dev.Httpmarco.Polocloud.V1.Proto\xca\x02 Dev\\Httpmarco\\Polocloud\\V1\\Proto\xe2\x02,Dev\\Httpmarco\\Polocloud\\V1\\Proto\\GPBMetadata\xea\x02$Dev::Httpmarco::Polocloud::V1::Protob\x06proto3"
 
 var (
@@ -342,28 +605,42 @@ func file_polocloud_v1_proto_group_provider_proto_rawDescGZIP() []byte {
 	return file_polocloud_v1_proto_group_provider_proto_rawDescData
 }
 
-var file_polocloud_v1_proto_group_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_polocloud_v1_proto_group_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_polocloud_v1_proto_group_provider_proto_goTypes = []any{
-	(*FindGroupRequest)(nil),  // 0: dev.httpmarco.polocloud.v1.proto.FindGroupRequest
-	(*FindGroupResponse)(nil), // 1: dev.httpmarco.polocloud.v1.proto.FindGroupResponse
-	(*GroupSnapshot)(nil),     // 2: dev.httpmarco.polocloud.v1.proto.GroupSnapshot
-	(*PlatformSnapshot)(nil),  // 3: dev.httpmarco.polocloud.v1.proto.PlatformSnapshot
-	nil,                       // 4: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.PropertiesEntry
-	(GroupType)(0),            // 5: dev.httpmarco.polocloud.v1.proto.GroupType
+	(*FindGroupRequest)(nil),    // 0: dev.httpmarco.polocloud.v1.proto.FindGroupRequest
+	(*FindGroupResponse)(nil),   // 1: dev.httpmarco.polocloud.v1.proto.FindGroupResponse
+	(*GroupCreateRequest)(nil),  // 2: dev.httpmarco.polocloud.v1.proto.GroupCreateRequest
+	(*GroupCreateResponse)(nil), // 3: dev.httpmarco.polocloud.v1.proto.GroupCreateResponse
+	(*GroupDeleteRequest)(nil),  // 4: dev.httpmarco.polocloud.v1.proto.GroupDeleteRequest
+	(*GroupDeleteResponse)(nil), // 5: dev.httpmarco.polocloud.v1.proto.GroupDeleteResponse
+	(*GroupSnapshot)(nil),       // 6: dev.httpmarco.polocloud.v1.proto.GroupSnapshot
+	(*PlatformSnapshot)(nil),    // 7: dev.httpmarco.polocloud.v1.proto.PlatformSnapshot
+	nil,                         // 8: dev.httpmarco.polocloud.v1.proto.GroupCreateRequest.PropertiesEntry
+	nil,                         // 9: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.PropertiesEntry
+	(GroupType)(0),              // 10: dev.httpmarco.polocloud.v1.proto.GroupType
 }
 var file_polocloud_v1_proto_group_provider_proto_depIdxs = []int32{
-	5, // 0: dev.httpmarco.polocloud.v1.proto.FindGroupRequest.type:type_name -> dev.httpmarco.polocloud.v1.proto.GroupType
-	2, // 1: dev.httpmarco.polocloud.v1.proto.FindGroupResponse.groups:type_name -> dev.httpmarco.polocloud.v1.proto.GroupSnapshot
-	5, // 2: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.type:type_name -> dev.httpmarco.polocloud.v1.proto.GroupType
-	3, // 3: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.platform:type_name -> dev.httpmarco.polocloud.v1.proto.PlatformSnapshot
-	4, // 4: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.properties:type_name -> dev.httpmarco.polocloud.v1.proto.GroupSnapshot.PropertiesEntry
-	0, // 5: dev.httpmarco.polocloud.v1.proto.GroupController.find:input_type -> dev.httpmarco.polocloud.v1.proto.FindGroupRequest
-	1, // 6: dev.httpmarco.polocloud.v1.proto.GroupController.find:output_type -> dev.httpmarco.polocloud.v1.proto.FindGroupResponse
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	10, // 0: dev.httpmarco.polocloud.v1.proto.FindGroupRequest.type:type_name -> dev.httpmarco.polocloud.v1.proto.GroupType
+	6,  // 1: dev.httpmarco.polocloud.v1.proto.FindGroupResponse.groups:type_name -> dev.httpmarco.polocloud.v1.proto.GroupSnapshot
+	10, // 2: dev.httpmarco.polocloud.v1.proto.GroupCreateRequest.type:type_name -> dev.httpmarco.polocloud.v1.proto.GroupType
+	7,  // 3: dev.httpmarco.polocloud.v1.proto.GroupCreateRequest.platform:type_name -> dev.httpmarco.polocloud.v1.proto.PlatformSnapshot
+	8,  // 4: dev.httpmarco.polocloud.v1.proto.GroupCreateRequest.properties:type_name -> dev.httpmarco.polocloud.v1.proto.GroupCreateRequest.PropertiesEntry
+	6,  // 5: dev.httpmarco.polocloud.v1.proto.GroupCreateResponse.group:type_name -> dev.httpmarco.polocloud.v1.proto.GroupSnapshot
+	6,  // 6: dev.httpmarco.polocloud.v1.proto.GroupDeleteResponse.group:type_name -> dev.httpmarco.polocloud.v1.proto.GroupSnapshot
+	10, // 7: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.type:type_name -> dev.httpmarco.polocloud.v1.proto.GroupType
+	7,  // 8: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.platform:type_name -> dev.httpmarco.polocloud.v1.proto.PlatformSnapshot
+	9,  // 9: dev.httpmarco.polocloud.v1.proto.GroupSnapshot.properties:type_name -> dev.httpmarco.polocloud.v1.proto.GroupSnapshot.PropertiesEntry
+	0,  // 10: dev.httpmarco.polocloud.v1.proto.GroupController.find:input_type -> dev.httpmarco.polocloud.v1.proto.FindGroupRequest
+	2,  // 11: dev.httpmarco.polocloud.v1.proto.GroupController.create:input_type -> dev.httpmarco.polocloud.v1.proto.GroupCreateRequest
+	4,  // 12: dev.httpmarco.polocloud.v1.proto.GroupController.delete:input_type -> dev.httpmarco.polocloud.v1.proto.GroupDeleteRequest
+	1,  // 13: dev.httpmarco.polocloud.v1.proto.GroupController.find:output_type -> dev.httpmarco.polocloud.v1.proto.FindGroupResponse
+	3,  // 14: dev.httpmarco.polocloud.v1.proto.GroupController.create:output_type -> dev.httpmarco.polocloud.v1.proto.GroupCreateResponse
+	5,  // 15: dev.httpmarco.polocloud.v1.proto.GroupController.delete:output_type -> dev.httpmarco.polocloud.v1.proto.GroupDeleteResponse
+	13, // [13:16] is the sub-list for method output_type
+	10, // [10:13] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_polocloud_v1_proto_group_provider_proto_init() }
@@ -378,7 +655,7 @@ func file_polocloud_v1_proto_group_provider_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_polocloud_v1_proto_group_provider_proto_rawDesc), len(file_polocloud_v1_proto_group_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -19,7 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GroupController_Find_FullMethodName = "/dev.httpmarco.polocloud.v1.proto.GroupController/find"
+	GroupController_Find_FullMethodName   = "/dev.httpmarco.polocloud.v1.proto.GroupController/find"
+	GroupController_Create_FullMethodName = "/dev.httpmarco.polocloud.v1.proto.GroupController/create"
+	GroupController_Delete_FullMethodName = "/dev.httpmarco.polocloud.v1.proto.GroupController/delete"
 )
 
 // GroupControllerClient is the client API for GroupController service.
@@ -27,6 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GroupControllerClient interface {
 	Find(ctx context.Context, in *FindGroupRequest, opts ...grpc.CallOption) (*FindGroupResponse, error)
+	Create(ctx context.Context, in *GroupCreateRequest, opts ...grpc.CallOption) (*GroupCreateResponse, error)
+	Delete(ctx context.Context, in *GroupDeleteRequest, opts ...grpc.CallOption) (*GroupDeleteResponse, error)
 }
 
 type groupControllerClient struct {
@@ -47,11 +51,33 @@ func (c *groupControllerClient) Find(ctx context.Context, in *FindGroupRequest, 
 	return out, nil
 }
 
+func (c *groupControllerClient) Create(ctx context.Context, in *GroupCreateRequest, opts ...grpc.CallOption) (*GroupCreateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupCreateResponse)
+	err := c.cc.Invoke(ctx, GroupController_Create_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupControllerClient) Delete(ctx context.Context, in *GroupDeleteRequest, opts ...grpc.CallOption) (*GroupDeleteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GroupDeleteResponse)
+	err := c.cc.Invoke(ctx, GroupController_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupControllerServer is the server API for GroupController service.
 // All implementations must embed UnimplementedGroupControllerServer
 // for forward compatibility.
 type GroupControllerServer interface {
 	Find(context.Context, *FindGroupRequest) (*FindGroupResponse, error)
+	Create(context.Context, *GroupCreateRequest) (*GroupCreateResponse, error)
+	Delete(context.Context, *GroupDeleteRequest) (*GroupDeleteResponse, error)
 	mustEmbedUnimplementedGroupControllerServer()
 }
 
@@ -64,6 +90,12 @@ type UnimplementedGroupControllerServer struct{}
 
 func (UnimplementedGroupControllerServer) Find(context.Context, *FindGroupRequest) (*FindGroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Find not implemented")
+}
+func (UnimplementedGroupControllerServer) Create(context.Context, *GroupCreateRequest) (*GroupCreateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedGroupControllerServer) Delete(context.Context, *GroupDeleteRequest) (*GroupDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedGroupControllerServer) mustEmbedUnimplementedGroupControllerServer() {}
 func (UnimplementedGroupControllerServer) testEmbeddedByValue()                         {}
@@ -104,6 +136,42 @@ func _GroupController_Find_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupController_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupCreateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupControllerServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupController_Create_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupControllerServer).Create(ctx, req.(*GroupCreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupController_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GroupDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupControllerServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupController_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupControllerServer).Delete(ctx, req.(*GroupDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupController_ServiceDesc is the grpc.ServiceDesc for GroupController service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +182,14 @@ var GroupController_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "find",
 			Handler:    _GroupController_Find_Handler,
+		},
+		{
+			MethodName: "create",
+			Handler:    _GroupController_Create_Handler,
+		},
+		{
+			MethodName: "delete",
+			Handler:    _GroupController_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
