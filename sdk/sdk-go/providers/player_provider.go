@@ -3,7 +3,7 @@ package providers;
 import (
 	"context"
 
-	pb "polocloud/sdk/gen/polocloud/v1/proto"
+	pb "github.com/httpmarco/polocloud/sdk/sdk-go/gen/polocloud/v1/proto"
 	grpc "google.golang.org/grpc"
 )
 

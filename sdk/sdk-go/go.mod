@@ -1,4 +1,4 @@
-module polocloud/sdk
+module github.com/httpmarco/polocloud/sdk/sdk-go
 
 go 1.24
 
