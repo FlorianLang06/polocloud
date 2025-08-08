@@ -1,0 +1,27 @@
+version: v2
+clean: true
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/HttpMarco/polocloud/sdk/sdk-go/gen
+plugins:
+  - local: protoc-gen-go
+    out: gen
+    opt: paths=source_relative
+  - local: protoc-gen-go-grpc
+    out: gen
+    opt: paths=source_relative
+inputs:
+  - directory: ../../proto/src/main/proto/
+
+#version: v1
+#plugins:
+#  - plugin: buf.build/protocolbuffers/go
+#    out: .
+#    opt:
+#      - paths=source_relative
+#  - plugin: buf.build/grpc/go
+#    out: .
+#    opt:
+#      - paths=source_relative
