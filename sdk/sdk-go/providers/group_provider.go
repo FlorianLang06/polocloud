@@ -24,7 +24,7 @@ func (provider GroupProvider) FindAll() ([]*pb.GroupSnapshot, error) {
 	return result.Groups, nil
 }
 
-func (provider GroupProvider) FindByName(name string) ([]*pb.GroupSnapshot, error) {
+func (provider GroupProvider) FindByName(name string) (*pb.GroupSnapshot, error) {
 	result, err := provider.client.Find(context.Background(), &pb.FindGroupRequest{
 		Name: name,
 	})
@@ -32,5 +32,9 @@ func (provider GroupProvider) FindByName(name string) ([]*pb.GroupSnapshot, erro
 		return nil, err
 	}
 
-	return result.Groups, nil
+	if len(result.Groups) < 1 {
+		return nil, nil
+	}
+
+	return result.Groups[0], nil
 }
