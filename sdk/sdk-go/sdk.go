@@ -1,6 +1,8 @@
 package sdk
 
 import (
+	"os"
+
 	grpc "google.golang.org/grpc"
 	insecure "google.golang.org/grpc/credentials/insecure"
 	providers "polocloud/sdk/providers"
@@ -12,7 +14,12 @@ type Polocloud struct {
 }
 
 func CreatePolocloudClient() (Polocloud, error) {
-	conn, err := grpc.NewClient("127.0.0.1:8932", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	port := os.Getenv("agent_port")
+	if port == "" {
+		port = "8932"
+	}
+
+	conn, err := grpc.NewClient("127.0.0.1:" + port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	groupProvider := providers.NewGroupProvider(conn)
 
