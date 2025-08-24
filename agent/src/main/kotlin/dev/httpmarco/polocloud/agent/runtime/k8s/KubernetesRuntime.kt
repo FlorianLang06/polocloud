@@ -11,10 +11,12 @@ class KubernetesRuntime : Runtime {
 
     private val kubernetesClient = KubernetesClientBuilder().build()
     private val groupStorage = KubernetesRuntimeGroupStorage(kubernetesClient)
+    private val configHolder = KubernetesRuntimeConfigHolder(kubernetesClient)
     private val serviceStorage = KubernetesRuntimeServiceStorage()
     private val factory = KubernetesFactory()
     private val expender = KubernetesExpender()
     private val templates = KubernetesRuntimeTemplates()
+    private val started = System.currentTimeMillis()
 
     override fun runnable(): Boolean {
         return try {
@@ -37,7 +39,12 @@ class KubernetesRuntime : Runtime {
     override fun expender() = expender
 
     override fun templates() = templates
-    override fun configHolder(): RuntimeConfigHolder {
+
+    override fun configHolder() = configHolder
+
+    override fun started() = started
+
+    override fun sendCommand(command: String) {
         TODO("Not yet implemented")
     }
 

@@ -1,73 +1,153 @@
 'use client';
 
-import Link from 'next/link';
-import { ArrowRight, Github, BookOpen } from 'lucide-react';
-import { GitHubStatsComponent } from './github-stats';
 import { useEffect, useState } from 'react';
+import { GitHubStatsComponent } from './github-stats';
+import { 
+    HeroTitle, 
+    HeroActions, 
+    HeroTerminal, 
+    HeroBackground,
+    TerminalLine 
+} from '@/components/home/hero';
 
 export function HeroSection() {
-  const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const [showCommand, setShowCommand] = useState(false);
+    const [showLogsPhase1, setShowLogsPhase1] = useState(false);
+    const [showLogsPhase2, setShowLogsPhase2] = useState(false);
+    const [showLogsPhase3, setShowLogsPhase3] = useState(false);
+    const [typedText, setTypedText] = useState('');
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [latestVersion, setLatestVersion] = useState('v3.0.0-pre.4-SNAPSHOT');
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 100);
+    const commandText = "java -jar polocloud-launcher.jar";
 
-    return () => clearTimeout(timer);
-  }, []);
+    const terminalLinesPhase1: TerminalLine[] = [
+        { time: "16:42:01", level: "INFO", message: `Starting PoloCloud ${latestVersion.replace('v', '')} Agent...`, color: "text-gray-300" },
+        { time: "16:42:01", level: "WARN", message: "You are using a snapshot version of polocloud. This version is not recommended for production use!", color: "text-yellow-400" }
+    ];
 
-  return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/20 min-h-screen flex items-center justify-center">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px] dark:bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)]" />
+    const terminalLinesPhase2: TerminalLine[] = [
+        { time: "16:42:01", level: "INFO", message: "You are running the latest version of the agent.", color: "text-gray-300" },
+        { time: "16:42:04", level: "INFO", message: "Successfully started gRPC server on port 8932", color: "text-gray-300" },
+        { time: "16:42:04", level: "INFO", message: "Using runtime: LocalRuntime", color: "text-gray-300" },
+        { time: "16:42:04", level: "INFO", message: "Load groups (2): lobby, proxy", color: "text-gray-300" },
+        { time: "16:42:04", level: "INFO", message: "Load 12 platforms with 207 versions.", color: "text-gray-300" },
+        { time: "16:42:04", level: "INFO", message: "The agent is now successfully started and ready to use!", color: "text-gray-300", highlight: "successfully", highlightColor: "text-cyan-400" },
+        { time: "16:42:04", level: "INFO", message: "The service lobby-1 is now starting...", color: "text-gray-300", highlight: "lobby-1", highlightColor: "text-cyan-400" },
+        { time: "16:42:04", level: "INFO", message: "The service proxy-1 is now starting...", color: "text-gray-300", highlight: "proxy-1", highlightColor: "text-cyan-400" }
+    ];
 
-      <div className="relative container mx-auto px-6 py-20 z-10">
-        <div className={`text-center max-w-4xl mx-auto transition-all duration-1000 ease-out ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-        }`}>
-          <h1 className={`text-5xl md:text-7xl lg:text-8xl font-black mb-8 text-foreground dark:text-white transition-all duration-1000 delay-200 tracking-tight leading-tight ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            PoloCloud
-          </h1>
+    const terminalLinesPhase3: TerminalLine[] = [
+        { time: "16:42:08", level: "INFO", message: "The service proxy-1 is now online.", color: "text-gray-300", highlight: "proxy-1", highlightColor: "text-cyan-400" },
+        { time: "16:42:30", level: "INFO", message: "The service lobby-1 is now online.", color: "text-gray-300", highlight: "lobby-1", highlightColor: "text-cyan-400" }
+    ];
 
-          <p className={`text-xl md:text-2xl lg:text-3xl text-muted-foreground mb-16 max-w-4xl mx-auto leading-relaxed font-light transition-all duration-1000 delay-400 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            Deploy and manage your Minecraft servers with ease.
-            <span className="block mt-2 text-lg md:text-xl lg:text-2xl font-normal">
-              Built for performance, designed for simplicity.
-            </span>
-          </p>
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsVisible(true);
+        }, 100);
 
-          <div className={`transition-all duration-1000 delay-600 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <GitHubStatsComponent />
-          </div>
+        const commandTimer = setTimeout(() => {
+            setShowCommand(true);
+        }, 1500);
 
-          <div className={`flex flex-col sm:flex-row gap-6 justify-center transition-all duration-1000 delay-800 relative z-20 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-          }`}>
-            <Link
-              href="/docs/cloud"
-              className="group bg-[rgba(0,120,255,0.9)] hover:bg-[rgba(0,120,255,1)] text-white px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-300 shadow-[0_0_20px_rgba(0,120,255,0.3)] hover:shadow-[0_0_25px_rgba(0,120,255,0.4)] flex items-center justify-center gap-3 relative z-10"
-            >
-              <BookOpen className="w-5 h-5" />
-              Get Started
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              href="https://github.com/HttpMarco/polocloud"
-              className="group bg-card/50 hover:bg-card border border-border/50 px-8 py-3 rounded-xl font-semibold text-lg transition-all duration-300 backdrop-blur-sm shadow-lg hover:shadow-xl flex items-center justify-center gap-3 relative z-10"
-            >
-              <Github className="w-5 h-5" />
-              View on GitHub
-            </Link>
-          </div>
-        </div>
-      </div>
+        return () => {
+            clearTimeout(timer);
+            clearTimeout(commandTimer);
+        };
+    }, []);
 
-      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-background via-background/95 via-background/80 to-transparent z-5" />
-    </section>
-  );
+    useEffect(() => {
+        const fetchLatestVersion = async () => {
+            try {
+                const response = await fetch('/api/github-releases');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.latestVersion) {
+                        setLatestVersion(data.latestVersion);
+                    }
+                }
+            } catch (error) {
+                console.log('Failed to fetch latest version, using fallback');
+            }
+        };
+
+        fetchLatestVersion();
+    }, []);
+
+    useEffect(() => {
+        if (showCommand && currentIndex < commandText.length) {
+            const timeout = setTimeout(() => {
+                setTypedText(commandText.slice(0, currentIndex + 1));
+                setCurrentIndex(currentIndex + 1);
+            }, 100);
+            return () => clearTimeout(timeout);
+        } else if (showCommand && currentIndex >= commandText.length) {
+            const logsTimer = setTimeout(() => {
+                setShowLogsPhase1(true);
+            }, 500);
+            return () => clearTimeout(logsTimer);
+        }
+    }, [showCommand, currentIndex, commandText]);
+
+    useEffect(() => {
+        if (showLogsPhase1) {
+            const phase2Timer = setTimeout(() => {
+                setShowLogsPhase2(true);
+            }, 2000);
+            return () => clearTimeout(phase2Timer);
+        }
+    }, [showLogsPhase1]);
+
+    useEffect(() => {
+        if (showLogsPhase2) {
+            const phase3Timer = setTimeout(() => {
+                setShowLogsPhase3(true);
+            }, 2000);
+            return () => clearTimeout(phase3Timer);
+        }
+    }, [showLogsPhase2]);
+
+    return (
+        <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-muted/20 min-h-screen flex items-center justify-center">
+            <HeroBackground />
+
+            <div className="relative container mx-auto px-3 sm:px-4 md:px-6 py-8 sm:py-12 md:py-16 lg:py-20 z-10">
+                <div className={`grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center transition-all duration-1000 ease-out ${
+                    isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}>
+                    <div className="order-2 lg:order-1 text-center lg:text-left">
+                        <HeroTitle isVisible={isVisible} latestVersion={latestVersion} />
+
+                        <div className={`transition-all duration-1000 delay-600 ${
+                            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                        }`}>
+                            <GitHubStatsComponent />
+                        </div>
+
+                        <HeroActions isVisible={isVisible} />
+                    </div>
+
+                    <div className="hidden lg:block order-1 lg:order-2">
+                        <HeroTerminal
+                            showCommand={showCommand}
+                            showLogsPhase1={showLogsPhase1}
+                            showLogsPhase2={showLogsPhase2}
+                            showLogsPhase3={showLogsPhase3}
+                            typedText={typedText}
+                            currentIndex={currentIndex}
+                            commandText={commandText}
+                            latestVersion={latestVersion}
+                            terminalLinesPhase1={terminalLinesPhase1}
+                            terminalLinesPhase2={terminalLinesPhase2}
+                            terminalLinesPhase3={terminalLinesPhase3}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 h-32 sm:h-48 md:h-64 bg-gradient-to-t from-background via-background/95 via-background/80 to-transparent z-5" />
+        </section>
+    );
 } 

@@ -15,6 +15,7 @@ class DockerRuntime : Runtime {
     private val groupStorage = DockerRuntimeGroupStorage()
     private val expender = DockerExpender()
     private val runtimeFactory = DockerFactory()
+    private val started = System.currentTimeMillis()
 
     override fun runnable(): Boolean {
         return try {
@@ -38,6 +39,12 @@ class DockerRuntime : Runtime {
     }
 
     override fun configHolder(): RuntimeConfigHolder {
+        TODO("Not yet implemented")
+    }
+
+    override fun started() = started
+
+    override fun sendCommand(command: String) {
         TODO("Not yet implemented")
     }
 
