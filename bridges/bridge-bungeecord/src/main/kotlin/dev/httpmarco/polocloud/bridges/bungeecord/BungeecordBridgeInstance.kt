@@ -17,21 +17,23 @@ import net.md_5.bungee.api.plugin.Listener
 import net.md_5.bungee.event.EventHandler
 import java.net.InetSocketAddress
 
-class BungeecordBridgeInstance : BridgeInstance<ServerInfo>(), Listener {
-
-    val registeredFallbacks = ArrayList<ServerInfo>()
+class BungeecordBridgeInstance : BridgeInstance<ServerInfo, ServerInfo>(), Listener {
 
     init {
         this.initialize()
     }
 
-    override fun unregisterService(identifier: ServerInfo) {
+    override fun unregisterService(identifier: ServerInfo): ServerInfo {
         ProxyServer.getInstance().servers.remove(identifier.name)
-        registeredFallbacks.remove(identifier)
+        return identifier
     }
 
     override fun findInfo(name: String): ServerInfo? {
         return ProxyServer.getInstance().getServerInfo(name)
+    }
+
+    override fun playerCount(identifier: ServerInfo): Int {
+        return identifier.players.size
     }
 
     override fun generateInfo(service: Service): ServerInfo {
@@ -39,12 +41,10 @@ class BungeecordBridgeInstance : BridgeInstance<ServerInfo>(), Listener {
             .constructServerInfo(service.name(), InetSocketAddress(service.hostname, service.port), null, false)
     }
 
-    override fun registerService(identifier: ServerInfo, fallback: Boolean) {
+    override fun registerService(identifier: ServerInfo, fallback: Boolean): ServerInfo {
         ProxyServer.getInstance().servers[identifier.name] = identifier
 
-        if (fallback) {
-            registeredFallbacks.add(identifier)
-        }
+        return identifier
     }
 
     @EventHandler
@@ -96,6 +96,6 @@ class BungeecordBridgeInstance : BridgeInstance<ServerInfo>(), Listener {
     }
 
     fun findFallback(): ServerInfo? {
-        return registeredFallbacks.minByOrNull { it.players.size }
+        return fallbackServer()
     }
 }

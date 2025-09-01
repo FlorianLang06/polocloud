@@ -15,9 +15,7 @@ import dev.waterdog.waterdogpe.network.serverinfo.ServerInfo
 import dev.waterdog.waterdogpe.player.ProxiedPlayer
 import java.net.InetSocketAddress
 
-class WaterdogBridgeInstance : BridgeInstance<BedrockServerInfo>(), IJoinHandler {
-
-    val registeredFallbacks = ArrayList<BedrockServerInfo>()
+class WaterdogBridgeInstance : BridgeInstance<BedrockServerInfo, BedrockServerInfo>(), IJoinHandler {
 
     init {
         registerEvents()
@@ -31,21 +29,23 @@ class WaterdogBridgeInstance : BridgeInstance<BedrockServerInfo>(), IJoinHandler
     override fun registerService(
         identifier: BedrockServerInfo,
         fallback: Boolean
-    ) {
+    ): BedrockServerInfo {
         ProxyServer.getInstance().registerServerInfo(identifier)
 
-        if (fallback) {
-            registeredFallbacks.add(identifier)
-        }
+        return identifier
     }
 
-    override fun unregisterService(identifier: BedrockServerInfo) {
+    override fun unregisterService(identifier: BedrockServerInfo): BedrockServerInfo {
         ProxyServer.getInstance().removeServerInfo(identifier.serverName)
-        registeredFallbacks.remove(identifier)
+        return identifier
     }
 
     override fun findInfo(name: String): BedrockServerInfo? {
         return ProxyServer.getInstance().getServerInfo(name) as BedrockServerInfo?
+    }
+
+    override fun playerCount(identifier: BedrockServerInfo): Int {
+        return identifier.players.size
     }
 
     private fun registerEvents() {
@@ -75,7 +75,7 @@ class WaterdogBridgeInstance : BridgeInstance<BedrockServerInfo>(), IJoinHandler
     }
 
     fun findFallback(): ServerInfo? {
-        return registeredFallbacks.minByOrNull { it.players.size }
+        return fallbackServer()
     }
 
     override fun determineServer(p0: ProxiedPlayer?): ServerInfo {

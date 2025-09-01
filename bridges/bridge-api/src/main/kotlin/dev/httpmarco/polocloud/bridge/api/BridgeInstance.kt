@@ -14,7 +14,7 @@ abstract class BridgeInstance<T, R> {
 
     abstract fun findInfo(name: String): T?
 
-    abstract fun getPlayerCount(identifier: R): Int
+    abstract fun playerCount(identifier: R): Int
 
     private lateinit var polocloud: PolocloudShared
 
@@ -57,10 +57,10 @@ abstract class BridgeInstance<T, R> {
         polocloud.eventProvider().call(event)
     }
 
-    fun getFallbackServer(): R {
+    fun fallbackServer(): R {
         val withPlayers = ArrayList<Pair<R, Int>>()
         for (fallback in registeredFallbacks) {
-            withPlayers.add(fallback to getPlayerCount(fallback))
+            withPlayers.add(fallback to playerCount(fallback))
         }
 
         val (service) = withPlayers.minBy { it.second }

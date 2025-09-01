@@ -47,7 +47,7 @@ class VelocityBridge @Inject constructor(
 
     @Subscribe
     fun onConnect(event: PlayerChooseInitialServerEvent) {
-        event.setInitialServer(getFallbackServer())
+        event.setInitialServer(fallbackServer())
     }
 
     @Subscribe
@@ -106,7 +106,7 @@ class VelocityBridge @Inject constructor(
         return proxyServer.getServer(name).map { it -> it.serverInfo }.getOrNull()
     }
 
-    override fun getPlayerCount(identifier: RegisteredServer): Int {
+    override fun playerCount(identifier: RegisteredServer): Int {
         return identifier.playersConnected.count()
     }
 }
