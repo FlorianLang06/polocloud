@@ -21,10 +21,12 @@ import java.net.InetSocketAddress
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
-class VelocityBridge @Inject constructor(val proxyServer: ProxyServer, private val logger: Logger, val metricsFactory: Metrics.Factory) : BridgeInstance<ServerInfo>() {
+class VelocityBridge @Inject constructor(
+    val proxyServer: ProxyServer,
+    private val logger: Logger,
+    val metricsFactory: Metrics.Factory
+) : BridgeInstance<ServerInfo, RegisteredServer>() {
 
-
-    private val registeredFallbacks = ArrayList<RegisteredServer>()
 
     private lateinit var metrics: Metrics
 
@@ -45,7 +47,7 @@ class VelocityBridge @Inject constructor(val proxyServer: ProxyServer, private v
 
     @Subscribe
     fun onConnect(event: PlayerChooseInitialServerEvent) {
-        event.setInitialServer(registeredFallbacks.minByOrNull { it.playersConnected.size })
+        event.setInitialServer(getFallbackServer())
     }
 
     @Subscribe
@@ -88,19 +90,23 @@ class VelocityBridge @Inject constructor(val proxyServer: ProxyServer, private v
         return ServerInfo(service.name(), InetSocketAddress(service.hostname, service.port))
     }
 
-    override fun registerService(identifier: ServerInfo, fallback: Boolean) {
+    override fun registerService(identifier: ServerInfo, fallback: Boolean): RegisteredServer {
         val server = proxyServer.registerServer(identifier)
 
-        if (fallback) {
-            registeredFallbacks.add(server)
-        }
+        return server
     }
 
-    override fun unregisterService(identifier: ServerInfo) {
+    override fun unregisterService(identifier: ServerInfo): RegisteredServer {
+        val server = proxyServer.registerServer(identifier)
         proxyServer.unregisterServer(identifier)
+        return server
     }
 
     override fun findInfo(name: String): ServerInfo? {
         return proxyServer.getServer(name).map { it -> it.serverInfo }.getOrNull()
+    }
+
+    override fun getPlayerCount(identifier: RegisteredServer): Int {
+        return identifier.playersConnected.count()
     }
 }
