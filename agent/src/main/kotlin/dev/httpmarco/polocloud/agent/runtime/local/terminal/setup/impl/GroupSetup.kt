@@ -3,6 +3,7 @@ package dev.httpmarco.polocloud.agent.runtime.local.terminal.setup.impl
 import com.google.gson.JsonPrimitive
 import dev.httpmarco.polocloud.agent.Agent
 import dev.httpmarco.polocloud.agent.groups.AbstractGroup
+import dev.httpmarco.polocloud.agent.i18n
 import dev.httpmarco.polocloud.agent.runtime.local.terminal.arguments.InputContext
 import dev.httpmarco.polocloud.agent.runtime.local.terminal.arguments.type.*
 import dev.httpmarco.polocloud.agent.runtime.local.terminal.setup.Setup
@@ -52,16 +53,23 @@ class GroupSetup : Setup<AbstractGroup>("Group setup") {
         val fallback = if (result.contains(fallbackArgument)) result.arg(fallbackArgument) else false
         val static = if (result.contains(staticArgument)) result.arg(staticArgument) else false
 
+        val templates = mutableListOf(
+            Template("EVERY"),
+            Template("EVERY_" + originalPlatform.type.name)
+        )
+
         val properties = HashMap<String, JsonPrimitive>()
 
         if (fallback) {
             properties["fallback"] = JsonPrimitive(true)
+            templates.add(Template("EVERY_FALLBACK"))
         }
 
         if (static) {
             properties["static"] = JsonPrimitive(true)
         }
 
+        templates.add(Template(name))
 
         // TODO USE EVERY TEMPLATE IF EXISTS
         val group = AbstractGroup(
@@ -73,11 +81,17 @@ class GroupSetup : Setup<AbstractGroup>("Group setup") {
             percentageToStartNewService.toDouble(),
             platform,
             System.currentTimeMillis(),
-            listOf(
-                Template("EVERY"), Template("EVERY_" + originalPlatform.type.name), Template(name)
-            ),
+            templates,
             properties
         )
+
+        if (group.isProxy() && Agent.runtime.serviceStorage().findAll().stream().anyMatch { it.type == GroupType.SERVER }) {
+            i18n.warn("agent.local-runtime.setup.group.warnProxyCantWork")
+        }
+
+        if (group.isProxy() && Agent.runtime.groupStorage().findAll().any({ it.isProxy() && it.platform() != group.platform() })) {
+            i18n.warn("agent.local-runtime.setup.group.warnMultipleProxies")
+        }
 
         Agent.runtime.groupStorage().publish(group)
         return group

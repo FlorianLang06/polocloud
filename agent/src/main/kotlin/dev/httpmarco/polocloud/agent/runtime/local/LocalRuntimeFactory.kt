@@ -1,6 +1,7 @@
 package dev.httpmarco.polocloud.agent.runtime.local
 
 import dev.httpmarco.polocloud.agent.Agent
+import dev.httpmarco.polocloud.agent.groups.AbstractGroup
 import dev.httpmarco.polocloud.agent.i18n
 import dev.httpmarco.polocloud.agent.runtime.RuntimeFactory
 import dev.httpmarco.polocloud.agent.services.AbstractService
@@ -10,7 +11,7 @@ import dev.httpmarco.polocloud.common.os.cpuUsage
 import dev.httpmarco.polocloud.common.os.currentOS
 import dev.httpmarco.polocloud.common.version.polocloudVersion
 import dev.httpmarco.polocloud.platforms.Platform
-import dev.httpmarco.polocloud.platforms.PlatformLanguage
+import dev.httpmarco.polocloud.common.language.Language
 import dev.httpmarco.polocloud.platforms.PlatformParameters
 import dev.httpmarco.polocloud.shared.events.definitions.service.ServiceChangeStateEvent
 import dev.httpmarco.polocloud.v1.services.ServiceSnapshot
@@ -104,7 +105,7 @@ class LocalRuntimeFactory(var localRuntime: LocalRuntime) : RuntimeFactory<Local
         }
 
         while (Agent.runtime.serviceStorage().findAll()
-                .count { it.state == ServiceState.STARTING } >= Agent.config.maxConcurrentServersStarts
+             .count { it.state == ServiceState.STARTING } >= Agent.config.maxConcurrentServersStarts
             ||
             cpuUsage() > Agent.config.maxCPUPercentageToStart
         ) {
@@ -219,6 +220,10 @@ class LocalRuntimeFactory(var localRuntime: LocalRuntime) : RuntimeFactory<Local
         return service.toSnapshot()
     }
 
+    override fun generateInstance(group: AbstractGroup): LocalService {
+        return LocalService(group)
+    }
+
     fun shutdown() {
         cacheThreadPool.shutdown()
     }
@@ -227,7 +232,7 @@ class LocalRuntimeFactory(var localRuntime: LocalRuntime) : RuntimeFactory<Local
         val commands = ArrayList<String>()
 
         when (platform.language) {
-            PlatformLanguage.JAVA -> {
+            Language.JAVA -> {
 
                 val javaPath = abstractService.group.properties["javaPath"]?.takeIf {
                     it.isString && JavaUtils().isValidJavaPath(it.asString)
@@ -247,7 +252,7 @@ class LocalRuntimeFactory(var localRuntime: LocalRuntime) : RuntimeFactory<Local
                 commands.addAll(platform.arguments)
             }
 
-            PlatformLanguage.GO, PlatformLanguage.RUST -> {
+            Language.GO, Language.RUST -> {
                 commands.addAll(currentOS.executableCurrentDirectoryCommand(abstractService.group.applicationPlatformFile().name))
             }
         }

@@ -11,7 +11,7 @@ oshi="6.8.3"
 
 # configuration
 configurate = "4.2.0"
-yaml = "2.4"
+yaml = "2.5"
 tomlj = "1.1.1"
 
 # networking
@@ -49,7 +49,7 @@ npc-bukkit = "3.0.0-beta13"
 bstats = "3.1.0"
 
 # utils
-lombok = "1.18.38"
+lombok = "1.18.40"
 
 [libraries]
 

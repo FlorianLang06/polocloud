@@ -2,6 +2,7 @@ package dev.httpmarco.polocloud.modules.rest.controller.impl.v3.controller.termi
 
 import dev.httpmarco.polocloud.agent.Agent
 import dev.httpmarco.polocloud.modules.rest.controller.Controller
+import dev.httpmarco.polocloud.modules.rest.controller.defaultResponse
 import dev.httpmarco.polocloud.modules.rest.controller.impl.v3.model.terminal.TerminalCommandModel
 import dev.httpmarco.polocloud.modules.rest.controller.methods.Request
 import dev.httpmarco.polocloud.modules.rest.controller.methods.RequestType
@@ -11,19 +12,10 @@ class TerminalController : Controller("/terminal") {
 
     @Request(requestType = RequestType.POST, path = "/command", permission = "polocloud.terminal.command")
     fun command(context: Context) {
-        val terminalCommandModel = try {
-            context.bodyAsClass(TerminalCommandModel::class.java)
-        } catch (e: Exception) {
-            context.status(400).json(message("Invalid body"))
-            return
-        }
+        val model = context.parseBodyOrBadRequest<TerminalCommandModel>() ?: return
+        if (!context.validate(model.command.isNotBlank(), "Command is required")) return
 
-        if (terminalCommandModel.command.isBlank()) {
-            context.status(400).json(message("Invalid body: command cannot be empty"))
-            return
-        }
-
-        Agent.runtime.sendCommand(terminalCommandModel.command)
-        context.status(200).json(message("Trying to execute command"))
+        Agent.runtime.sendCommand(model.command)
+        context.defaultResponse(201, "Trying to execute command")
     }
 }

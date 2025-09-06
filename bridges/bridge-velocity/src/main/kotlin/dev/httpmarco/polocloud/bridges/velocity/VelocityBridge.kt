@@ -80,9 +80,12 @@ class VelocityBridge @Inject constructor(
                 // Player was not connected to any service
                 return
             }
-            event.result =
-                KickedFromServerEvent.RedirectPlayer.create(registeredFallbacks.filter { it.serverInfo.name != event.server.serverInfo.name }
-                    .minByOrNull { it.playersConnected.size })
+            val server = registeredFallbacks.filter { it.serverInfo.name != event.server.serverInfo.name }.minByOrNull { it.playersConnected.size }
+
+            if(server == null || server == event.server) {
+                return
+            }
+            event.result = KickedFromServerEvent.RedirectPlayer.create(server)
         }
     }
 
