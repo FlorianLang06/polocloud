@@ -16,3 +16,5 @@ rootProject.name = "polocloudv3"
 include("frames", "frames:frame-gradle-plugin", "frames:frame-api", "cli", "runner")
 include("proto")
 include("common")
+include("installer")
+include("console")

@@ -10,8 +10,9 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
+
 /**
- * Gradle plugin that embeds a `dependencies.blob` file into the produced JAR.
+ * Gradle plugin that embeds a `dependencies.index` file into the produced JAR.
  *
  * The blob contains runtime dependency metadata (group, artifact, version, download URL, checksum)
  * which can later be consumed by Polocloud at runtime to resolve and verify dependencies.
@@ -40,34 +41,36 @@ class PolocloudDependencyPlugin : Plugin<Project> {
                     )
                 }
 
+                val blobFile = project.layout.buildDirectory
+                    .file("dependencies.index")
+                    .get()
+                    .asFile
+
+                blobFile.parentFile.mkdirs()
+
+                val primaryRepo = project.repositories
+                    .filterIsInstance<MavenArtifactRepository>()
+                    .firstOrNull()
+                    ?.url
+                    ?.toString()
+                    ?: "https://repo.maven.apache.org/maven2"
+
+                val dependencies = extension.projects.mapNotNull { notation ->
+                    parseDependency(notation, primaryRepo)
+                }
+
                 doFirst {
-                    val blobFile = project.layout.buildDirectory
-                        .file("dependencies.blob")
-                        .get()
-                        .asFile
-
-                    blobFile.parentFile.mkdirs()
-
-                    val primaryRepo = project.repositories
-                        .filterIsInstance<MavenArtifactRepository>()
-                        .firstOrNull()
-                        ?.url
-                        ?.toString()
-                        ?: "https://repo.maven.apache.org/maven2"
-
-                    val dependencies = extension.projects.mapNotNull { notation ->
-                        parseDependency(notation, primaryRepo)
-                    }
-
                     blobFile.writeText(
                         dependencies.joinToString("\n") { it.toNotation() },
                         StandardCharsets.UTF_8
                     )
                 }
 
-                from(project.layout.buildDirectory) {
-                    include("dependencies.blob")
-                    into("/")
+                if (!dependencies.isEmpty()) {
+                    from(project.layout.buildDirectory) {
+                        include("dependencies.index")
+                        into("/")
+                    }
                 }
             }
         }
@@ -123,7 +126,7 @@ fun fetchChecksum(jarUrl: String): String {
 }
 
 /**
- * Adds a runtime dependency that will be embedded into the `dependencies.blob`
+ * Adds a runtime dependency that will be embedded into the `dependencies.index`
  * and also registers it as an `implementation` dependency.
  *
  * @param notation dependency notation (`group:artifact:version`)

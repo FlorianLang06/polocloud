@@ -5,9 +5,20 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.jar.JarFile
 
-private const val BLOB_FILE = "dependencies.blob"
+private const val BLOB_FILE = "dependencies.index"
 
 class OwnBlobScanner(private val file: File) : DependencyScanner<String> {
+
+    constructor(clazz: Class<*>) : this(
+        File(
+            clazz::class
+                .java
+                .protectionDomain
+                .codeSource
+                .location
+                .toURI()
+        )
+    )
 
     override fun scanDependencies(): List<String> {
         if (!file.exists()) {
@@ -16,7 +27,7 @@ class OwnBlobScanner(private val file: File) : DependencyScanner<String> {
 
         JarFile(file).use { jar ->
             val entry = jar.getJarEntry(BLOB_FILE)
-                ?: error("dependencies.blob not found in JAR: ${file.absolutePath}")
+                ?: error("dependencies.index not found in JAR: ${file.absolutePath}")
 
             jar.getInputStream(entry).use { stream ->
                 val content = stream

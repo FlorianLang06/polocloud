@@ -7,21 +7,40 @@ polocloud {
     mainClass = "dev.httpmarco.polocloud.runner.PolocloudRuntimeLauncher"
 }
 
-// TODO use gradle plugin here
 tasks.named<Jar>("jar") {
-    dependsOn(":cli:jar", ":common:jar")
+    val subprojects = listOf(
+        ":cli",
+        ":common",
+        ":console",
+        ":installer"
+    )
 
-    val cliJar = project(":cli").tasks.named<Jar>("jar").get().archiveFile.get().asFile
-    val commonJar = project(":common").tasks.named<Jar>("jar").get().archiveFile.get().asFile
+    dependsOn(subprojects.map { "$it:jar" })
 
-    from(cliJar) {
-        into(".cache")
+    subprojects.forEach { path ->
+        val jarTask = project(path).tasks.named<Jar>("jar")
+
+        from(jarTask.flatMap { it.archiveFile }) {
+            into(".cache")
+        }
     }
 
-    from(commonJar) {
-        into(".cache")
+    val cacheIndexFile = layout.buildDirectory.file("generated/cache.index")
+
+    doFirst {
+        val lines = subprojects.map { path ->
+            val jar = project(path).tasks.named<Jar>("jar").get()
+            ".cache/${jar.archiveFileName.get()}"
+        }
+
+        val file = cacheIndexFile.get().asFile
+        file.parentFile.mkdirs()
+        file.writeText(lines.joinToString("\n"))
     }
+
+    from(cacheIndexFile)
 }
+
 
 java {
     toolchain {
