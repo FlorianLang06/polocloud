@@ -24,21 +24,6 @@ tasks.named<Jar>("jar") {
             into(".cache")
         }
     }
-
-    val cacheIndexFile = layout.buildDirectory.file("generated/cache.index")
-
-    doFirst {
-        val lines = subprojects.map { path ->
-            val jar = project(path).tasks.named<Jar>("jar").get()
-            ".cache/${jar.archiveFileName.get()}"
-        }
-
-        val file = cacheIndexFile.get().asFile
-        file.parentFile.mkdirs()
-        file.writeText(lines.joinToString("\n"))
-    }
-
-    from(cacheIndexFile)
 }
 
 

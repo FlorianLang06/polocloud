@@ -20,6 +20,14 @@ public final class PolocloudParameters {
     public static final String VERSION_ENV = "version";
 
     /**
+     * Name of the initialization control file used by Polocloud to track the initialization state of the CLI or node.
+     *
+     * <p>This file is stored in the "local" directory and contains metadata about the initialization process,</p>
+     *  <p>such as timestamps, status, and any relevant information needed to determine if the CLI or node has been initialized.</p>
+     */
+    public static final String INITIALIZATION_CONTROL_FILE_NAME = "local/initialization.info";
+
+    /**
      * Path to the runtime cache folder used by Polocloud for temporary and cached files.
      *
      * <p>This folder is created in the current working directory.</p>
