@@ -91,14 +91,22 @@ public final class PolocloudProcess {
     /**
      * Resolves the classpath entries required by the CLI.
      *
-     * @return the CLI classpath
+     * @return the needed classpath entries as a list of paths
      */
     private List<Path> getApplicationClasspath() {
-        return Arrays.asList(
-                PolocloudParameters.BOOT_KOTLIN,
-                PolocloudParameters.expenderRuntimeCache("cli"),
-                PolocloudParameters.expenderRuntimeCache("common")
-        );
+        List<Path> elements = new ArrayList<>(Arrays.asList(PolocloudParameters.BOOT_KOTLIN, PolocloudParameters.expenderRuntimeCache("cli")));
+
+        if(false) {
+            elements.add(PolocloudParameters.expenderRuntimeCache("installer"));
+        } else {
+            if(false) {
+                elements.add(PolocloudParameters.expenderRuntimeCache("cli"));
+            }
+            if(false) {
+                elements.add(PolocloudParameters.expenderRuntimeCache("node"));
+            }
+        }
+        return elements;
     }
 
     /**
