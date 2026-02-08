@@ -1,6 +1,6 @@
 package dev.httpmarco.polocloud.node.database.sql
 
-import dev.httpmarco.polocloud.node.database.DatabaseConnectionFactoryPart
+import dev.httpmarco.polocloud.node.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.node.database.credentials.SqlDatabaseCredentials
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -12,16 +12,16 @@ import javax.sql.DataSource
  * Abstract SQL connection factory using HikariCP as the connection pool.
  * Provides methods to connect to a SQL database and manage the connection pool.
  *
- * @see DatabaseConnectionFactoryPart
+ * @see DatabaseConnectionFactory
  */
-class SqlConnectionFactoryPart : DatabaseConnectionFactoryPart<SqlDatabaseCredentials>() {
+class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredentials>() {
 
     companion object {
         private val logger: Logger = LogManager.getLogger(SqlConnectionFactoryPart::class.java)
     }
 
     private val executor = SqlExecutor(this)
-    private var dataSource: HikariDataSource? = null
+    var dataSource: HikariDataSource? = null
 
     /**
      * Connects to the SQL database using the provided credentials.
@@ -30,7 +30,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactoryPart<SqlDatabaseCreden
      */
     override fun connect(credentials: SqlDatabaseCredentials) {
         this.dataSource = createHikariDataSource(
-            jdbcUrl = credentials.driver,
+            jdbcUrl = "jdbc:${credentials.driver}://${credentials.hostname}:${credentials.port}/${credentials.database}",
             username = credentials.username,
             password = credentials.password
         )
@@ -87,10 +87,4 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactoryPart<SqlDatabaseCreden
         }
     }
 
-    /**
-     * Provides the underlying DataSource.
-     *
-     * @return The DataSource if connected, null otherwise.
-     */
-    fun getDataSource(): DataSource? = dataSource
 }

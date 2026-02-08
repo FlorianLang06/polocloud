@@ -15,7 +15,7 @@
 
     <Loggers>
 
-        <Logger name="dev.httpmarco.polocloud" level="debug" additivity="false">
+        <Logger name="dev.httpmarco.polocloud" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
 
