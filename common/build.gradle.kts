@@ -5,4 +5,5 @@ plugins {
 
 dependencies {
     compileOnly(libs.bundles.grpc)
+    compileOnly(libs.bundles.logging)
 }
