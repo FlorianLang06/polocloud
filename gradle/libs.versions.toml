@@ -2,6 +2,7 @@
 jline = "3.30.6"
 grpc = "1.79.0"
 protobuf = "4.33.5"
+log4j = "2.25.3"
 
 [libraries]
 protobuf =  { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
@@ -12,8 +13,13 @@ grpc-services =  { group = "io.grpc", name = "grpc-services", version.ref = "grp
 
 jline = { module = "org.jline:jline", version.ref = "jline" }
 
+log4j-api = { group = "org.apache.logging.log4j", name = "log4j-api", version.ref = "log4j" }
+log4j-core = { group = "org.apache.logging.log4j", name = "log4j-core", version.ref = "log4j" }
+log4j-slf4j = { group = "org.apache.logging.log4j", name = "log4j-slf4j2-impl", version.ref = "log4j" }
+
 [plugins]
 
 
 [bundles]
 grpc = ["grpc-api", "grpc-stub", "grpc-services", "protobuf"]
+logging = ["log4j-api", "log4j-core", "log4j-slf4j"]
