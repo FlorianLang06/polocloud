@@ -1,10 +1,19 @@
 [versions]
 jline = "3.30.6"
+grpc = "1.79.0"
+protobuf = "4.33.5"
 
 [libraries]
+protobuf =  { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
+
+grpc-api =  { group = "io.grpc", name = "grpc-api", version.ref = "grpc" }
+grpc-stub =  { group = "io.grpc", name = "grpc-stub", version.ref = "grpc" }
+grpc-services =  { group = "io.grpc", name = "grpc-services", version.ref = "grpc" }
+
 jline = { module = "org.jline:jline", version.ref = "jline" }
 
 [plugins]
 
 
 [bundles]
+grpc = ["grpc-api", "grpc-stub", "grpc-services", "protobuf"]
