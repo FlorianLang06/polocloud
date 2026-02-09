@@ -1,11 +1,11 @@
-package dev.httpmarco.polocloud.node.database.sql
+package dev.httpmarco.polocloud.node.cluster.external.database.sql
 
-import dev.httpmarco.polocloud.node.database.DatabaseExecutor
-import dev.httpmarco.polocloud.node.database.DatabaseKey
-import dev.httpmarco.polocloud.node.database.DatabaseState
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseExecutor
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseIdentifier
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseKey
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.sql.ResultSet
 import java.sql.SQLException
 
 /**
@@ -71,7 +71,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
 
         val fields = key.clazz.declaredFields
         val identifierField =
-            fields.find { it.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null }
+            fields.find { it.getAnnotation(DatabaseIdentifier::class.java) != null }
                 ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
         val setClause = fields.joinToString(", ") { "${it.name} = ?" }
@@ -92,7 +92,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
         ensureTableExists(key)
 
         val identifierField =
-            key.clazz.declaredFields.find { it.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null }
+            key.clazz.declaredFields.find { it.getAnnotation(DatabaseIdentifier::class.java) != null }
                 ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
         identifierField.isAccessible = true
@@ -192,7 +192,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
                     val columns = fields.joinToString(", ") { field ->
                         val sqlType = mapJavaTypeToSql(field.type)
                         val pk =
-                            if (field.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null) "PRIMARY KEY" else ""
+                            if (field.getAnnotation(DatabaseIdentifier::class.java) != null) "PRIMARY KEY" else ""
                         "${field.name} $sqlType $pk"
                     }
                     val sql = "CREATE TABLE $table ($columns);"

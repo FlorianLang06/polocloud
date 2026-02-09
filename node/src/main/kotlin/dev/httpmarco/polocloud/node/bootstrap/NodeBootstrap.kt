@@ -1,7 +1,7 @@
 package dev.httpmarco.polocloud.node.bootstrap
 
-import dev.httpmarco.polocloud.node.LocalNode
+import dev.httpmarco.polocloud.node.NodeInstance
 
 fun main(args: Array<String>) {
-    LocalNode
+    NodeInstance
 }

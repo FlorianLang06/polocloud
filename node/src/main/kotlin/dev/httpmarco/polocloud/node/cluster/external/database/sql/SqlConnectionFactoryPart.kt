@@ -1,13 +1,12 @@
-package dev.httpmarco.polocloud.node.database.sql
+package dev.httpmarco.polocloud.node.cluster.external.database.sql
 
-import dev.httpmarco.polocloud.node.database.DatabaseConnectionFactory
-import dev.httpmarco.polocloud.node.database.credentials.SqlDatabaseCredentials
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseConnectionFactory
+import dev.httpmarco.polocloud.node.cluster.external.database.credentials.SqlDatabaseCredentials
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import dev.httpmarco.polocloud.node.database.DatabaseState
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import javax.sql.DataSource
 
 /**
  * Abstract SQL connection factory using HikariCP as the connection pool.

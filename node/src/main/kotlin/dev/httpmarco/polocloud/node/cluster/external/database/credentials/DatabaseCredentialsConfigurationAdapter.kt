@@ -1,11 +1,11 @@
-package dev.httpmarco.polocloud.node.database.credentials
+package dev.httpmarco.polocloud.node.cluster.external.database.credentials
 
 import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
-import dev.httpmarco.polocloud.node.database.DatabaseType
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseType
 import java.lang.reflect.Type
 
 class DatabaseCredentialsConfigurationAdapter : JsonSerializer<DatabaseCredentials>,

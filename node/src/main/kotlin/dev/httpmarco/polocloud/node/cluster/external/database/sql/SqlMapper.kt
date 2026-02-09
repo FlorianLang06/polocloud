@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.database.sql
+package dev.httpmarco.polocloud.node.cluster.external.database.sql
 
 import java.sql.ResultSet
 

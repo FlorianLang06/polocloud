@@ -1,7 +1,7 @@
 package dev.httpmarco.polocloud.node.cluster
 
-import dev.httpmarco.polocloud.node.database.DatabaseIdentifier
-import dev.httpmarco.polocloud.node.database.DatabaseKey
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseIdentifier
+import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseKey
 
 val NODE_DATA_KEY = DatabaseKey("nodes", NodeData::class.java)
 

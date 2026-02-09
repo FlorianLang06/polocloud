@@ -21,6 +21,7 @@
 
         <Logger name="io.grpc" level="warn"/>
         <Logger name="io.netty" level="warn"/>
+        <Logger name="com.zaxxer.hikari" level="warn"/>
 
         <Root level="info">
             <AppenderRef ref="Console"/>

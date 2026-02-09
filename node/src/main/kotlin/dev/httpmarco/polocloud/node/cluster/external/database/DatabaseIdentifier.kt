@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.database
+package dev.httpmarco.polocloud.node.cluster.external.database
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
