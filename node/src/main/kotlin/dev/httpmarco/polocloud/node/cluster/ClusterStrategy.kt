@@ -1,6 +1,8 @@
 package dev.httpmarco.polocloud.node.cluster
 
-interface ClusterStrategy {
+import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
+
+interface ClusterStrategy<T : NodeInstanceConfiguration> {
 
 
 

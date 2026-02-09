@@ -1,8 +1,8 @@
-package dev.httpmarco.polocloud.node.cluster.external.database
+package dev.httpmarco.polocloud.node.storage.database
 
 import dev.httpmarco.polocloud.common.Closeable
-import dev.httpmarco.polocloud.node.cluster.external.database.credentials.DatabaseCredentials
-import dev.httpmarco.polocloud.node.cluster.external.database.sql.SqlExecutor
+import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentials
+import dev.httpmarco.polocloud.node.storage.database.sql.SqlExecutor
 import org.slf4j.LoggerFactory
 
 /**

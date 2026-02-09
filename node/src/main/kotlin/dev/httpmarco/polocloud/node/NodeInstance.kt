@@ -3,9 +3,10 @@ package dev.httpmarco.polocloud.node
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
-import dev.httpmarco.polocloud.node.cluster.external.database.credentials.DatabaseCredentials
-import dev.httpmarco.polocloud.node.cluster.external.database.credentials.DatabaseCredentialsConfigurationAdapter
-import dev.httpmarco.polocloud.node.cluster.external.database.credentials.SqlDatabaseCredentials
+import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentials
+import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentialsConfigurationAdapter
+import dev.httpmarco.polocloud.node.storage.database.credentials.SqlDatabaseCredentials
+import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import java.util.UUID
 
 /**

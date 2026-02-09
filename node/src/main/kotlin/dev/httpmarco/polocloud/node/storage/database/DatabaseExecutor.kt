@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.external.database
+package dev.httpmarco.polocloud.node.storage.database
 
 /**
  * A generic executor interface for performing CRUD operations on database tables.

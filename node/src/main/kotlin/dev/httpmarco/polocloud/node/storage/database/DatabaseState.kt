@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.external.database
+package dev.httpmarco.polocloud.node.storage.database
 
 enum class DatabaseState {
 

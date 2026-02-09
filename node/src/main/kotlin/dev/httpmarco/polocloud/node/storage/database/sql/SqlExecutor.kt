@@ -1,9 +1,9 @@
-package dev.httpmarco.polocloud.node.cluster.external.database.sql
+package dev.httpmarco.polocloud.node.storage.database.sql
 
-import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseExecutor
-import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseIdentifier
-import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseKey
-import dev.httpmarco.polocloud.node.cluster.external.database.DatabaseState
+import dev.httpmarco.polocloud.node.storage.database.DatabaseExecutor
+import dev.httpmarco.polocloud.node.storage.database.DatabaseIdentifier
+import dev.httpmarco.polocloud.node.storage.database.DatabaseKey
+import dev.httpmarco.polocloud.node.storage.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.sql.SQLException
