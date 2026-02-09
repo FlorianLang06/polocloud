@@ -13,10 +13,12 @@ dependencies {
     compileOnly(libs.bundles.logging)
     compileOnly(libs.postgreSql)
     compileOnly(libs.hikariCp)
+    compileOnly(libs.gson)
 
     runtimeOnly(libs.bundles.grpc)
     runtimeOnly(projects.common)
     runtimeOnly(libs.bundles.logging)
     runtimeOnly(libs.hikariCp)
     runtimeOnly(libs.postgreSql)
+    runtimeOnly(libs.gson)
 }
