@@ -38,7 +38,7 @@ abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
     abstract fun connect(credentials: T)
 
     @Suppress("UNCHECKED_CAST")
-    fun connect(credentials: DatabaseCredentials) {
+    fun globalConnect(credentials: DatabaseCredentials) {
         connect(credentials as T)
     }
 

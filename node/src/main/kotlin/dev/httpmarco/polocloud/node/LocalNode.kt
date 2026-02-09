@@ -1,9 +1,15 @@
 package dev.httpmarco.polocloud.node
 
-import dev.httpmarco.polocloud.common.configuration.FileConfigSource
+import dev.httpmarco.polocloud.common.Address
+import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
-import dev.httpmarco.polocloud.config.ConfigLoader
+import dev.httpmarco.polocloud.node.database.credentials.DatabaseCredentials
+import dev.httpmarco.polocloud.node.database.credentials.DatabaseCredentialsConfigurationAdapter
+import dev.httpmarco.polocloud.node.database.credentials.SqlDatabaseCredentials
 import dev.httpmarco.polocloud.node.database.sql.SqlConnectionFactoryPart
+import java.lang.reflect.Type
+import java.util.UUID
+
 /**
  * Singleton representing the local PoloCloud node.
  *
@@ -28,7 +34,7 @@ object LocalNode {
         endpoint.connect()
 
         // connect database using credentials from configuration
-        databaseConnectionFactory.connect(config.database)
+        databaseConnectionFactory.globalConnect(config.database)
     }
 
     /**
@@ -37,10 +43,16 @@ object LocalNode {
      * Uses the Config system with Object Mapping to map into [LocalNodeConfiguration].
      */
     private fun generateConfiguration(): LocalNodeConfiguration {
-        val loader = ConfigLoader()
-            .addSource(FileConfigSource(LOCAL_NODE_PATH))
-            .load()
+        val section = ConfigSection(LOCAL_NODE_PATH).withMapping(
+            DatabaseCredentials::class.java,
+            DatabaseCredentialsConfigurationAdapter()
+        )
 
-        return loader.root().asObject()
+        return section.readOrCreate(
+            LocalNodeConfiguration(
+                UUID.randomUUID().toString(), Address("0.0.0.0", 8325),
+                SqlDatabaseCredentials("postgresql", Address("localhost", 5432), "postgres", "test123", "polo")
+            )
+        )
     }
 }

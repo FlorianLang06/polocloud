@@ -32,7 +32,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
     override fun connect(credentials: SqlDatabaseCredentials) {
         state = DatabaseState.CONNECTING
         this.dataSource = createHikariDataSource(
-            jdbcUrl = "jdbc:${credentials.driver}://${credentials.hostname}:${credentials.port}/${credentials.database}",
+            jdbcUrl = "jdbc:${credentials.driver}://${credentials.address.asString()}/${credentials.database}",
             username = credentials.username,
             password = credentials.password
         )
