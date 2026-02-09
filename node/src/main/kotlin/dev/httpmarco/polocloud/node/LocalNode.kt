@@ -1,20 +1,46 @@
 package dev.httpmarco.polocloud.node
 
+import dev.httpmarco.polocloud.common.configuration.FileConfigSource
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
-import dev.httpmarco.polocloud.node.cluster.Node
-import dev.httpmarco.polocloud.node.database.DatabaseKey
-import dev.httpmarco.polocloud.node.database.credentials.SqlDatabaseCredentials
+import dev.httpmarco.polocloud.config.ConfigLoader
 import dev.httpmarco.polocloud.node.database.sql.SqlConnectionFactoryPart
-
+/**
+ * Singleton representing the local PoloCloud node.
+ *
+ * Responsible for:
+ * 1. Loading configuration
+ * 2. Initializing GRPC endpoint
+ * 3. Establishing database connection
+ */
 object LocalNode {
 
-    private val endpoint = GrpcEndpoint(5467)
-    private val databaseConnectionFactory = SqlConnectionFactoryPart()
+    /** Node configuration, loaded lazily from JSON */
+    val config: LocalNodeConfiguration by lazy { generateConfiguration() }
+
+    /** GRPC endpoint for inter-node communication */
+    val endpoint: GrpcEndpoint by lazy { GrpcEndpoint(config.bindAddress.port) }
+
+    /** SQL database connection factory */
+    val databaseConnectionFactory: SqlConnectionFactoryPart by lazy { SqlConnectionFactoryPart() }
 
     init {
+        // connect GRPC endpoint
         endpoint.connect()
 
-        // todo testing element -> replace with configuration
-        this.databaseConnectionFactory.connect(SqlDatabaseCredentials("postgresql", "localhost", 5432, "postgres", "test123", "polo"))
+        // connect database using credentials from configuration
+        databaseConnectionFactory.connect(config.database)
+    }
+
+    /**
+     * Generates the configuration by loading the JSON file.
+     *
+     * Uses the Config system with Object Mapping to map into [LocalNodeConfiguration].
+     */
+    private fun generateConfiguration(): LocalNodeConfiguration {
+        val loader = ConfigLoader()
+            .addSource(FileConfigSource(LOCAL_NODE_PATH))
+            .load()
+
+        return loader.root().asObject()
     }
 }
