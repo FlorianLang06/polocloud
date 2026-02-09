@@ -2,6 +2,7 @@ package dev.httpmarco.polocloud.node.database.sql
 
 import dev.httpmarco.polocloud.node.database.DatabaseExecutor
 import dev.httpmarco.polocloud.node.database.DatabaseKey
+import dev.httpmarco.polocloud.node.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.sql.ResultSet
@@ -62,11 +63,16 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
      * Updates an existing row in the table associated with the given DatabaseKey.
      */
     override fun <T> update(key: DatabaseKey<T>, value: T) {
+        if (factory.state != DatabaseState.CONNECTED) {
+            return
+        }
+
         ensureTableExists(key)
 
         val fields = key.clazz.declaredFields
-        val identifierField = fields.find { it.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null }
-            ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
+        val identifierField =
+            fields.find { it.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null }
+                ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
         val setClause = fields.joinToString(", ") { "${it.name} = ?" }
         val sql = "UPDATE ${key.id} SET $setClause WHERE ${identifierField.name} = ?;"
@@ -85,8 +91,9 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
     override fun <T> delete(key: DatabaseKey<T>, value: T) {
         ensureTableExists(key)
 
-        val identifierField = key.clazz.declaredFields.find { it.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null }
-            ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
+        val identifierField =
+            key.clazz.declaredFields.find { it.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null }
+                ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
         identifierField.isAccessible = true
         val sql = "DELETE FROM ${key.id} WHERE ${identifierField.name} = ?;"
@@ -105,6 +112,10 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
      * Executes a generic SQL update statement (INSERT/UPDATE/DELETE) with optional parameters.
      */
     fun update(sql: String, vararg params: Any?): Int {
+        if (!factory.isValid()) {
+            return -1
+        }
+
         val ds = factory.dataSource ?: throw IllegalStateException("DataSource is not initialized")
         logger.debug("Executing SQL update: $sql with params: ${params.joinToString()}")
 
@@ -129,6 +140,11 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
      * Executes a SQL query with optional parameters and maps each result row using the provided mapper.
      */
     fun <T> query(sql: String, vararg params: Any?, mapper: SqlMapper<T>): List<T> {
+
+        if (!factory.isValid()) {
+            return emptyList()
+        }
+
         val ds = factory.dataSource ?: throw IllegalStateException("DataSource is not initialized")
         val results = arrayListOf<T>()
 
@@ -175,7 +191,8 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
                     val fields = key.clazz.declaredFields
                     val columns = fields.joinToString(", ") { field ->
                         val sqlType = mapJavaTypeToSql(field.type)
-                        val pk = if (field.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null) "PRIMARY KEY" else ""
+                        val pk =
+                            if (field.getAnnotation(dev.httpmarco.polocloud.node.database.DatabaseIdentifier::class.java) != null) "PRIMARY KEY" else ""
                         "${field.name} $sqlType $pk"
                     }
                     val sql = "CREATE TABLE $table ($columns);"
@@ -191,15 +208,14 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
     /**
      * Maps a Java/Kotlin type to a corresponding SQL column type.
      */
-    private fun mapJavaTypeToSql(clazz: Class<*>): String {
-        return when (clazz) {
-            Int::class.java, java.lang.Integer::class.java -> "INT"
-            Long::class.java, java.lang.Long::class.java -> "BIGINT"
-            String::class.java -> "VARCHAR(255)"
-            Boolean::class.java, java.lang.Boolean::class.java -> "BOOLEAN"
-            Double::class.java, java.lang.Double::class.java -> "DOUBLE"
-            Float::class.java, java.lang.Float::class.java -> "FLOAT"
+    private fun mapJavaTypeToSql(clazz: Class<*>): String =
+        when (clazz.kotlin) {
+            Int::class -> "INT"
+            Long::class -> "BIGINT"
+            String::class -> "VARCHAR(255)"
+            Boolean::class -> "BOOLEAN"
+            Double::class -> "DOUBLE"
+            Float::class -> "FLOAT"
             else -> "TEXT"
         }
-    }
 }

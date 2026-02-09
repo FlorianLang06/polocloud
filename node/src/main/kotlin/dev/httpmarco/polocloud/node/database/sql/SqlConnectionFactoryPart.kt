@@ -4,6 +4,7 @@ import dev.httpmarco.polocloud.node.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.node.database.credentials.SqlDatabaseCredentials
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import dev.httpmarco.polocloud.node.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import javax.sql.DataSource
@@ -29,11 +30,13 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
      * @param credentials The SQL database credentials.
      */
     override fun connect(credentials: SqlDatabaseCredentials) {
+        state = DatabaseState.CONNECTING
         this.dataSource = createHikariDataSource(
             jdbcUrl = "jdbc:${credentials.driver}://${credentials.hostname}:${credentials.port}/${credentials.database}",
             username = credentials.username,
             password = credentials.password
         )
+        state = DatabaseState.CONNECTED
         logger.info("Connected to database at {}", credentials.driver)
     }
 
@@ -75,6 +78,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
      * Closes the DataSource and releases all connections.
      */
     override fun close() {
+        state = DatabaseState.CLOSED
         dataSource?.let {
             try {
                 it.close()
