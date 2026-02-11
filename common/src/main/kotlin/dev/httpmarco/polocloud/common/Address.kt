@@ -1,5 +1,7 @@
 package dev.httpmarco.polocloud.common
 
+val GLOBAL_ADDRESS = Address("0.0.0.0", 1)
+
 /**
  * Represents a network address (hostname + port).
  *

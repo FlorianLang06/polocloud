@@ -1,6 +1,7 @@
 package dev.httpmarco.polocloud.node
 
 import dev.httpmarco.polocloud.common.Address
+import dev.httpmarco.polocloud.common.GLOBAL_ADDRESS
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
 import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentials
@@ -40,12 +41,6 @@ object NodeInstance {
             DatabaseCredentials::class.java,
             DatabaseCredentialsConfigurationAdapter()
         )
-
-        return section.readOrCreate(
-            NodeInstanceConfiguration(
-                UUID.randomUUID().toString(), Address("0.0.0.0", 8325),
-                SqlDatabaseCredentials("postgresql", Address("localhost", 5432), "postgres", "test123", "polo")
-            )
-        )
+        return section.readOrCreate(NodeInstanceConfiguration(GLOBAL_ADDRESS.withPort(42030)))
     }
 }
