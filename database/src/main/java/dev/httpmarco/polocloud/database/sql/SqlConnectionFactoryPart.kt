@@ -1,11 +1,10 @@
-package dev.httpmarco.polocloud.node.storage.database.sql
+package dev.httpmarco.polocloud.database.sql
 
-import dev.httpmarco.polocloud.node.storage.database.DatabaseConnectionFactory
-import dev.httpmarco.polocloud.node.storage.database.credentials.SqlDatabaseCredentials
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.storage.database.DatabaseState
+import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
+import dev.httpmarco.polocloud.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
@@ -13,7 +12,7 @@ import org.apache.logging.log4j.Logger
  * Abstract SQL connection factory using HikariCP as the connection pool.
  * Provides methods to connect to a SQL database and manage the connection pool.
  *
- * @see DatabaseConnectionFactory
+ * @see dev.httpmarco.polocloud.database.DatabaseConnectionFactory
  */
 class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredentials>() {
 

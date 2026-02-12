@@ -18,3 +18,4 @@ include("frames", "frames:frame-gradle-plugin", "frames:frame-api", "cli", "runn
 include("proto")
 include("common")
 include("node")
+include("database")

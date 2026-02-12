@@ -1,7 +1,6 @@
-package dev.httpmarco.polocloud.node.storage.database.credentials
+package dev.httpmarco.polocloud.database
 
 import dev.httpmarco.polocloud.common.Address
-import dev.httpmarco.polocloud.node.storage.database.DatabaseType
 
 abstract class DatabaseCredentials(
     val address: Address,

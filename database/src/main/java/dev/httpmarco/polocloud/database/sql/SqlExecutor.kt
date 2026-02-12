@@ -1,9 +1,9 @@
-package dev.httpmarco.polocloud.node.storage.database.sql
+package dev.httpmarco.polocloud.database.sql
 
-import dev.httpmarco.polocloud.node.storage.database.DatabaseExecutor
-import dev.httpmarco.polocloud.node.storage.database.DatabaseIdentifier
-import dev.httpmarco.polocloud.node.storage.database.DatabaseKey
-import dev.httpmarco.polocloud.node.storage.database.DatabaseState
+import dev.httpmarco.polocloud.database.DatabaseExecutor
+import dev.httpmarco.polocloud.database.DatabaseKey
+import dev.httpmarco.polocloud.database.DatabaseState
+import dev.httpmarco.polocloud.database.EntryIdentifier
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.sql.SQLException
@@ -71,7 +71,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
 
         val fields = key.clazz.declaredFields
         val identifierField =
-            fields.find { it.getAnnotation(DatabaseIdentifier::class.java) != null }
+            fields.find { it.getAnnotation(EntryIdentifier::class.java) != null }
                 ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
         val setClause = fields.joinToString(", ") { "${it.name} = ?" }
@@ -92,7 +92,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
         ensureTableExists(key)
 
         val identifierField =
-            key.clazz.declaredFields.find { it.getAnnotation(DatabaseIdentifier::class.java) != null }
+            key.clazz.declaredFields.find { it.getAnnotation(EntryIdentifier::class.java) != null }
                 ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
         identifierField.isAccessible = true
@@ -192,7 +192,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
                     val columns = fields.joinToString(", ") { field ->
                         val sqlType = mapJavaTypeToSql(field.type)
                         val pk =
-                            if (field.getAnnotation(DatabaseIdentifier::class.java) != null) "PRIMARY KEY" else ""
+                            if (field.getAnnotation(EntryIdentifier::class.java) != null) "PRIMARY KEY" else ""
                         "${field.name} $sqlType $pk"
                     }
                     val sql = "CREATE TABLE $table ($columns);"

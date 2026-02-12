@@ -1,9 +1,7 @@
-package dev.httpmarco.polocloud.node.storage.database
+package dev.httpmarco.polocloud.database
 
 import dev.httpmarco.polocloud.common.Closeable
-import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentials
-import dev.httpmarco.polocloud.node.storage.database.sql.SqlExecutor
+import dev.httpmarco.polocloud.database.sql.SqlExecutor
 import org.slf4j.LoggerFactory
 
 /**
@@ -26,7 +24,7 @@ abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
     /**
      * Current state of the database connection.
      *
-     * Initially set to [DatabaseState.UNKNOWN] and should be updated
+     * Initially set to [dev.httpmarco.polocloud.database.DatabaseState.UNKNOWN] and should be updated
      * by concrete implementations when connecting or closing the connection.
      */
     var state = DatabaseState.UNKNOWN
@@ -46,21 +44,21 @@ abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
     /**
      * Returns an SQL executor used to execute queries and updates.
      *
-     * @return a database-specific [SqlExecutor] implementation
+     * @return a database-specific [dev.httpmarco.polocloud.database.sql.SqlExecutor] implementation
      */
     abstract fun executor(): SqlExecutor
 
     /**
      * Checks whether the database connection is currently valid.
      *
-     * @return true if the connection state is [DatabaseState.CONNECTED], otherwise false
+     * @return true if the connection state is [dev.httpmarco.polocloud.database.DatabaseState.CONNECTED], otherwise false
      *
      * If the database is not connected, a log message is emitted to prevent
      * invalid database operations.
      */
     fun isValid(): Boolean {
         if (state != DatabaseState.CONNECTED) {
-            logger.info(TranslationService.tr("database", "database.connection.invalid_state", "state" to state.name))
+            logger.info("Cannot perform update, database is not connected")
             return false
         }
         return true
