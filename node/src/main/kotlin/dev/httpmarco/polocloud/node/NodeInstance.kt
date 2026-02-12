@@ -1,14 +1,13 @@
 package dev.httpmarco.polocloud.node
 
-import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.GLOBAL_ADDRESS
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
+import dev.httpmarco.polocloud.i18n.api.TranslationService
+import dev.httpmarco.polocloud.i18n.model.Language
 import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentials
 import dev.httpmarco.polocloud.node.storage.database.credentials.DatabaseCredentialsConfigurationAdapter
-import dev.httpmarco.polocloud.node.storage.database.credentials.SqlDatabaseCredentials
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
-import java.util.UUID
 
 /**
  * Singleton representing the local PoloCloud node.
@@ -29,6 +28,12 @@ object NodeInstance {
     init {
         // connect GRPC endpoint
         endpoint.connect()
+
+        TranslationService.init()
+        TranslationService.defaultLanguage("en_US")
+        // TODO get language from config and ask the user on setup with e.g. TranslationService#defaultLanguage("database")
+        TranslationService.preloadAsync("database", Language("en_US"))
+        //TODO preLoad all translation packs e.g. database when cluster is enabled and db is needed
     }
 
     /**

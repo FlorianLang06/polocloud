@@ -1,4 +1,6 @@
 [versions]
+polocloud-i18n = "3.0.0-pre.8-SNAPSHOT"
+
 jline = "3.30.6"
 grpc = "1.79.0"
 protobuf = "4.33.5"
@@ -12,6 +14,8 @@ postgreSql = "42.7.9"
 gson = "2.13.2"
 
 [libraries]
+polocloud-i18n = { group = "dev.httpmarco.polocloud", name = "polocloud-i18n", version.ref = "polocloud-i18n"}
+
 protobuf =  { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
 
 grpc-api =  { group = "io.grpc", name = "grpc-api", version.ref = "grpc" }

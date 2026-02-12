@@ -5,6 +5,7 @@ enum class DatabaseState {
     UNKNOWN,
     CONNECTING,
     CONNECTED,
+    FAILED,
     CLOSED
 
 }
