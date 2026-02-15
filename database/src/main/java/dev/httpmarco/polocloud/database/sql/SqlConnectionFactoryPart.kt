@@ -29,8 +29,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
      * @param credentials The SQL database credentials.
      */
     override fun connect(credentials: SqlDatabaseCredentials) {
-        state = DatabaseState.CONNECTING
-
+        this.state = DatabaseState.CONNECTING
         logger.info(TranslationService.tr("database", "database.connection.connecting"))
 
         try {
@@ -40,7 +39,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
                 password = credentials.password
             )
 
-            state = DatabaseState.CONNECTED
+            this.state = DatabaseState.CONNECTED
 
             logger.info(
                 TranslationService.tr(
@@ -50,7 +49,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
                 )
             )
         } catch (exception: Exception) {
-            state = DatabaseState.FAILED
+            this.state = DatabaseState.FAILED
             logger.error(TranslationService.tr("database", "database.connection.failed"), exception)
         }
     }

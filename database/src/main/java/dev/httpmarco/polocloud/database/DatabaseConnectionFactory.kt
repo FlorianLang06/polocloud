@@ -2,6 +2,7 @@ package dev.httpmarco.polocloud.database
 
 import dev.httpmarco.polocloud.common.Closeable
 import dev.httpmarco.polocloud.database.sql.SqlExecutor
+import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.slf4j.LoggerFactory
 
 /**
@@ -58,7 +59,7 @@ abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
      */
     fun isValid(): Boolean {
         if (state != DatabaseState.CONNECTED) {
-            logger.info("Cannot perform update, database is not connected")
+            logger.info(TranslationService.tr("database", "database.connection.invalid_state", "state" to state.name))
             return false
         }
         return true

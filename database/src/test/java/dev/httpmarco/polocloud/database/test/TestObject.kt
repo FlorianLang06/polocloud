@@ -1,4 +1,4 @@
 package dev.httpmarco.polocloud.database.test
 
-class TestObject {
+data class TestObject(val name: String, val age: Int) {
 }
