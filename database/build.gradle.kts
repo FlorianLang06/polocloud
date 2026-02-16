@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     kotlin("jvm") version "2.3.0"
     id("dev.httpmarco.polocloud")
@@ -46,8 +48,13 @@ dependencies {
     testImplementation("redis.clients:jedis:7.2.1")
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.2.0")
     testImplementation("org.junit.platform:junit-platform-suite:1.10.0")
+    testImplementation("com.h2database:h2:2.4.240")
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+val compileTestKotlin: KotlinCompile by tasks
+compileTestKotlin.compilerOptions {
+    freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
 }

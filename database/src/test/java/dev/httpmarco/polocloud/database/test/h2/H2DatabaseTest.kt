@@ -1,7 +1,10 @@
 package dev.httpmarco.polocloud.database.test.h2
 
+import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
+import dev.httpmarco.polocloud.database.sql.SqlConnectionFactoryPart
+import dev.httpmarco.polocloud.database.sql.SqlDatabaseCredentials
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
 import org.testcontainers.containers.GenericContainer
@@ -12,15 +15,18 @@ import org.testcontainers.utility.DockerImageName
 class H2DatabaseTest : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        TODO("Not yet implemented")
+        return SqlConnectionFactoryPart()
     }
 
     override fun credentials(): DatabaseCredentials {
-        TODO("Not yet implemented")
+        return SqlDatabaseCredentials("h2:tcp", Address(h2.host, h2.firstMappedPort), "test", "test", "testdb")
     }
 
     companion object {
         @Container
-        val h2Container = GenericContainer(DockerImageName.parse("oscarfonts/h2:latest")).withExposedPorts(1521)
+        @JvmStatic
+        private val h2 = GenericContainer(DockerImageName.parse("oscarfonts/h2:latest"))
+            .withExposedPorts(1521)
+            .withEnv("H2_OPTIONS", "-ifNotExists")
     }
 }

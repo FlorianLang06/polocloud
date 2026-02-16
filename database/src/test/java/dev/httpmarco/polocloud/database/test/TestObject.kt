@@ -1,4 +1,6 @@
 package dev.httpmarco.polocloud.database.test
 
-data class TestObject(val name: String, val age: Int) {
+import dev.httpmarco.polocloud.database.EntryIdentifier
+
+data class TestObject(@EntryIdentifier val name: String, val age: Int) {
 }

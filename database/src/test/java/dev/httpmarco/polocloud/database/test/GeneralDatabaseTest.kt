@@ -4,60 +4,100 @@ import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
-import kotlin.test.assertNotNull
+import org.junit.jupiter.api.*
+import org.slf4j.LoggerFactory
+import org.testcontainers.junit.jupiter.Testcontainers
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
+@Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class GeneralDatabaseTest {
 
-    private val key = DatabaseKey("testdb", TestObject::class.java)
-    private val factory by lazy { factory() }
+    private val log = LoggerFactory.getLogger(GeneralDatabaseTest::class.java)
+
+    private lateinit var factory: DatabaseConnectionFactory<*>
+    private lateinit var key: DatabaseKey<TestObject>
+
+    private val dummyValue = TestObject("dummy", 42)
 
     init {
         TranslationService.init()
     }
 
     @BeforeEach
-    fun connect() {
+    fun setup() {
+        factory = factory()
         factory.globalConnect(credentials())
-        assert(factory.isValid())
+
+        assertTrue(factory.isValid())
+
+        key = DatabaseKey("testdb", TestObject::class.java)
+
+        // ensure clean state
+        factory.executor().destroy(key)
+    }
+
+    @AfterEach
+    fun cleanup() {
+        factory.executor().destroy(key)
     }
 
     @Test
-    fun insert() {
+    fun `findAll should return empty list when table is empty`() {
+        var objects = factory.executor().findAll(key)
 
+        log.info("Found ${objects.size} objects")
+
+        assertTrue(objects.isEmpty())
+
+        factory.executor().save(key, dummyValue)
+        objects = factory.executor().findAll(key)
+
+        log.info("Found ${objects.size} objects")
+        assertTrue(!objects.isEmpty())
     }
 
     @Test
-    fun findAll() {
+    fun `save should insert object`() {
+        factory.executor().save(key, dummyValue)
+
         val objects = factory.executor().findAll(key)
 
-        assertNotNull(objects)
-        assert(objects.count() == 0)
+        assertEquals(1, objects.size)
+        assertEquals(dummyValue.name, objects.first().name)
     }
 
     @Test
-    fun findById() {
+    fun `exists should return true after insert`() {
+        factory.executor().save(key, dummyValue)
 
+        val result = factory.executor().exists(key, dummyValue)
+
+        assertTrue(result)
     }
 
     @Test
-    fun save() {
+    fun `exists should return false when not present`() {
+        val result = factory.executor().exists(key, dummyValue)
 
+        assertFalse(result)
     }
+
 
     @Test
-    fun exists() {
+    fun `destroy should remove table data`() {
+        factory.executor().save(key, dummyValue)
 
+        factory.executor().destroy(key)
+
+        val objects = factory.executor().findAll(key)
+
+        assertTrue(objects.isEmpty())
     }
 
-    @Test
-    fun delete() {
+    abstract fun factory(): DatabaseConnectionFactory<*>
 
-    }
-
-    abstract fun factory() : DatabaseConnectionFactory<*>
-
-    abstract fun credentials() : DatabaseCredentials
+    abstract fun credentials(): DatabaseCredentials
 }
