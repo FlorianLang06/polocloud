@@ -17,7 +17,7 @@ class MysqlDatabaseTest : GeneralDatabaseTest() {
     }
 
     override fun credentials(): DatabaseCredentials {
-        return SqlDatabaseCredentials("mysql", Address(mysql.host, mysql.firstMappedPort), "test", "test", "testdb")
+        return DatabaseCredentials.Mysql(Address(mysql.host, mysql.firstMappedPort), "test", "test", "testdb")
     }
 
     companion object {

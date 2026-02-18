@@ -4,7 +4,6 @@ import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.nosql.mongo.MongoConnectionFactoryPart
-import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactoryPart
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
 import org.testcontainers.containers.MongoDBContainer
@@ -17,7 +16,7 @@ class MongoDbDatabaseTest  : GeneralDatabaseTest() {
     }
 
     override fun credentials(): DatabaseCredentials {
-        return MongoDatabaseCredentials(Address(mongo.host, mongo.firstMappedPort), "test", null, "testdb");
+        return DatabaseCredentials.MongoDB(Address(mongo.host, mongo.firstMappedPort), "test", "", "testdb");
     }
 
     companion object {
