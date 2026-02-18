@@ -19,7 +19,10 @@ dependencies {
     compileOnly(projects.common)
     compileOnly(libs.postgreSql)
     compileOnly(libs.hikariCp)
+    compileOnly(libs.gson)
     compileOnly(libs.polocloud.i18n)
+    compileOnly("redis.clients:jedis:7.2.1")
+    compileOnly("org.mongodb:mongodb-driver-sync:5.6.3")
 
     runtimeOnly(projects.common)
     runtimeOnly(libs.bundles.logging)
@@ -27,6 +30,7 @@ dependencies {
     runtimeOnly(libs.postgreSql)
     runtimeOnly(libs.polocloud.i18n)
 
+    testImplementation(libs.gson)
     testImplementation(projects.common)
     testImplementation(libs.bundles.logging)
     testImplementation(libs.hikariCp)
@@ -49,6 +53,7 @@ dependencies {
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.2.0")
     testImplementation("org.junit.platform:junit-platform-suite:1.10.0")
     testImplementation("com.h2database:h2:2.4.240")
+    testImplementation("org.mongodb:mongodb-driver-sync:5.6.3")
 }
 
 tasks.test {

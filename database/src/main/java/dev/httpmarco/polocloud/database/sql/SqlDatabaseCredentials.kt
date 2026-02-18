@@ -11,5 +11,5 @@ class SqlDatabaseCredentials(
     password: String,
     val database: String
 ) : DatabaseCredentials(address, username, password) {
-    override fun type() = DatabaseType.SQL
+
 }

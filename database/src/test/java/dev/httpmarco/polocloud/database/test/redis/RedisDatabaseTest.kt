@@ -1,7 +1,9 @@
 package dev.httpmarco.polocloud.database.test.redis
 
+import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
+import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactoryPart
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
 import org.testcontainers.containers.GenericContainer
@@ -11,15 +13,16 @@ import org.testcontainers.junit.jupiter.Container
 class RedisDatabaseTest : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        TODO("Not yet implemented")
+        return RedisConnectionFactoryPart()
     }
 
     override fun credentials(): DatabaseCredentials {
-        TODO("Not yet implemented")
+        return DatabaseCredentials(Address(redis.host, redis.firstMappedPort), "test", null)
     }
 
     companion object {
         @Container
-        val redis = GenericContainer("redis:8.2.4-alpine3.22").withExposedPorts(6379)
+        @JvmStatic
+        private val redis = GenericContainer("redis:8.2.4-alpine3.22").withExposedPorts(6379)
     }
 }

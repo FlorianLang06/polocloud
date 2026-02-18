@@ -47,7 +47,7 @@ abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
      *
      * @return a database-specific [dev.httpmarco.polocloud.database.sql.SqlExecutor] implementation
      */
-    abstract fun executor(): SqlExecutor
+    abstract fun executor(): DatabaseExecutor
 
     /**
      * Checks whether the database connection is currently valid.

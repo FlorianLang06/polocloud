@@ -36,7 +36,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
             this.dataSource = createHikariDataSource(
                 jdbcUrl = "jdbc:${credentials.driver}://${credentials.address.asString()}/${credentials.database}",
                 username = credentials.username,
-                password = credentials.password
+                password = credentials.password!!
             )
 
             this.state = DatabaseState.CONNECTED
