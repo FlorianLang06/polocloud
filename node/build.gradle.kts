@@ -11,6 +11,7 @@ polocloud {
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven {
         name = "polocloud-snapshots"

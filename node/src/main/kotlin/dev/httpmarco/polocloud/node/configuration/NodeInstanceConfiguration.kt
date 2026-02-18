@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 open class NodeInstanceConfiguration(
-    val bindAddress: Address = LOCAL_ADDRESS.withPort(42309),
+    val bindAddress: Address = LOCAL_ADDRESS.withPort(4239),
     val database: DatabaseCredentials = DatabaseCredentials.H2("local/polocloud.h2.db"),
     val cache: NodeCacheCredentialsConfiguration = NodeCacheCredentialsConfiguration()
 ) {

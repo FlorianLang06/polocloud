@@ -11,8 +11,8 @@ polocloud {
 }
 
 repositories {
-    mavenCentral()
     mavenLocal()
+    mavenCentral()
 }
 
 dependencies {

@@ -10,6 +10,7 @@ import dev.httpmarco.polocloud.i18n.model.Language
 import dev.httpmarco.polocloud.node.cluster.Cluster
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import java.util.UUID
+import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 import kotlin.io.path.readBytes
 import kotlin.io.path.writeBytes
@@ -38,6 +39,7 @@ object NodeInstance {
         TranslationService.defaultLanguage("en_US")
         // TODO get language from config and ask the user on setup with e.g. TranslationService#defaultLanguage("database")
         TranslationService.preloadAsync("database", Language("en_US"))
+        TranslationService.preloadAsync("cluster", Language("en_US"))
         //TODO preLoad all translation packs e.g. database when cluster is enabled and db is needed
 
         // connect GRPC endpoint
@@ -67,6 +69,7 @@ object NodeInstance {
         } else {
             // Datei not exists → generate new
             val newId = UUID.randomUUID()
+            LOCAL_NODE_ID_PATH.parent.createDirectories()
             LOCAL_NODE_ID_PATH.writeBytes(newId.toBytes())
             newId
         }
