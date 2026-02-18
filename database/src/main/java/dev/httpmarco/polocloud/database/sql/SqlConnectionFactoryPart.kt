@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
+import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseState
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -14,7 +15,7 @@ import org.apache.logging.log4j.Logger
  *
  * @see dev.httpmarco.polocloud.database.DatabaseConnectionFactory
  */
-class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredentials>() {
+class SqlConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials.DatabaseRelated>() {
 
     companion object {
         private val logger: Logger = LogManager.getLogger(SqlConnectionFactoryPart::class.java)
@@ -28,15 +29,15 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
      *
      * @param credentials The SQL database credentials.
      */
-    override fun connect(credentials: SqlDatabaseCredentials) {
+    override fun connect(credentials: DatabaseCredentials.DatabaseRelated) {
         this.state = DatabaseState.CONNECTING
         logger.info(TranslationService.tr("database", "database.connection.connecting"))
 
         try {
             this.dataSource = createHikariDataSource(
-                jdbcUrl = "jdbc:${credentials.driver}://${credentials.address.asString()}/${credentials.database}",
+                jdbcUrl = "jdbc:${credentials.javaClass.simpleName.lowercase()}://${credentials.address.asString()}/${credentials.database}",
                 username = credentials.username,
-                password = credentials.password!!
+                password = credentials.password
             )
 
             this.state = DatabaseState.CONNECTED
@@ -45,7 +46,7 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<SqlDatabaseCredential
                 TranslationService.tr(
                     "database",
                     "database.connection.established",
-                    "driver" to credentials.driver
+                    "driver" to credentials.javaClass.simpleName.lowercase()
                 )
             )
         } catch (exception: Exception) {

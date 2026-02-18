@@ -11,7 +11,7 @@ import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-class MongoConnectionFactoryPart : DatabaseConnectionFactory<MongoDatabaseCredentials>() {
+class MongoConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials.MongoDB>() {
 
     companion object {
         private val logger: Logger = LogManager.getLogger(MongoConnectionFactoryPart::class.java)
@@ -21,7 +21,7 @@ class MongoConnectionFactoryPart : DatabaseConnectionFactory<MongoDatabaseCreden
 
     var client: MongoClient? = null
 
-    override fun connect(credentials: MongoDatabaseCredentials) {
+    override fun connect(credentials: DatabaseCredentials.MongoDB) {
         state = DatabaseState.CONNECTING
         logger.info(TranslationService.tr("database", "database.connection.connecting"))
 

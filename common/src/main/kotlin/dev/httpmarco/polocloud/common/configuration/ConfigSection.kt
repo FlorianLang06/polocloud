@@ -1,27 +1,33 @@
 package dev.httpmarco.polocloud.common.configuration
 
-import com.google.gson.GsonBuilder
-import java.lang.reflect.Type
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
 
-private var GSON = GsonBuilder().setPrettyPrinting().serializeNulls().disableHtmlEscaping().create()
-
 class ConfigSection(private val path: Path) {
 
-    fun withMapping(type: Type, adapter: Any): ConfigSection {
-        GSON = GSON.newBuilder().registerTypeAdapter(type, adapter).create()
-        return this;
+    private val json: Json = Json {
+        prettyPrint = true
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+        classDiscriminator = "type" // für polymorphe sealed classes
     }
-
-    fun <T> readOrCreate(default: T): T {
-        if (path.exists()) {
-            return GSON.fromJson(Files.readString(path), default?.javaClass) as T
+    fun <T> readOrCreate(serializer: KSerializer<T>, default: T): T {
+        return if (path.exists()) {
+            val content = Files.readString(path)
+            json.decodeFromString(serializer, content)
         } else {
             path.toFile().createNewFile()
-            Files.writeString(path, GSON.toJson(default))
-            return default
+            val content = json.encodeToString(serializer, default)
+            Files.writeString(path, content)
+            default
         }
+    }
+
+    fun <T> save(serializer: KSerializer<T>, obj: T) {
+        val content = json.encodeToString(serializer, obj)
+        Files.writeString(path, content)
     }
 }

@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
  * - providing an SQL executor
  * - basic validation of the connection state
  */
-abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
+abstract class DatabaseConnectionFactory<C : DatabaseCredentials>  : Closeable {
 
     /**
      * Logger used for database connection lifecycle messages.
@@ -35,12 +35,7 @@ abstract class DatabaseConnectionFactory<T : DatabaseCredentials> : Closeable {
      *
      * @param credentials database access credentials
      */
-    abstract fun connect(credentials: T)
-
-    @Suppress("UNCHECKED_CAST")
-    fun globalConnect(credentials: DatabaseCredentials) {
-        connect(credentials as T)
-    }
+    abstract fun connect(credentials: C)
 
     /**
      * Returns an SQL executor used to execute queries and updates.

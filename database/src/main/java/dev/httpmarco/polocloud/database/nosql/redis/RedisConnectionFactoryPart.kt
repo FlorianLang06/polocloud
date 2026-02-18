@@ -5,12 +5,12 @@ import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseState
 import redis.clients.jedis.UnifiedJedis
 
-class RedisConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials>() {
+class RedisConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials.Redis>() {
 
     private lateinit var jedis: UnifiedJedis
     private lateinit var executor: RedisExecutor
 
-    override fun connect(credentials: DatabaseCredentials) {
+    override fun connect(credentials: DatabaseCredentials.Redis) {
 
         state = DatabaseState.CONNECTING
 

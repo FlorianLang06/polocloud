@@ -1,5 +1,6 @@
 package dev.httpmarco.polocloud.common.grpc
 
+import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
 import io.grpc.BindableService
 import io.grpc.Server
@@ -15,11 +16,11 @@ import java.util.concurrent.TimeUnit
  * stopping, and health management. It is intended for cloud-native usage
  * and supports graceful shutdown with health status updates.
  *
- * @param port the port number on which the gRPC server will listen.
+ * @param address the port number on which the gRPC server will listen.
  * @param services one or more gRPC services to register with this endpoint.
  */
 class GrpcEndpoint(
-    private val port: Int,
+    private val address: Address,
     vararg services: BindableService
 ) : Closeable {
 
@@ -37,12 +38,12 @@ class GrpcEndpoint(
      */
     fun connect() {
         if (server != null) {
-            logger.warn("gRPC server is already running on port {}", port)
+            logger.warn("gRPC server is already running on port {}", address.port)
             return
         }
 
-        logger.info("Starting gRPC server on port {}", port)
-        val builder = ServerBuilder.forPort(port)
+        logger.info("Starting gRPC server on port {}", address.port)
+        val builder = ServerBuilder.forPort(address.port)
             .addService(healthManager.healthService)
 
         services.forEach { service ->
@@ -72,7 +73,7 @@ class GrpcEndpoint(
             return
         }
 
-        logger.info("Shutting down gRPC server on port {}", port)
+        logger.info("Shutting down gRPC server on port {}", address.port)
         healthManager.setStatus(
             "",
             io.grpc.health.v1.HealthCheckResponse.ServingStatus.NOT_SERVING
