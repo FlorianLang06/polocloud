@@ -6,7 +6,9 @@ import dev.httpmarco.polocloud.database.DatabaseState
 import dev.httpmarco.polocloud.database.EntryIdentifier
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.lang.reflect.Field
 import java.sql.SQLException
+import java.util.UUID
 
 class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecutor {
 
@@ -21,7 +23,6 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
         val identifierField = findIdentifierField(fields)
             ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
 
-
         identifierField.isAccessible = true
         val identifierValue = identifierField.get(value)
 
@@ -32,9 +33,12 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
             mapper = SqlMapper { rs -> rs.getInt(1) > 0 }
         ) ?: false
 
-        val params = fields.map {
-            it.isAccessible = true
-            it.get(value)
+        val params = fields.map { field ->
+            field.isAccessible = true
+            val rawValue = field.get(value)
+            if (field.type.isEnum) {
+                (rawValue as Enum<*>).name
+            } else rawValue
         }
 
         if (exists) {
@@ -63,16 +67,19 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
         return queryList(
             sql,
             mapper = SqlMapper { rs ->
-
                 val args = fields.map { field ->
-                    rs.getObject(field.name)
+                    val value = rs.getObject(field.name)
+                    if (field.type.isEnum && value is String) {
+                        java.lang.Enum.valueOf(field.type as Class<out Enum<*>>, value)
+                    } else if (field.type == UUID::class.java && value is String) {
+                        UUID.fromString(value)
+                    } else value
                 }.toTypedArray()
 
                 constructor.newInstance(*args) as T
             }
         )
     }
-
 
     override fun <T> exists(key: DatabaseKey<T>, value: T): Boolean {
         ensureTableExists(key)
@@ -204,7 +211,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
                         "${field.name} $sqlType $pk"
                     }
 
-                    val sql = "CREATE TABLE $table ($columns);"
+                    val sql = "CREATE TABLE IF NOT EXISTS $table ($columns);"
                     logger.debug("Creating table: $sql")
                     update(sql)
                 }
@@ -215,13 +222,17 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
     }
 
     private fun mapJavaTypeToSql(clazz: Class<*>): String =
-        when (clazz.kotlin) {
-            Int::class -> "INT"
-            Long::class -> "BIGINT"
-            String::class -> "VARCHAR(255)"
-            Boolean::class -> "BOOLEAN"
-            Double::class -> "DOUBLE"
-            Float::class -> "FLOAT"
+        when {
+            clazz.isEnum -> "VARCHAR(50)"
+            clazz.kotlin == Int::class -> "INT"
+            clazz.kotlin == Long::class -> "BIGINT"
+            clazz.kotlin == String::class -> "VARCHAR(255)"
+            clazz.kotlin == Boolean::class -> "BOOLEAN"
+            clazz.kotlin == Double::class -> "DOUBLE"
+            clazz.kotlin == Float::class -> "FLOAT"
             else -> "TEXT"
         }
+
+    override fun findIdentifierField(fields: Array<Field>): Field? =
+        fields.find { it.getAnnotation(EntryIdentifier::class.java) != null }
 }
