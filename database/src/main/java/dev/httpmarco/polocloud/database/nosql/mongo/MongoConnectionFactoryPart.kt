@@ -11,7 +11,7 @@ import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-class MongoConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials.MongoDB>() {
+class MongoConnectionFactoryPart(credentials: DatabaseCredentials.MongoDB) : DatabaseConnectionFactory<DatabaseCredentials.MongoDB>(credentials) {
 
     companion object {
         private val logger: Logger = LogManager.getLogger(MongoConnectionFactoryPart::class.java)

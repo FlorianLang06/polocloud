@@ -3,10 +3,16 @@ package dev.httpmarco.polocloud.node
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
 import dev.httpmarco.polocloud.common.utils.TerminalUtils
-import dev.httpmarco.polocloud.database.DatabaseCredentials
+import dev.httpmarco.polocloud.common.utils.toBytes
+import dev.httpmarco.polocloud.common.utils.toUUID
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.i18n.model.Language
+import dev.httpmarco.polocloud.node.cluster.Cluster
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
+import java.util.UUID
+import kotlin.io.path.exists
+import kotlin.io.path.readBytes
+import kotlin.io.path.writeBytes
 
 /**
  * Singleton representing the local PoloCloud node.
@@ -18,6 +24,8 @@ import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
  */
 object NodeInstance {
 
+    val localId = generateLocalId()
+
     val config: NodeInstanceConfiguration by lazy { generateConfiguration() }
 
     /** GRPC endpoint for inter-node communication */
@@ -26,17 +34,42 @@ object NodeInstance {
     init {
         TerminalUtils.clear()
 
-        // connect GRPC endpoint
-        endpoint.connect()
-
         TranslationService.init()
         TranslationService.defaultLanguage("en_US")
         // TODO get language from config and ask the user on setup with e.g. TranslationService#defaultLanguage("database")
         TranslationService.preloadAsync("database", Language("en_US"))
         //TODO preLoad all translation packs e.g. database when cluster is enabled and db is needed
+
+        // connect GRPC endpoint
+        endpoint.connect()
+
+        Cluster.detect()
     }
 
     fun generateConfiguration(): NodeInstanceConfiguration {
-        return ConfigSection(LOCAL_NODE_PATH).readOrCreate(NodeInstanceConfiguration.serializer(), NodeInstanceConfiguration())
+        return ConfigSection(LOCAL_NODE_PATH).readOrCreate(
+            NodeInstanceConfiguration.serializer(),
+            NodeInstanceConfiguration()
+        )
     }
+
+    fun generateLocalId(): UUID {
+        return if (LOCAL_NODE_ID_PATH.exists()) {
+            val bytes = LOCAL_NODE_ID_PATH.readBytes()
+            try {
+                bytes.toUUID()
+            } catch (_: IllegalArgumentException) {
+                // destroyed file → generate new
+                val newId = UUID.randomUUID()
+                LOCAL_NODE_ID_PATH.writeBytes(newId.toBytes())
+                newId
+            }
+        } else {
+            // Datei not exists → generate new
+            val newId = UUID.randomUUID()
+            LOCAL_NODE_ID_PATH.writeBytes(newId.toBytes())
+            newId
+        }
+    }
+
 }

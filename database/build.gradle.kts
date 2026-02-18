@@ -33,6 +33,15 @@ dependencies {
     runtimeOnly(libs.polocloud.i18n)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
+    runtimeOnly("org.mongodb:mongodb-driver-sync:4.11.0")
+    runtimeOnly("com.mysql:mysql-connector-j:9.6.0")
+    runtimeOnly("redis.clients:jedis:7.2.1")
+    runtimeOnly("org.mariadb.jdbc:mariadb-java-client:3.2.0")
+    runtimeOnly("org.junit.platform:junit-platform-suite:1.10.0")
+    runtimeOnly("com.h2database:h2:2.4.240")
+    runtimeOnly("org.mongodb:mongodb-driver-sync:5.6.3")
+    runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
     testImplementation(libs.gson)
     testImplementation(projects.common)
     testImplementation(libs.bundles.logging)

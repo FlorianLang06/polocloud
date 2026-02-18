@@ -15,7 +15,8 @@ import org.apache.logging.log4j.Logger
  *
  * @see dev.httpmarco.polocloud.database.DatabaseConnectionFactory
  */
-class SqlConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials.DatabaseRelated>() {
+class SqlConnectionFactoryPart(credentials: DatabaseCredentials) :
+    DatabaseConnectionFactory<DatabaseCredentials>(credentials) {
 
     companion object {
         private val logger: Logger = LogManager.getLogger(SqlConnectionFactoryPart::class.java)
@@ -29,15 +30,36 @@ class SqlConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials.D
      *
      * @param credentials The SQL database credentials.
      */
-    override fun connect(credentials: DatabaseCredentials.DatabaseRelated) {
+    override fun connect(credentials: DatabaseCredentials) {
+        val jdbcUrl = when (credentials) {
+            is DatabaseCredentials.DatabaseRelated -> "jdbc:mariadb://${credentials.address.asString()}/${credentials.database}"
+            is DatabaseCredentials.H2 -> "jdbc:h2:file:./${credentials.path}"
+            else -> {
+                logger.error(
+                    TranslationService.tr(
+                        "database",
+                        "database.connection.unsupported",
+                        "type" to credentials.javaClass.simpleName
+                    )
+                )
+                return
+            }
+        }
+
         this.state = DatabaseState.CONNECTING
         logger.info(TranslationService.tr("database", "database.connection.connecting"))
 
         try {
             this.dataSource = createHikariDataSource(
-                jdbcUrl = "jdbc:${credentials.javaClass.simpleName.lowercase()}://${credentials.address.asString()}/${credentials.database}",
-                username = credentials.username,
-                password = credentials.password
+                jdbcUrl = jdbcUrl,
+                username = when (credentials) {
+                    is DatabaseCredentials.DatabaseRelated -> credentials.username
+                    is DatabaseCredentials.H2 -> "sa"
+                },
+                password =  when (credentials) {
+                    is DatabaseCredentials.DatabaseRelated -> credentials.password
+                    is DatabaseCredentials.H2 -> ""
+                }
             )
 
             this.state = DatabaseState.CONNECTED
