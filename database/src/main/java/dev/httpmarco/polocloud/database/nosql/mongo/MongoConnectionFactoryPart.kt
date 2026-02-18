@@ -11,23 +11,23 @@ import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-class MongoConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials>() {
+class MongoConnectionFactoryPart : DatabaseConnectionFactory<MongoDatabaseCredentials>() {
 
     companion object {
         private val logger: Logger = LogManager.getLogger(MongoConnectionFactoryPart::class.java)
     }
 
-    private val executor = MongoExecutor(this)
+    private var executor : MongoExecutor? = null;
 
     var client: MongoClient? = null
 
-    override fun connect(credentials: DatabaseCredentials) {
+    override fun connect(credentials: MongoDatabaseCredentials) {
         state = DatabaseState.CONNECTING
         logger.info(TranslationService.tr("database", "database.connection.connecting"))
 
         try {
 
-            val connectionString = if (credentials.username != null && credentials.password != null) {
+            val connectionString = if (credentials.password != null) {
                 "mongodb://${credentials.username}:${credentials.password}@${credentials.address.asString()}/${credentials.database}"
             } else {
                 "mongodb://${credentials.address.asString()}/${credentials.database}"
@@ -38,6 +38,7 @@ class MongoConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials
                 .build()
 
             client = MongoClients.create(settings)
+            this.executor = MongoExecutor(client!!.getDatabase(credentials.database))
 
             state = DatabaseState.CONNECTED
 
@@ -55,7 +56,7 @@ class MongoConnectionFactoryPart : DatabaseConnectionFactory<DatabaseCredentials
         }
     }
 
-    override fun executor() = executor
+    override fun executor() = executor!!
 
     override fun close() {
         try {

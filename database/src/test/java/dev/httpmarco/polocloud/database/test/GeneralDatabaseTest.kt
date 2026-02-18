@@ -42,6 +42,7 @@ abstract class GeneralDatabaseTest {
     @AfterEach
     fun cleanup() {
         factory.executor().destroy(key)
+        factory.close()
     }
 
     @Test

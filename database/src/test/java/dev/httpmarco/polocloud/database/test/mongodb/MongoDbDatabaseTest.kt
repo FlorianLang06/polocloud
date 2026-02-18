@@ -1,8 +1,10 @@
 package dev.httpmarco.polocloud.database.test.mongodb
 
+import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.nosql.mongo.MongoConnectionFactoryPart
+import dev.httpmarco.polocloud.database.nosql.mongo.MongoDatabaseCredentials
 import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactoryPart
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
@@ -16,12 +18,11 @@ class MongoDbDatabaseTest  : GeneralDatabaseTest() {
     }
 
     override fun credentials(): DatabaseCredentials {
-        TODO("Not yet implemented")
+        return MongoDatabaseCredentials(Address(mongo.host, mongo.firstMappedPort), "test", null, "testdb");
     }
 
     companion object {
         @Container
         val mongo = MongoDBContainer("mongo:6.0.7")
     }
-
 }

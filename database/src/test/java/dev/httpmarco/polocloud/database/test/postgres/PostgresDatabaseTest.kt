@@ -9,7 +9,6 @@ import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 
 @DisplayName("PostgreSQL")
 internal class PostgresDatabaseTest  : GeneralDatabaseTest() {
