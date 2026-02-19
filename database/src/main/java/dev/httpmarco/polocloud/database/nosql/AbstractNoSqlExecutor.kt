@@ -40,6 +40,7 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
         write(key.id, identifier, json)
     }
 
+
     override fun <T : Any> findAll(key: DatabaseKey<T>): List<T> {
         return readAll(key.id).map {
             DatabaseSerializer.deserialize(it, key.clazz) as T
@@ -48,7 +49,7 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
 
     override fun <T : Any> delete(key: DatabaseKey<T>, value: T) {
 
-        val idField = findIdentifierField(value!!::class.java.declaredFields)
+        val idField = findIdentifierField(value::class.java.declaredFields)
             ?: return
 
         idField.isAccessible = true

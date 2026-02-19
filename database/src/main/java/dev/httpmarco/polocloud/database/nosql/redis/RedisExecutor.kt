@@ -2,12 +2,16 @@ package dev.httpmarco.polocloud.database.nosql.redis
 
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.database.DatabaseSerializer
+import dev.httpmarco.polocloud.database.filtering.Filter
+import dev.httpmarco.polocloud.database.filtering.FilterTranslator
 import dev.httpmarco.polocloud.database.nosql.AbstractNoSqlExecutor
 import redis.clients.jedis.UnifiedJedis
 
 class RedisExecutor(
     private val jedis: UnifiedJedis
 ) : AbstractNoSqlExecutor() {
+
+    private val filterTranslator = RedisTranslator()
 
     override fun write(collection: String, identifier: String, json: String) {
         jedis.set("$collection:$identifier", json)
@@ -42,5 +46,14 @@ class RedisExecutor(
             key.clazz
         )
     }
+
+    override fun <T : Any> find(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): List<T> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filterTranslator() = filterTranslator
 
 }

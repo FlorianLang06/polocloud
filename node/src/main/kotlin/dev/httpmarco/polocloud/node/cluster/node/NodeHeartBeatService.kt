@@ -2,6 +2,8 @@ package dev.httpmarco.polocloud.node.cluster.node
 
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseKey
+import dev.httpmarco.polocloud.database.filtering.Eq
+import dev.httpmarco.polocloud.database.filtering.Filter
 import dev.httpmarco.polocloud.node.cluster.node.data.NodeHeartBeat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +44,8 @@ class NodeHeartBeatService(val localId: String, val factory: DatabaseConnectionF
     }
 
     fun cleanUp() {
-        // todo
+        val beats = factory.executor().find(databaseKey, Eq("nodeId", localId))
+        println("Cleaning up ${beats.size} old heartbeats for node $localId")
     }
 
     private var prevTicks: LongArray = processor.systemCpuLoadTicks

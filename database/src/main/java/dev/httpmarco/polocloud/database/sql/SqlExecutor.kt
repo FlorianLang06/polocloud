@@ -1,6 +1,8 @@
 package dev.httpmarco.polocloud.database.sql
 
 import dev.httpmarco.polocloud.database.*
+import dev.httpmarco.polocloud.database.filtering.And
+import dev.httpmarco.polocloud.database.filtering.Filter
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.lang.reflect.Constructor
@@ -34,6 +36,7 @@ class SqlExecutor(
     private val factory: SqlConnectionFactory
 ) : DatabaseExecutor {
 
+    private val filterTranslator : SqlFilterTranslator = SqlFilterTranslator()
     private val logger: Logger = LogManager.getLogger(SqlExecutor::class.java)
 
     /**
@@ -118,6 +121,46 @@ class SqlExecutor(
         val meta = resolveMeta(key)
         return findById(key, meta.identifier.get(value)) != null
     }
+
+    override fun <T : Any> find(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): List<T> {
+
+        if (!factory.isValid()) return emptyList()
+
+        ensureTableExists(key)
+        val meta = resolveMeta(key)
+
+        // Keine Filter → alles zurückgeben
+        if (filters.isEmpty()) {
+            return queryList(
+                "SELECT * FROM ${key.id}",
+                mapper = SqlMapper { rs -> mapRow(meta, rs) }
+            )
+        }
+
+        val combined: Filter =
+            if (filters.size == 1) filters[0]
+            else And(filters.toList())
+
+        val translated = filterTranslator.translate(combined)
+
+        val sql = """
+        SELECT * FROM ${key.id}
+        WHERE ${translated.clause}
+    """.trimIndent()
+
+        return queryList(
+            sql,
+            *translated.parameters
+                .map { mapValueForDb(it) }
+                .toTypedArray(),
+            mapper = SqlMapper { rs -> mapRow(meta, rs) }
+        )
+    }
+
+    override fun filterTranslator() = filterTranslator
 
     /**
      * Deletes an entity from the database.
