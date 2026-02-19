@@ -14,11 +14,7 @@ import org.testcontainers.utility.DockerImageName
 class H2DatabaseTest : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return SqlConnectionFactory()
-    }
-
-    override fun credentials(): DatabaseCredentials {
-        return SqlDatabaseCredentials("h2:tcp", Address(h2.host, h2.firstMappedPort), "test", "test", "testdb")
+        return SqlConnectionFactory(DatabaseCredentials.H2("h2:tcp", Address(h2.host, h2.firstMappedPort), "test", "test", "testdb"))
     }
 
     companion object {

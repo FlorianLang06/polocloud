@@ -99,6 +99,4 @@ abstract class GeneralDatabaseTest {
     }
 
     abstract fun factory(): DatabaseConnectionFactory<*>
-
-    abstract fun credentials(): DatabaseCredentials
 }

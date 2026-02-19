@@ -10,13 +10,17 @@ import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 
 @DisplayName("MongoDB")
-class MongoDbDatabaseTest  : GeneralDatabaseTest() {
-    override fun factory(): DatabaseConnectionFactory<*> {
-        return MongoConnectionFactory()
-    }
+class MongoDbDatabaseTest : GeneralDatabaseTest() {
 
-    override fun credentials(): DatabaseCredentials {
-        return DatabaseCredentials.MongoDB(Address(mongo.host, mongo.firstMappedPort), "test", "", "testdb");
+    override fun factory(): DatabaseConnectionFactory<*> {
+        return MongoConnectionFactory(
+            DatabaseCredentials.MongoDB(
+                Address(mongo.host, mongo.firstMappedPort),
+                "test",
+                "",
+                "testdb"
+            )
+        )
     }
 
     companion object {

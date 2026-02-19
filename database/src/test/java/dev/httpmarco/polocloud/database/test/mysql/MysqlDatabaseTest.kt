@@ -13,11 +13,7 @@ import org.testcontainers.junit.jupiter.Container
 class MysqlDatabaseTest : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return SqlConnectionFactory()
-    }
-
-    override fun credentials(): DatabaseCredentials {
-        return DatabaseCredentials.Mysql(Address(mysql.host, mysql.firstMappedPort), "test", "test", "testdb")
+        return SqlConnectionFactory(DatabaseCredentials.Mysql(Address(mysql.host, mysql.firstMappedPort), "test", "test", "testdb"))
     }
 
     companion object {

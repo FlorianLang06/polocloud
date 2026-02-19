@@ -13,11 +13,7 @@ import org.testcontainers.junit.jupiter.Container
 class MariaDbDatabaseTest  : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return SqlConnectionFactory()
-    }
-
-    override fun credentials(): DatabaseCredentials {
-        return SqlDatabaseCredentials("mariadb", Address(mariaDB.host, mariaDB.firstMappedPort), "test", "test", "testdb")
+        return SqlConnectionFactory(DatabaseCredentials.MariaDB("mariadb", Address(mariaDB.host, mariaDB.firstMappedPort), "test", "test", "testdb"))
     }
 
     companion object {
