@@ -133,7 +133,12 @@ object Cluster {
                 "Node IP mismatch detected. Possible split-brain condition."
             )
         }
-        logger.info("Node successfully validated in existing cluster.")
+        logger.info(
+            TranslationService.tr(
+                "cluster",
+                "cluster.node.validate.local.success"
+            )
+        )
     }
 
     fun markOnline() {
