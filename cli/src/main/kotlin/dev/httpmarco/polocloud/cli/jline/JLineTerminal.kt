@@ -16,7 +16,6 @@ class JLine3Terminal {
         .system(true)
         .encoding(StandardCharsets.UTF_8)
         .dumb(false)
-        .jansi(true)
         .build()
 
     private val lineReader: LineReaderImpl = LineReaderBuilder.builder()
@@ -29,6 +28,10 @@ class JLine3Terminal {
         .option(LineReader.Option.AUTO_PARAM_SLASH, false)
         .variable(LineReader.BELL_STYLE, "none")
         .build() as LineReaderImpl
+
+    val jLine3Reading = JLine3Reading(this, this.lineReader
+//        , this.commandService
+    )
 
     fun clearScreen() {
         terminal.puts(InfoCmp.Capability.clear_screen);
@@ -65,7 +68,9 @@ class JLine3Terminal {
     }
 
     fun resetPrompt() {
-        //  this.updatePrompt("&bpolocloud&8@&7" + polocloudVersion() + " &8» &7")
+        //TODO update this prompt on connection with node
+        //this.updatePrompt("&bpolocloud&8@&7" + polocloudVersion() + " &8» &7")
+        this.updatePrompt("&bpolocloud&8-&7cli &8» &7")
     }
 
     fun shutdown() {

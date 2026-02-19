@@ -1,19 +1,47 @@
 package dev.httpmarco.polocloud.cli
 
-import dev.httpmarco.polocloud.common.dependency.DependencyRegistry
-import dev.httpmarco.polocloud.common.dependency.insert.ClasspathInsert
-import dev.httpmarco.polocloud.common.dependency.scanning.OwnBlobScanner
-import java.nio.file.Path
+import dev.httpmarco.polocloud.cli.jline.JLine3Terminal
+import dev.httpmarco.polocloud.cli.logging.LoggingCli
+import dev.httpmarco.polocloud.cli.logging.LoggingLayout
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+import org.apache.logging.log4j.core.LoggerContext
 
-fun main() {
+var logger = initLogging()
 
-    val dependencyRegistry = DependencyRegistry(ClasspathInsert())
+object PolocloudCli {
+    val terminal: JLine3Terminal = JLine3Terminal()
+
+    init {
+        this.terminal.jLine3Reading.start()
 
 
-    // TODO
-    val cliJar = Path.of(".cache/dev/httpmarco/polocloud/cli/3.0.0-pre.10-SNAPSHOT/cli-3.0.0-pre.10-SNAPSHOT.jar").toFile()
+    }
+}
 
-    dependencyRegistry.scan(OwnBlobScanner(cliJar))
-    dependencyRegistry.downloadAndRegister()
+fun initLogging(debugMode: Boolean = false): Logger {
+    val ctx = LoggerContext.getContext(false)
+    val config = ctx.configuration
+    val rootLoggerConfig = config.rootLogger
 
+    val existingAppenderList = ArrayList(rootLoggerConfig.appenders.values)
+    existingAppenderList.forEach { appender ->
+        appender.stop()
+        rootLoggerConfig.removeAppender(appender.name)
+        config.appenders.remove(appender.name)
+    }
+
+    rootLoggerConfig.isAdditive = false
+
+    val layout = LoggingLayout.createLayout()
+    val appender = LoggingCli.create("LoggingAgent", layout)
+    appender.start()
+    config.addAppender(appender)
+
+    rootLoggerConfig.level = if (debugMode) Level.DEBUG else Level.INFO
+    rootLoggerConfig.addAppender(appender, rootLoggerConfig.level, null)
+
+    ctx.updateLoggers()
+    return LogManager.getLogger("PoloCloud")
 }

@@ -29,7 +29,7 @@ class DependencyRegistry(val insert: DependencyInsert<*>) {
      * This uses [parallelStream] to improve download performance.
      */
     fun downloadAndRegister() {
-        registeredDependencies.parallelStream().forEach {
+        registeredDependencies.forEach { //TODO add parallelStream but set the right classloader
             it.download()
             this.insert.register(it)
         }
