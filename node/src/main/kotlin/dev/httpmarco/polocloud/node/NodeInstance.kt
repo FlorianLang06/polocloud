@@ -8,6 +8,7 @@ import dev.httpmarco.polocloud.common.utils.toUUID
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.i18n.model.Language
 import dev.httpmarco.polocloud.node.cluster.Cluster
+import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import java.util.UUID
 import kotlin.io.path.createDirectories

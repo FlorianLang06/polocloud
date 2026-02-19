@@ -8,6 +8,11 @@ import java.lang.reflect.Field
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.UUID
+import java.sql.Timestamp
+import java.time.Instant as JavaInstant
+import kotlin.time.Instant as KotlinInstant
+import kotlin.time.ExperimentalTime
+
 
 /**
  * SQL-based implementation of [DatabaseExecutor].
@@ -160,27 +165,6 @@ class SqlExecutor(
     }
 
 
-    private fun <T> mapRow(meta: EntityMeta<T>, rs: ResultSet): T {
-        val args = meta.fields.map { field ->
-            val value = rs.getObject(field.name)
-
-            when {
-                field.type.isEnum && value is String ->
-                    java.lang.Enum.valueOf(
-                        field.type as Class<out Enum<*>>,
-                        value
-                    )
-
-                field.type == UUID::class.java && value is String ->
-                    UUID.fromString(value)
-
-                else -> value
-            }
-        }.toTypedArray()
-
-        return meta.constructor.newInstance(*args) as T
-    }
-
     /**
      * Executes an SQL update statement.
      *
@@ -198,7 +182,7 @@ class SqlExecutor(
             ds.connection.use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
                     params.forEachIndexed { i, p ->
-                        stmt.setObject(i + 1, p)
+                        stmt.setObject(i + 1, mapValueForDb(p)) // <-- hier
                     }
                     stmt.executeUpdate()
                 }
@@ -292,6 +276,43 @@ class SqlExecutor(
         }
     }
 
+    @OptIn(ExperimentalTime::class)
+    private fun mapValueForDb(value: Any?): Any? {
+        return when (value) {
+            is KotlinInstant -> Timestamp.from(JavaInstant.ofEpochMilli(value.toEpochMilliseconds()))
+            is Enum<*> -> value.name
+            is UUID -> value.toString()
+            else -> value
+        }
+    }
+
+    private fun <T> mapRow(meta: EntityMeta<T>, rs: ResultSet): T {
+        val args = meta.fields.map { field ->
+            val value = rs.getObject(field.name)
+
+            when {
+                field.type.isEnum && value is String ->
+                    java.lang.Enum.valueOf(field.type as Class<out Enum<*>>, value)
+
+                field.type == UUID::class.java && value is String ->
+                    UUID.fromString(value)
+
+                field.type.kotlin == KotlinInstant::class -> when (value) {
+                    is Timestamp -> KotlinInstant.fromEpochMilliseconds(value.time)
+                    is String -> KotlinInstant.parse(value)  // <- String → Instant
+                    is JavaInstant -> KotlinInstant.fromEpochMilliseconds(value.toEpochMilli())
+                    else -> throw IllegalArgumentException("Cannot convert $value to KotlinInstant")
+                }
+
+                else -> value
+            }
+        }.toTypedArray()
+
+        return meta.constructor.newInstance(*args) as T
+    }
+
+
+
     private fun mapJavaTypeToSql(clazz: Class<*>): String =
         when {
             clazz.isEnum -> "VARCHAR(50)"
@@ -301,6 +322,7 @@ class SqlExecutor(
             clazz.kotlin == Boolean::class -> "BOOLEAN"
             clazz.kotlin == Double::class -> "DOUBLE"
             clazz.kotlin == Float::class -> "FLOAT"
+            clazz.kotlin == KotlinInstant::class -> "TIMESTAMP"
             clazz == UUID::class.java -> "VARCHAR(36)"
             else -> "TEXT"
         }

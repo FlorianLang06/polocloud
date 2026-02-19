@@ -1,7 +1,7 @@
 package dev.httpmarco.polocloud.node.cluster.node.data
 
 import dev.httpmarco.polocloud.database.EntryIdentifier
-import java.time.Instant
+import kotlin.time.Instant
 
 /**
  * Represents a heartbeat from a node, including usage metrics and TPS.

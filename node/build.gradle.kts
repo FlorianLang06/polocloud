@@ -29,6 +29,7 @@ dependencies {
     compileOnly(projects.database)
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    compileOnly("com.github.oshi:oshi-core:6.9.3")
 
     runtimeOnly(libs.bundles.grpc)
     runtimeOnly(projects.common)
@@ -39,4 +40,5 @@ dependencies {
     runtimeOnly(projects.database)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    runtimeOnly("com.github.oshi:oshi-core:6.9.3")
 }

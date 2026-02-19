@@ -6,12 +6,14 @@ import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.NodeInstance
 import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
+import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
 import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import dev.httpmarco.polocloud.node.cluster.security.toBase64
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Central cluster lifecycle manager.
@@ -33,11 +35,13 @@ object Cluster {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
     private val clusterDatabaseKey = DatabaseKey("nodes", NodeData::class)
-    private val security = ClusterSecurity()
     private val database = NodeInstance.config.database.factory()
+    private val security = ClusterSecurity()
+    private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
 
     init {
         initializeDatabase()
+        heartBeatService.startScheduler()
         logIdentity()
     }
 
@@ -98,12 +102,22 @@ object Cluster {
     }
 
 
-
     /**
      * Registers this node as the first node in a new cluster.
      */
     private fun createInitialNode(ip: String) {
-        val nodeData = NodeData(security.localId, "node-1", ip, 25565, NodeState.STARTING, true, security.publicKey.toBase64())
+        // todo add version and git commit hash
+        val nodeData = NodeData(
+            security.localId,
+            "node-1",
+            ip,
+            25565,
+            NodeState.STARTING,
+            true,
+            security.publicKey.toBase64(),
+            "1.0.0",
+            "01293012ke,0"
+        )
 
         database.executor().save(clusterDatabaseKey, nodeData)
 
@@ -145,7 +159,8 @@ object Cluster {
     }
 
     fun markOnline() {
-        val localNode = database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
+        val localNode =
+            database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
 
         if (localNode.state == NodeState.CRASHED || localNode.state == NodeState.OFFLINE || localNode.state == NodeState.STOPPING) {
             logger.warn(
@@ -177,7 +192,10 @@ object Cluster {
             hostname = ip,
             port = 25565,
             state = NodeState.STARTING,
-            publicKey = security.publicKey.toBase64()
+            publicKey = security.publicKey.toBase64(),
+            head = false,
+            version = "1.0.0", //todo
+            gitCommitHash = "01293012ke,0" // todo
         )
 
         val approvals = mutableListOf<String>()
