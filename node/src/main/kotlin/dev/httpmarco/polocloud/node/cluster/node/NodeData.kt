@@ -9,7 +9,7 @@ data class NodeData(
     val name: String,
     val hostname: String,
     val port: Int,
-    val state: NodeState,
+    var state: NodeState,
     val head: Boolean = false,
     val firstConnection: Long = System.currentTimeMillis(),
     val lastConnection: Long = System.currentTimeMillis()

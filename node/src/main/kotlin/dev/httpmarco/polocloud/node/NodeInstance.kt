@@ -25,8 +25,6 @@ import kotlin.io.path.writeBytes
  */
 object NodeInstance {
 
-    val localId = generateLocalId()
-
     val config: NodeInstanceConfiguration by lazy { generateConfiguration() }
 
     /** GRPC endpoint for inter-node communication */
@@ -46,6 +44,11 @@ object NodeInstance {
         endpoint.connect()
 
         Cluster.detect()
+
+        // TODO load required services (e.g. database) and ensure connectivity before marking the node as online
+
+        // finally mark the node as online in the cluster
+        Cluster.markOnline()
     }
 
     fun generateConfiguration(): NodeInstanceConfiguration {
@@ -54,25 +57,4 @@ object NodeInstance {
             NodeInstanceConfiguration()
         )
     }
-
-    fun generateLocalId(): UUID {
-        return if (LOCAL_NODE_ID_PATH.exists()) {
-            val bytes = LOCAL_NODE_ID_PATH.readBytes()
-            try {
-                bytes.toUUID()
-            } catch (_: IllegalArgumentException) {
-                // destroyed file → generate new
-                val newId = UUID.randomUUID()
-                LOCAL_NODE_ID_PATH.writeBytes(newId.toBytes())
-                newId
-            }
-        } else {
-            // Datei not exists → generate new
-            val newId = UUID.randomUUID()
-            LOCAL_NODE_ID_PATH.parent.createDirectories()
-            LOCAL_NODE_ID_PATH.writeBytes(newId.toBytes())
-            newId
-        }
-    }
-
 }

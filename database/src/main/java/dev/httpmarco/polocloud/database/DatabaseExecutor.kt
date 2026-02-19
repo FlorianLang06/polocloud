@@ -25,6 +25,15 @@ interface DatabaseExecutor {
     fun <T> findAll(key: DatabaseKey<T>): List<T>
 
     /**
+     * Finds a single row in the table associated with the given [dev.httpmarco.polocloud.database.DatabaseKey] by its identifier.
+     *
+     * @param key The [dev.httpmarco.polocloud.database.DatabaseKey] representing the table and target type.
+     * @param id The identifier value used to find the specific row. This should correspond to
+     * @return An object of type [T] if a matching row is found, or null if no such row exists.
+     */
+    fun <T> findById(key: DatabaseKey<T>, id: Any): T?
+
+    /**
      * Deletes a row from the table associated with the given [dev.httpmarco.polocloud.database.DatabaseKey].
      *
      * The row to delete is identified using the field annotated with

@@ -1,158 +1,231 @@
 package dev.httpmarco.polocloud.database.sql
 
-import dev.httpmarco.polocloud.database.DatabaseExecutor
-import dev.httpmarco.polocloud.database.DatabaseKey
-import dev.httpmarco.polocloud.database.DatabaseState
-import dev.httpmarco.polocloud.database.EntryIdentifier
+import dev.httpmarco.polocloud.database.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.lang.reflect.Constructor
 import java.lang.reflect.Field
+import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.UUID
 
-class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecutor {
+/**
+ * SQL-based implementation of [DatabaseExecutor].
+ *
+ * This executor provides automatic table creation and reflection-based
+ * entity mapping. The field annotated with [EntryIdentifier] is used
+ * as the primary key.
+ *
+ * Features:
+ * - Automatic table generation
+ * - Insert or update (upsert-like behavior)
+ * - Enum stored as String
+ * - UUID stored as String
+ *
+ * Note:
+ * This implementation prioritizes simplicity over reflection caching.
+ */
+class SqlExecutor(
+    private val factory: SqlConnectionFactoryPart
+) : DatabaseExecutor {
 
     private val logger: Logger = LogManager.getLogger(SqlExecutor::class.java)
 
+    /**
+     * Saves or updates an entity in the database.
+     *
+     * If an entity with the same primary key already exists,
+     * an UPDATE is executed. Otherwise, an INSERT is performed.
+     *
+     * @param key   the database key describing table and entity type
+     * @param value the entity instance to persist
+     *
+     * @throws IllegalStateException if no [EntryIdentifier] field exists
+     */
     override fun <T> save(key: DatabaseKey<T>, value: T) {
-        if (factory.state != DatabaseState.CONNECTED) return
+        if (!factory.isValid()) return
 
         ensureTableExists(key)
+        val meta = resolveMeta(key)
 
-        val fields = key.clazz.declaredFields
-        val identifierField = findIdentifierField(fields)
-            ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
+        val idValue = meta.identifier.get(value)
+        val exists = findById(key, idValue) != null
 
-        identifierField.isAccessible = true
-        val identifierValue = identifierField.get(value)
-
-        val existsSql = "SELECT COUNT(*) FROM ${key.id} WHERE ${identifierField.name} = ?;"
-        val exists = queryOne(
-            existsSql,
-            identifierValue,
-            mapper = SqlMapper { rs -> rs.getInt(1) > 0 }
-        ) ?: false
-
-        val params = fields.map { field ->
-            field.isAccessible = true
-            val rawValue = field.get(value)
-            if (field.type.isEnum) {
-                (rawValue as Enum<*>).name
-            } else rawValue
+        val values = meta.fields.map { field ->
+            val raw = field.get(value)
+            if (field.type.isEnum) (raw as Enum<*>).name else raw
         }
 
         if (exists) {
-            val setClause = fields.joinToString(", ") { "${it.name} = ?" }
-            val sql = "UPDATE ${key.id} SET $setClause WHERE ${identifierField.name} = ?;"
-            update(sql, *(params + identifierValue).toTypedArray())
+            val setClause = meta.fields.joinToString(", ") { "${it.name} = ?" }
+            val sql = "UPDATE ${key.id} SET $setClause WHERE ${meta.identifier.name} = ?"
+            update(sql, *(values + idValue).toTypedArray())
         } else {
-            val columns = fields.joinToString(", ") { it.name }
-            val placeholders = fields.joinToString(", ") { "?" }
-            val sql = "INSERT INTO ${key.id} ($columns) VALUES ($placeholders);"
-            update(sql, *params.toTypedArray())
+            val columns = meta.fields.joinToString(", ") { it.name }
+            val placeholders = meta.fields.joinToString(", ") { "?" }
+            val sql = "INSERT INTO ${key.id} ($columns) VALUES ($placeholders)"
+            update(sql, *values.toTypedArray())
         }
     }
 
+    /**
+     * Retrieves all entities from the table.
+     *
+     * @param key the database key
+     * @return list of mapped entities
+     */
     override fun <T> findAll(key: DatabaseKey<T>): List<T> {
         ensureTableExists(key)
-
-        val sql = "SELECT * FROM ${key.id};"
-
-        val clazz = key.clazz
-        val constructor = clazz.declaredConstructors.first()
-        constructor.isAccessible = true
-
-        val fields = clazz.declaredFields
+        val meta = resolveMeta(key)
 
         return queryList(
-            sql,
-            mapper = SqlMapper { rs ->
-                val args = fields.map { field ->
-                    val value = rs.getObject(field.name)
-                    if (field.type.isEnum && value is String) {
-                        java.lang.Enum.valueOf(field.type as Class<out Enum<*>>, value)
-                    } else if (field.type == UUID::class.java && value is String) {
-                        UUID.fromString(value)
-                    } else value
-                }.toTypedArray()
-
-                constructor.newInstance(*args) as T
-            }
+            "SELECT * FROM ${key.id}",
+            mapper = SqlMapper { rs -> mapRow(meta, rs) }
         )
     }
 
-    override fun <T> exists(key: DatabaseKey<T>, value: T): Boolean {
+    /**
+     * Retrieves a single entity by its primary key.
+     *
+     * @param key the database key
+     * @param id  primary key value
+     * @return mapped entity or null if not found
+     */
+    override fun <T> findById(key: DatabaseKey<T>, id: Any): T? {
         ensureTableExists(key)
-
-        val identifierField = findIdentifierField(key.clazz.declaredFields)
-            ?: throw IllegalStateException("No @DatabaseIdentifier field found in ${key.clazz.simpleName}")
-
-        identifierField.isAccessible = true
-        val identifierValue = identifierField.get(value)
-
-        val sql = "SELECT COUNT(*) FROM ${key.id} WHERE ${identifierField.name} = ?;"
+        val meta = resolveMeta(key)
 
         return queryOne(
-            sql,
-            identifierValue,
-            mapper = SqlMapper { rs -> rs.getInt(1) > 0 }
-        ) ?: false
+            "SELECT * FROM ${key.id} WHERE ${meta.identifier.name} = ? LIMIT 1",
+            id,
+            mapper = SqlMapper { rs -> mapRow(meta, rs) }
+        )
     }
 
+    /**
+     * Checks whether an entity exists in the database.
+     *
+     * @param key   the database key
+     * @param value entity instance
+     * @return true if present
+     */
+    override fun <T> exists(key: DatabaseKey<T>, value: T): Boolean {
+        val meta = resolveMeta(key)
+        return findById(key, meta.identifier.get(value)) != null
+    }
+
+    /**
+     * Deletes an entity from the database.
+     *
+     * @param key   the database key
+     * @param value entity instance to delete
+     */
     override fun <T> delete(key: DatabaseKey<T>, value: T) {
         ensureTableExists(key)
+        val meta = resolveMeta(key)
 
-        val identifierField =
-            key.clazz.declaredFields.find { it.getAnnotation(EntryIdentifier::class.java) != null }
-                ?: throw IllegalStateException("No @DatabaseIdentifier field found")
-
-        identifierField.isAccessible = true
-        val sql = "DELETE FROM ${key.id} WHERE ${identifierField.name} = ?;"
-        update(sql, identifierField.get(value))
+        val idValue = meta.identifier.get(value)
+        update("DELETE FROM ${key.id} WHERE ${meta.identifier.name} = ?", idValue)
     }
 
+    /**
+     * Drops the table represented by the given key.
+     *
+     * @param key the database key
+     */
     override fun destroy(key: DatabaseKey<*>) {
-        val sql = "DROP TABLE IF EXISTS ${key.id};"
-        update(sql)
+        update("DROP TABLE IF EXISTS ${key.id}")
     }
 
+    private data class EntityMeta<T>(
+        val fields: List<Field>,
+        val identifier: Field,
+        val constructor: Constructor<*>
+    )
+
+    private fun <T> resolveMeta(key: DatabaseKey<T>): EntityMeta<T> {
+        val clazz = key.clazz
+        val fields = clazz.declaredFields.toList().onEach { it.isAccessible = true }
+
+        val identifier = fields.find {
+            it.getAnnotation(EntryIdentifier::class.java) != null
+        } ?: throw IllegalStateException(
+            "No @EntryIdentifier field found in ${clazz.simpleName}"
+        )
+
+        val constructor = clazz.declaredConstructors.first().apply {
+            isAccessible = true
+        }
+
+        return EntityMeta(fields, identifier, constructor)
+    }
+
+    private fun <T> mapRow(meta: EntityMeta<T>, rs: ResultSet): T {
+        val args = meta.fields.map { field ->
+            val value = rs.getObject(field.name)
+
+            when {
+                field.type.isEnum && value is String ->
+                    java.lang.Enum.valueOf(
+                        field.type as Class<out Enum<*>>,
+                        value
+                    )
+
+                field.type == UUID::class.java && value is String ->
+                    UUID.fromString(value)
+
+                else -> value
+            }
+        }.toTypedArray()
+
+        return meta.constructor.newInstance(*args) as T
+    }
+
+    /**
+     * Executes an SQL update statement.
+     *
+     * @param sql    SQL string
+     * @param params statement parameters
+     * @return affected row count or -1 if invalid
+     */
     fun update(sql: String, vararg params: Any?): Int {
         if (!factory.isValid()) return -1
 
-        val ds = factory.dataSource ?: throw IllegalStateException("DataSource not initialized")
-
-        logger.debug("Executing update: $sql with params: ${params.joinToString()}")
+        val ds = factory.dataSource
+            ?: throw IllegalStateException("DataSource not initialized")
 
         return try {
             ds.connection.use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
-                    params.forEachIndexed { index, param ->
-                        stmt.setObject(index + 1, param)
+                    params.forEachIndexed { i, p ->
+                        stmt.setObject(i + 1, p)
                     }
                     stmt.executeUpdate()
                 }
             }
         } catch (ex: Exception) {
-            logger.error("Failed SQL update: $sql", ex)
+            logger.error("SQL update failed: $sql", ex)
             0
         }
     }
 
+    /**
+     * Executes an SQL query returning multiple results.
+     */
     fun <T> queryList(
         sql: String,
         vararg params: Any?,
         mapper: SqlMapper<T>
-    ): List<T> {
-        return executeQuery(sql, params, mapper)
-    }
+    ): List<T> = executeQuery(sql, params, mapper)
 
+    /**
+     * Executes an SQL query returning a single result.
+     */
     fun <T> queryOne(
         sql: String,
         vararg params: Any?,
         mapper: SqlMapper<T>
-    ): T? {
-        return executeQuery(sql, params, mapper).firstOrNull()
-    }
+    ): T? = executeQuery(sql, params, mapper).firstOrNull()
 
     private fun <T> executeQuery(
         sql: String,
@@ -162,17 +235,17 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
 
         if (!factory.isValid()) return emptyList()
 
-        val ds = factory.dataSource ?: throw IllegalStateException("DataSource not initialized")
-        val results = mutableListOf<T>()
+        val ds = factory.dataSource
+            ?: throw IllegalStateException("DataSource not initialized")
 
-        logger.debug("Executing query: $sql with params: ${params.joinToString()}")
+        val results = mutableListOf<T>()
 
         try {
             ds.connection.use { conn ->
                 conn.prepareStatement(sql).use { stmt ->
 
-                    params.forEachIndexed { index, param ->
-                        stmt.setObject(index + 1, param)
+                    params.forEachIndexed { i, p ->
+                        stmt.setObject(i + 1, p)
                     }
 
                     stmt.executeQuery().use { rs ->
@@ -183,41 +256,39 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
                 }
             }
         } catch (ex: Exception) {
-            logger.error("Query failed: $sql", ex)
+            logger.error("SQL query failed: $sql", ex)
         }
 
         return results
     }
 
+    /**
+     * Ensures the SQL table for the given entity exists.
+     * If not, it will be created dynamically.
+     */
     private fun <T> ensureTableExists(key: DatabaseKey<T>) {
-        val ds = factory.dataSource ?: throw IllegalStateException("DataSource not initialized")
-        val table = key.id
+        val ds = factory.dataSource
+            ?: throw IllegalStateException("DataSource not initialized")
 
         try {
             ds.connection.use { conn ->
                 val meta = conn.metaData
-                val rs = meta.getTables(null, null, table, arrayOf("TABLE"))
+                val rs = meta.getTables(null, null, key.id, arrayOf("TABLE"))
 
                 if (!rs.next()) {
-                    val fields = key.clazz.declaredFields
+                    val metaInfo = resolveMeta(key)
 
-                    val columns = fields.joinToString(", ") { field ->
-                        val sqlType = mapJavaTypeToSql(field.type)
-                        val pk =
-                            if (field.getAnnotation(EntryIdentifier::class.java) != null)
-                                "PRIMARY KEY"
-                            else ""
-
-                        "${field.name} $sqlType $pk"
+                    val columns = metaInfo.fields.joinToString(", ") { field ->
+                        val type = mapJavaTypeToSql(field.type)
+                        val pk = if (field == metaInfo.identifier) "PRIMARY KEY" else ""
+                        "${field.name} $type $pk"
                     }
 
-                    val sql = "CREATE TABLE IF NOT EXISTS $table ($columns);"
-                    logger.debug("Creating table: $sql")
-                    update(sql)
+                    update("CREATE TABLE IF NOT EXISTS ${key.id} ($columns)")
                 }
             }
         } catch (ex: SQLException) {
-            logger.error("Failed to ensure table exists: $table", ex)
+            logger.error("Failed to ensure table exists: ${key.id}", ex)
         }
     }
 
@@ -230,6 +301,7 @@ class SqlExecutor(private val factory: SqlConnectionFactoryPart) : DatabaseExecu
             clazz.kotlin == Boolean::class -> "BOOLEAN"
             clazz.kotlin == Double::class -> "DOUBLE"
             clazz.kotlin == Float::class -> "FLOAT"
+            clazz == UUID::class.java -> "VARCHAR(36)"
             else -> "TEXT"
         }
 
