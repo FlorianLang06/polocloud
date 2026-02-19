@@ -1,5 +1,7 @@
 package dev.httpmarco.polocloud.database.nosql.redis
 
+import dev.httpmarco.polocloud.database.DatabaseKey
+import dev.httpmarco.polocloud.database.DatabaseSerializer
 import dev.httpmarco.polocloud.database.nosql.AbstractNoSqlExecutor
 import redis.clients.jedis.UnifiedJedis
 
@@ -30,4 +32,15 @@ class RedisExecutor(
             jedis.del(*keys.toTypedArray())
         }
     }
+
+    override fun <T : Any> findById(key: DatabaseKey<T>, id: Any): T? {
+        val redisKey = "${key.id}:$id"
+        val json = jedis.get(redisKey) ?: return null
+
+        return DatabaseSerializer.deserialize(
+            json,
+            key.clazz
+        )
+    }
+
 }

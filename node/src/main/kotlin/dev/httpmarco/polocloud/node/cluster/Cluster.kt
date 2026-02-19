@@ -30,8 +30,7 @@ import org.slf4j.LoggerFactory
 object Cluster {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
-
-    private val clusterDatabaseKey = DatabaseKey("nodes", NodeData::class.java)
+    private val clusterDatabaseKey = DatabaseKey("nodes", NodeData::class)
     private val security = ClusterSecurity()
     private val database = NodeInstance.config.database.factory()
 
@@ -142,8 +141,7 @@ object Cluster {
     }
 
     fun markOnline() {
-        val localNode =
-            database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
+        val localNode = database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
 
         if (localNode.state == NodeState.CRASHED || localNode.state == NodeState.OFFLINE || localNode.state == NodeState.STOPPING) {
             logger.warn(

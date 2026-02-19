@@ -1,6 +1,8 @@
 package dev.httpmarco.polocloud.database.nosql.mongo
 
 import com.mongodb.client.MongoDatabase
+import dev.httpmarco.polocloud.database.DatabaseKey
+import dev.httpmarco.polocloud.database.DatabaseSerializer
 import dev.httpmarco.polocloud.database.nosql.AbstractNoSqlExecutor
 import org.bson.Document
 
@@ -9,7 +11,6 @@ class MongoExecutor(
 ) : AbstractNoSqlExecutor() {
 
     override fun write(collection: String, identifier: String, json: String) {
-
         val col = database.getCollection(collection)
 
         val doc = Document.parse(json)
@@ -43,4 +44,18 @@ class MongoExecutor(
     override fun destroyInternal(collection: String) {
         database.getCollection(collection).drop()
     }
+
+    override fun <T : Any> findById(key: DatabaseKey<T>, id: Any): T? {
+        val collection = database.getCollection(key.id)
+
+        val document = collection
+            .find(Document("_id", id.toString()))
+            .first() ?: return null
+
+        return DatabaseSerializer.deserialize(
+            document.toJson(),
+            key.clazz
+        )
+    }
+
 }

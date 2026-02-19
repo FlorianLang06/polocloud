@@ -42,7 +42,7 @@ class SqlExecutor(
      *
      * @throws IllegalStateException if no [EntryIdentifier] field exists
      */
-    override fun <T> save(key: DatabaseKey<T>, value: T) {
+    override fun <T : Any> save(key: DatabaseKey<T>, value: T) {
         if (!factory.isValid()) return
 
         ensureTableExists(key)
@@ -74,7 +74,7 @@ class SqlExecutor(
      * @param key the database key
      * @return list of mapped entities
      */
-    override fun <T> findAll(key: DatabaseKey<T>): List<T> {
+    override fun <T : Any> findAll(key: DatabaseKey<T>): List<T> {
         ensureTableExists(key)
         val meta = resolveMeta(key)
 
@@ -91,7 +91,7 @@ class SqlExecutor(
      * @param id  primary key value
      * @return mapped entity or null if not found
      */
-    override fun <T> findById(key: DatabaseKey<T>, id: Any): T? {
+    override fun <T : Any> findById(key: DatabaseKey<T>, id: Any): T? {
         ensureTableExists(key)
         val meta = resolveMeta(key)
 
@@ -109,7 +109,7 @@ class SqlExecutor(
      * @param value entity instance
      * @return true if present
      */
-    override fun <T> exists(key: DatabaseKey<T>, value: T): Boolean {
+    override fun <T : Any> exists(key: DatabaseKey<T>, value: T): Boolean {
         val meta = resolveMeta(key)
         return findById(key, meta.identifier.get(value)) != null
     }
@@ -120,7 +120,7 @@ class SqlExecutor(
      * @param key   the database key
      * @param value entity instance to delete
      */
-    override fun <T> delete(key: DatabaseKey<T>, value: T) {
+    override fun <T : Any> delete(key: DatabaseKey<T>, value: T) {
         ensureTableExists(key)
         val meta = resolveMeta(key)
 
@@ -143,8 +143,9 @@ class SqlExecutor(
         val constructor: Constructor<*>
     )
 
-    private fun <T> resolveMeta(key: DatabaseKey<T>): EntityMeta<T> {
-        val clazz = key.clazz
+    private fun <T : Any> resolveMeta(key: DatabaseKey<T>): EntityMeta<T> {
+        val clazz = key.clazz.java // important!
+
         val fields = clazz.declaredFields.toList().onEach { it.isAccessible = true }
 
         val identifier = fields.find {
@@ -153,12 +154,11 @@ class SqlExecutor(
             "No @EntryIdentifier field found in ${clazz.simpleName}"
         )
 
-        val constructor = clazz.declaredConstructors.first().apply {
-            isAccessible = true
-        }
+        val constructor = clazz.declaredConstructors.first().apply { isAccessible = true }
 
-        return EntityMeta(fields, identifier, constructor)
+        return EntityMeta<T>(fields, identifier, constructor)
     }
+
 
     private fun <T> mapRow(meta: EntityMeta<T>, rs: ResultSet): T {
         val args = meta.fields.map { field ->
@@ -266,7 +266,7 @@ class SqlExecutor(
      * Ensures the SQL table for the given entity exists.
      * If not, it will be created dynamically.
      */
-    private fun <T> ensureTableExists(key: DatabaseKey<T>) {
+    private fun <T : Any> ensureTableExists(key: DatabaseKey<T>) {
         val ds = factory.dataSource
             ?: throw IllegalStateException("DataSource not initialized")
 

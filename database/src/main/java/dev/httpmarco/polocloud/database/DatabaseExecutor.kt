@@ -14,7 +14,7 @@ interface DatabaseExecutor {
      * @param key The [dev.httpmarco.polocloud.database.DatabaseKey] representing the table and target type.
      * @param value The object to be inserted as a new row in the database.
      */
-    fun <T> save(key: DatabaseKey<T>, value: T)
+    fun <T : Any> save(key: DatabaseKey<T>, value: T)
 
     /**
      * Retrieves all rows from the table associated with the given [dev.httpmarco.polocloud.database.DatabaseKey].
@@ -22,7 +22,7 @@ interface DatabaseExecutor {
      * @param key The [dev.httpmarco.polocloud.database.DatabaseKey] representing the table and target type.
      * @return A list of objects of type [T] mapped from the database rows.
      */
-    fun <T> findAll(key: DatabaseKey<T>): List<T>
+    fun <T : Any> findAll(key: DatabaseKey<T>): List<T>
 
     /**
      * Finds a single row in the table associated with the given [dev.httpmarco.polocloud.database.DatabaseKey] by its identifier.
@@ -31,7 +31,7 @@ interface DatabaseExecutor {
      * @param id The identifier value used to find the specific row. This should correspond to
      * @return An object of type [T] if a matching row is found, or null if no such row exists.
      */
-    fun <T> findById(key: DatabaseKey<T>, id: Any): T?
+    fun <T : Any> findById(key: DatabaseKey<T>, id: Any): T?
 
     /**
      * Deletes a row from the table associated with the given [dev.httpmarco.polocloud.database.DatabaseKey].
@@ -42,7 +42,7 @@ interface DatabaseExecutor {
      * @param key The [dev.httpmarco.polocloud.database.DatabaseKey] representing the table.
      * @param value The object representing the row to delete.
      */
-    fun <T> delete(key: DatabaseKey<T>, value: T)
+    fun <T : Any> delete(key: DatabaseKey<T>, value: T)
 
     /**
      * Destroys the resources associated with a specific [dev.httpmarco.polocloud.database.DatabaseKey].
@@ -61,7 +61,7 @@ interface DatabaseExecutor {
      *
      * @return true if a matching row exists, false otherwise.
      */
-    fun <T> exists(key: DatabaseKey<T>, value: T) : Boolean
+    fun <T : Any> exists(key: DatabaseKey<T>, value: T) : Boolean
 
     /**
      * Finds the field in the given array of fields that is annotated with [EntryIdentifier].

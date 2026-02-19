@@ -28,24 +28,25 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
         collection: String
     )
 
-    override fun <T> save(key: DatabaseKey<T>, value: T) {
-        val idField = findIdentifierField(value!!::class.java.declaredFields) ?: throw IllegalStateException("No EntryIdentifier found")
+    override fun <T : Any> save(key: DatabaseKey<T>, value: T) {
+        val idField = findIdentifierField(value::class.java.declaredFields)
+            ?: throw IllegalStateException("No EntryIdentifier found")
 
         idField.isAccessible = true
         val identifier = idField.get(value).toString()
 
-        val json = DatabaseSerializer.serialize(value)
+        val json = DatabaseSerializer.serialize(value, key.clazz)
 
         write(key.id, identifier, json)
     }
 
-    override fun <T> findAll(key: DatabaseKey<T>): List<T> {
+    override fun <T : Any> findAll(key: DatabaseKey<T>): List<T> {
         return readAll(key.id).map {
             DatabaseSerializer.deserialize(it, key.clazz) as T
         }
     }
 
-    override fun <T> delete(key: DatabaseKey<T>, value: T) {
+    override fun <T : Any> delete(key: DatabaseKey<T>, value: T) {
 
         val idField = findIdentifierField(value!!::class.java.declaredFields)
             ?: return
@@ -60,7 +61,7 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
         destroyInternal(key.id)
     }
 
-    override fun <T> exists(key: DatabaseKey<T>, value: T): Boolean {
+    override fun <T : Any> exists(key: DatabaseKey<T>, value: T): Boolean {
         val idField = findIdentifierField(value!!::class.java.declaredFields) ?: return false
 
         idField.isAccessible = true
