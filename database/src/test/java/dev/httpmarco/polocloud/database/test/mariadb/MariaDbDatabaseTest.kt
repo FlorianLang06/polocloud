@@ -3,7 +3,7 @@ package dev.httpmarco.polocloud.database.test.mariadb
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
-import dev.httpmarco.polocloud.database.sql.SqlConnectionFactoryPart
+import dev.httpmarco.polocloud.database.sql.SqlConnectionFactory
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
 import org.testcontainers.containers.MariaDBContainer
@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.Container
 class MariaDbDatabaseTest  : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return SqlConnectionFactoryPart()
+        return SqlConnectionFactory()
     }
 
     override fun credentials(): DatabaseCredentials {

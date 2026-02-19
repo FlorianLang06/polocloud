@@ -15,11 +15,11 @@ import org.apache.logging.log4j.Logger
  *
  * @see dev.httpmarco.polocloud.database.DatabaseConnectionFactory
  */
-class SqlConnectionFactoryPart(credentials: DatabaseCredentials) :
+class SqlConnectionFactory(credentials: DatabaseCredentials) :
     DatabaseConnectionFactory<DatabaseCredentials>(credentials) {
 
     companion object {
-        private val logger: Logger = LogManager.getLogger(SqlConnectionFactoryPart::class.java)
+        private val logger: Logger = LogManager.getLogger(SqlConnectionFactory::class.java)
     }
 
     private val executor = SqlExecutor(this)

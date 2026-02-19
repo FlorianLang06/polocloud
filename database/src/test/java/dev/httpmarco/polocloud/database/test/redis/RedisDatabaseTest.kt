@@ -3,7 +3,7 @@ package dev.httpmarco.polocloud.database.test.redis
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
-import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactoryPart
+import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactory
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
 import org.testcontainers.containers.GenericContainer
@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.Container
 class RedisDatabaseTest : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return RedisConnectionFactoryPart()
+        return RedisConnectionFactory()
     }
 
     override fun credentials(): DatabaseCredentials {

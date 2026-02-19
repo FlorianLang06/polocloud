@@ -5,7 +5,7 @@ import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseState
 import redis.clients.jedis.UnifiedJedis
 
-class RedisConnectionFactoryPart(credentials: DatabaseCredentials.Redis) : DatabaseConnectionFactory<DatabaseCredentials.Redis>(credentials) {
+class RedisConnectionFactory(credentials: DatabaseCredentials.Redis) : DatabaseConnectionFactory<DatabaseCredentials.Redis>(credentials) {
 
     private lateinit var jedis: UnifiedJedis
     private lateinit var executor: RedisExecutor

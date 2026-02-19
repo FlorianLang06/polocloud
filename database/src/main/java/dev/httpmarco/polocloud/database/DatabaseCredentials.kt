@@ -1,9 +1,9 @@
 package dev.httpmarco.polocloud.database
 
 import dev.httpmarco.polocloud.common.Address
-import dev.httpmarco.polocloud.database.nosql.mongo.MongoConnectionFactoryPart
-import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactoryPart
-import dev.httpmarco.polocloud.database.sql.SqlConnectionFactoryPart
+import dev.httpmarco.polocloud.database.nosql.mongo.MongoConnectionFactory
+import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactory
+import dev.httpmarco.polocloud.database.sql.SqlConnectionFactory
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -29,7 +29,7 @@ sealed class DatabaseCredentials {
     ) : DatabaseRelated() {
 
         override fun factory(): DatabaseConnectionFactory<*> {
-            return SqlConnectionFactoryPart(this)
+            return SqlConnectionFactory(this)
         }
 
     }
@@ -43,7 +43,7 @@ sealed class DatabaseCredentials {
     ) : DatabaseRelated() {
 
         override fun factory(): DatabaseConnectionFactory<*> {
-            return MongoConnectionFactoryPart(this)
+            return MongoConnectionFactory(this)
         }
 
 
@@ -57,7 +57,7 @@ sealed class DatabaseCredentials {
     ) : DatabaseCredentials() {
 
         override fun factory(): DatabaseConnectionFactory<*> {
-            return RedisConnectionFactoryPart(this)
+            return RedisConnectionFactory(this)
         }
 
     }
@@ -70,7 +70,7 @@ sealed class DatabaseCredentials {
         override val database: String
     ) : DatabaseRelated() {
         override fun factory(): DatabaseConnectionFactory<*> {
-            return SqlConnectionFactoryPart(this)
+            return SqlConnectionFactory(this)
         }
     }
 
@@ -81,7 +81,7 @@ sealed class DatabaseCredentials {
         override val address: Address get() = Address("localhost", 0)
 
         override fun factory(): DatabaseConnectionFactory<*> {
-            return SqlConnectionFactoryPart(this)
+            return SqlConnectionFactory(this)
         }
     }
 
@@ -93,7 +93,7 @@ sealed class DatabaseCredentials {
         override val database: String
     ) : DatabaseRelated() {
         override fun factory(): DatabaseConnectionFactory<*> {
-            return SqlConnectionFactoryPart(this)
+            return SqlConnectionFactory(this)
         }
     }
 }

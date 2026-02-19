@@ -26,7 +26,7 @@ import java.util.UUID
  * This implementation prioritizes simplicity over reflection caching.
  */
 class SqlExecutor(
-    private val factory: SqlConnectionFactoryPart
+    private val factory: SqlConnectionFactory
 ) : DatabaseExecutor {
 
     private val logger: Logger = LogManager.getLogger(SqlExecutor::class.java)
