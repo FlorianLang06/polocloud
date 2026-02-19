@@ -28,6 +28,7 @@ dependencies {
     compileOnly(libs.polocloud.i18n)
     compileOnly(projects.database)
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     runtimeOnly(libs.bundles.grpc)
     runtimeOnly(projects.common)
@@ -37,4 +38,5 @@ dependencies {
     runtimeOnly(libs.polocloud.i18n)
     runtimeOnly(projects.database)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 }

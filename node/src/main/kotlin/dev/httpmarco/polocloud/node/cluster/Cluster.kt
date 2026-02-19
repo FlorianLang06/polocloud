@@ -6,7 +6,7 @@ import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.NodeInstance
 import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
-import dev.httpmarco.polocloud.node.cluster.node.NodeData
+import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import dev.httpmarco.polocloud.node.cluster.security.toBase64
