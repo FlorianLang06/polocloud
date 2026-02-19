@@ -37,12 +37,12 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
 
         val json = DatabaseSerializer.serialize(value, key.clazz)
 
-        write(key.id, identifier, json)
+        write(key.id(), identifier, json)
     }
 
 
     override fun <T : Any> findAll(key: DatabaseKey<T>): List<T> {
-        return readAll(key.id).map {
+        return readAll(key.id()).map {
             DatabaseSerializer.deserialize(it, key.clazz) as T
         }
     }
@@ -55,18 +55,18 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
         idField.isAccessible = true
         val identifier = idField.get(value).toString()
 
-        deleteInternal(key.id, identifier)
+        deleteInternal(key.id(), identifier)
     }
 
     override fun destroy(key: DatabaseKey<*>) {
-        destroyInternal(key.id)
+        destroyInternal(key.id())
     }
 
     override fun <T : Any> exists(key: DatabaseKey<T>, value: T): Boolean {
-        val idField = findIdentifierField(value!!::class.java.declaredFields) ?: return false
+        val idField = findIdentifierField(value::class.java.declaredFields) ?: return false
 
         idField.isAccessible = true
         val identifier = idField.get(value).toString()
-        return existsInternal(key.id, identifier)
+        return existsInternal(key.id(), identifier)
     }
 }

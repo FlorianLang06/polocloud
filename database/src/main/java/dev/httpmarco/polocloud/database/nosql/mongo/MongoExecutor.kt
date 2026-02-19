@@ -50,7 +50,7 @@ class MongoExecutor(
     }
 
     override fun <T : Any> findById(key: DatabaseKey<T>, id: Any): T? {
-        val collection = database.getCollection(key.id)
+        val collection = database.getCollection(key.id())
 
         val document = collection
             .find(Document("_id", id.toString()))

@@ -36,7 +36,7 @@ class NodeHeartBeatService(
 ) {
 
     private val logger = LoggerFactory.getLogger(NodeHeartBeatService::class.java)
-    private val databaseKey = DatabaseKey("nodes_heartbeat", NodeHeartBeat::class)
+    private val databaseKey = DatabaseKey( NodeHeartBeat::class)
     private val sysInfo = SystemInfo()
     private val processor: CentralProcessor = sysInfo.hardware.processor
     private val memory: GlobalMemory = sysInfo.hardware.memory

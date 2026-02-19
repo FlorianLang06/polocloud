@@ -2,6 +2,7 @@ package dev.httpmarco.polocloud.node.cluster.node.data
 
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.EntryIdentifier
+import dev.httpmarco.polocloud.database.RepositoryName
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import java.util.UUID
 import kotlin.time.Clock
@@ -23,6 +24,7 @@ import kotlin.time.Instant
  * @param lastConnection Timestamp of last connection
  */
 
+@RepositoryName("nodes")
 data class NodeData(
     @EntryIdentifier val id: UUID = UUID.randomUUID(),
     val name: String,

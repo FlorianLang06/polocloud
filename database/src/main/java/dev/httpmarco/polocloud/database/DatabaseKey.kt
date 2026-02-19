@@ -2,4 +2,10 @@ package dev.httpmarco.polocloud.database
 
 import kotlin.reflect.KClass
 
-data class DatabaseKey<T : Any>(val id : String, val clazz: KClass<T>)
+data class DatabaseKey<T : Any>(val clazz: KClass<T>) {
+
+    fun id(): String {
+        val repoAnnotation = clazz.annotations.filterIsInstance<RepositoryName>().firstOrNull()
+        return repoAnnotation?.name ?: clazz.simpleName!!
+    }
+}
