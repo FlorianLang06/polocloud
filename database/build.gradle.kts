@@ -25,14 +25,14 @@ dependencies {
     compileOnly("redis.clients:jedis:7.2.1")
     compileOnly("org.mongodb:mongodb-driver-sync:5.6.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-
+    compileOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
     runtimeOnly(projects.common)
     runtimeOnly(libs.bundles.logging)
     runtimeOnly(libs.hikariCp)
     runtimeOnly(libs.postgreSql)
     runtimeOnly(libs.polocloud.i18n)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-
+    runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:1.9.10")
     runtimeOnly("org.mongodb:mongodb-driver-sync:4.11.0")
     runtimeOnly("com.mysql:mysql-connector-j:9.6.0")
     runtimeOnly("redis.clients:jedis:7.2.1")

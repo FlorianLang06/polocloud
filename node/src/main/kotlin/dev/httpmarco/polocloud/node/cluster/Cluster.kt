@@ -34,14 +34,13 @@ import java.util.UUID
 object Cluster {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
-    private val clusterDatabaseKey = DatabaseKey("nodes", NodeData::class)
+    private val clusterDatabaseKey = DatabaseKey(NodeData::class)
     private val database = NodeInstance.config.database.factory()
     private val security = ClusterSecurity()
     private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
 
     init {
         initializeDatabase()
-        heartBeatService.startScheduler()
         logIdentity()
     }
 
@@ -99,6 +98,8 @@ object Cluster {
             nodes.any { it.id == security.localId } -> validateExistingNode(nodes)
             //    else -> registerNewNode(executor, nodes, publicIp)
         }
+
+        heartBeatService.startScheduler()
     }
 
 

@@ -1,6 +1,8 @@
 package dev.httpmarco.polocloud.database.sql
 
 import dev.httpmarco.polocloud.database.*
+import dev.httpmarco.polocloud.database.filtering.And
+import dev.httpmarco.polocloud.database.filtering.Filter
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.lang.reflect.Constructor
@@ -34,6 +36,7 @@ class SqlExecutor(
     private val factory: SqlConnectionFactory
 ) : DatabaseExecutor {
 
+    private val filterTranslator: SqlFilterTranslator = SqlFilterTranslator()
     private val logger: Logger = LogManager.getLogger(SqlExecutor::class.java)
 
     /**
@@ -63,12 +66,12 @@ class SqlExecutor(
 
         if (exists) {
             val setClause = meta.fields.joinToString(", ") { "${it.name} = ?" }
-            val sql = "UPDATE ${key.id} SET $setClause WHERE ${meta.identifier.name} = ?"
+            val sql = "UPDATE ${key.id()} SET $setClause WHERE ${meta.identifier.name} = ?"
             update(sql, *(values + idValue).toTypedArray())
         } else {
             val columns = meta.fields.joinToString(", ") { it.name }
             val placeholders = meta.fields.joinToString(", ") { "?" }
-            val sql = "INSERT INTO ${key.id} ($columns) VALUES ($placeholders)"
+            val sql = "INSERT INTO ${key.id()} ($columns) VALUES ($placeholders)"
             update(sql, *values.toTypedArray())
         }
     }
@@ -84,7 +87,7 @@ class SqlExecutor(
         val meta = resolveMeta(key)
 
         return queryList(
-            "SELECT * FROM ${key.id}",
+            "SELECT * FROM ${key.id()}",
             mapper = SqlMapper { rs -> mapRow(meta, rs) }
         )
     }
@@ -101,7 +104,7 @@ class SqlExecutor(
         val meta = resolveMeta(key)
 
         return queryOne(
-            "SELECT * FROM ${key.id} WHERE ${meta.identifier.name} = ? LIMIT 1",
+            "SELECT * FROM ${key.id()} WHERE ${meta.identifier.name} = ? LIMIT 1",
             id,
             mapper = SqlMapper { rs -> mapRow(meta, rs) }
         )
@@ -119,6 +122,46 @@ class SqlExecutor(
         return findById(key, meta.identifier.get(value)) != null
     }
 
+    override fun <T : Any> find(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): List<T> {
+
+        if (!factory.isValid()) return emptyList()
+
+        ensureTableExists(key)
+        val meta = resolveMeta(key)
+
+        // Keine Filter → alles zurückgeben
+        if (filters.isEmpty()) {
+            return queryList(
+                "SELECT * FROM ${key.id()}",
+                mapper = SqlMapper { rs -> mapRow(meta, rs) }
+            )
+        }
+
+        val combined: Filter =
+            if (filters.size == 1) filters[0]
+            else And(filters.toList())
+
+        val translated = filterTranslator.translate(combined)
+
+        val sql = """
+        SELECT * FROM ${key.id()}
+        WHERE ${translated.clause}
+    """.trimIndent()
+
+        return queryList(
+            sql,
+            *translated.parameters
+                .map { mapValueForDb(it) }
+                .toTypedArray(),
+            mapper = SqlMapper { rs -> mapRow(meta, rs) }
+        )
+    }
+
+    override fun filterTranslator() = filterTranslator
+
     /**
      * Deletes an entity from the database.
      *
@@ -130,7 +173,7 @@ class SqlExecutor(
         val meta = resolveMeta(key)
 
         val idValue = meta.identifier.get(value)
-        update("DELETE FROM ${key.id} WHERE ${meta.identifier.name} = ?", idValue)
+        update("DELETE FROM ${key.id()} WHERE ${meta.identifier.name} = ?", idValue)
     }
 
     /**
@@ -139,7 +182,7 @@ class SqlExecutor(
      * @param key the database key
      */
     override fun destroy(key: DatabaseKey<*>) {
-        update("DROP TABLE IF EXISTS ${key.id}")
+        update("DROP TABLE IF EXISTS ${key.id()}")
     }
 
     private data class EntityMeta<T>(
@@ -257,22 +300,30 @@ class SqlExecutor(
         try {
             ds.connection.use { conn ->
                 val meta = conn.metaData
-                val rs = meta.getTables(null, null, key.id, arrayOf("TABLE"))
+                val rs = meta.getTables(null, null, key.id(), arrayOf("TABLE"))
 
                 if (!rs.next()) {
                     val metaInfo = resolveMeta(key)
 
-                    val columns = metaInfo.fields.joinToString(", ") { field ->
+                    val columnDefinitions = metaInfo.fields.joinToString(", ") { field ->
                         val type = mapJavaTypeToSql(field.type)
                         val pk = if (field == metaInfo.identifier) "PRIMARY KEY" else ""
-                        "${field.name} $type $pk"
+
+                        val fkAnnotation = field.getAnnotation(EntryRef::class.java)
+                        val fk = if (fkAnnotation != null) {
+                            val fkKey = DatabaseKey(fkAnnotation.clazz)
+                            ensureTableExists(fkKey)
+                            "REFERENCES ${fkKey.id()}(${metaInfo.identifier.name})"
+                        } else ""
+
+                        "${field.name} $type $pk $fk".trim()
                     }
 
-                    update("CREATE TABLE IF NOT EXISTS ${key.id} ($columns)")
+                    update("CREATE TABLE IF NOT EXISTS ${key.id()} ($columnDefinitions)")
                 }
             }
         } catch (ex: SQLException) {
-            logger.error("Failed to ensure table exists: ${key.id}", ex)
+            logger.error("Failed to ensure table exists: ${key.id()}", ex)
         }
     }
 
@@ -310,7 +361,6 @@ class SqlExecutor(
 
         return meta.constructor.newInstance(*args) as T
     }
-
 
 
     private fun mapJavaTypeToSql(clazz: Class<*>): String =

@@ -3,12 +3,16 @@ package dev.httpmarco.polocloud.database.nosql.mongo
 import com.mongodb.client.MongoDatabase
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.database.DatabaseSerializer
+import dev.httpmarco.polocloud.database.filtering.Filter
+import dev.httpmarco.polocloud.database.filtering.FilterTranslator
 import dev.httpmarco.polocloud.database.nosql.AbstractNoSqlExecutor
 import org.bson.Document
 
 class MongoExecutor(
     private val database: MongoDatabase
 ) : AbstractNoSqlExecutor() {
+
+    private val filterTranslator = MongoFilterTranslator()
 
     override fun write(collection: String, identifier: String, json: String) {
         val col = database.getCollection(collection)
@@ -46,7 +50,7 @@ class MongoExecutor(
     }
 
     override fun <T : Any> findById(key: DatabaseKey<T>, id: Any): T? {
-        val collection = database.getCollection(key.id)
+        val collection = database.getCollection(key.id())
 
         val document = collection
             .find(Document("_id", id.toString()))
@@ -57,5 +61,14 @@ class MongoExecutor(
             key.clazz
         )
     }
+
+    override fun <T : Any> find(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): List<T> {
+        TODO("Not yet implemented")
+    }
+
+    override fun filterTranslator() = filterTranslator
 
 }

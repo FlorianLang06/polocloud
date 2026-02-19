@@ -1,5 +1,8 @@
 package dev.httpmarco.polocloud.database
 
+import dev.httpmarco.polocloud.database.filtering.Filter
+import dev.httpmarco.polocloud.database.filtering.FilterTranslator
+
 /**
  * A generic executor interface for performing CRUD operations on database tables.
  *
@@ -62,6 +65,24 @@ interface DatabaseExecutor {
      * @return true if a matching row exists, false otherwise.
      */
     fun <T : Any> exists(key: DatabaseKey<T>, value: T) : Boolean
+
+    /**
+     * Finds a single row in the table associated with the given [dev.httpmarco.polocloud.database.DatabaseKey] using the provided filters.
+     *
+     * The filters are applied to the query to narrow down the search results. The specific implementation of how filters are applied
+     * depends on the underlying database and its query capabilities. For example, in a MongoDB implementation, the filters might be translated into MongoDB query filters, while in a SQL-based implementation, they might be translated into WHERE clauses
+     * The method returns an object of type [T] if a matching row is found, or null if no such row exists.
+     *
+     * @param key The [dev.httpmarco.polocloud.database.DatabaseKey] representing the table and target type.
+     * @param filters Vararg parameter representing the filters to apply to the query.
+     * @return An object of type [T] if a matching row is found, or null if no such row exists.
+     */
+    fun <T : Any> find(key: DatabaseKey<T>, vararg filters: Filter): List<T>
+
+    /**
+     * Provides a [FilterTranslator] that can translate the generic filter type [Q] into the specific filter format required by the underlying database.
+     */
+    fun filterTranslator() : FilterTranslator<*>
 
     /**
      * Finds the field in the given array of fields that is annotated with [EntryIdentifier].
