@@ -5,12 +5,12 @@ plugins {
     id("dev.httpmarco.polocloud")
 }
 
+polocloud {
+    mainClass = "dev.httpmarco.polocloud.cli.PolocloudCliKt"
+}
+
 dependencies {
     polocloudRuntime(libs.jline)
 
     compileOnly(projects.common)
-}
-
-polocloud {
-    mainClass = "dev.httpmarco.polocloud.cli.PolocloudCliKt"
 }

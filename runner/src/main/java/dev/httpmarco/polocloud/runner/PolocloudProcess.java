@@ -94,7 +94,10 @@ public final class PolocloudProcess {
      * @return the needed classpath entries as a list of paths
      */
     private List<Path> getApplicationClasspath() {
-        List<Path> elements = new ArrayList<>(Arrays.asList(PolocloudParameters.BOOT_KOTLIN, PolocloudParameters.expenderRuntimeCache("cli")));
+        List<Path> elements = new ArrayList<>();
+        elements.add(PolocloudParameters.BOOT_KOTLIN);
+        elements.add(PolocloudParameters.expenderRuntimeCache("common"));
+        elements.add(PolocloudParameters.expenderRuntimeCache("cli"));
 
         if(false) {
             elements.add(PolocloudParameters.expenderRuntimeCache("installer"));
