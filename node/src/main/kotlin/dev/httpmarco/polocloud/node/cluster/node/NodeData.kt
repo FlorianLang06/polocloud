@@ -4,7 +4,6 @@ import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.EntryIdentifier
 import java.util.UUID
 
-
 data class NodeData(
     @EntryIdentifier val id: UUID = UUID.randomUUID(),
     val name: String,
