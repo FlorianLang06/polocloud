@@ -1,6 +1,7 @@
 package dev.httpmarco.polocloud.node.cluster
 
 import dev.httpmarco.polocloud.common.utils.publicIpAddress
+import dev.httpmarco.polocloud.common.utils.toBytes
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.NodeInstance
@@ -8,6 +9,7 @@ import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
 import dev.httpmarco.polocloud.node.cluster.node.NodeData
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
+import dev.httpmarco.polocloud.node.cluster.security.toBase64
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -95,11 +97,13 @@ object Cluster {
         }
     }
 
+
+
     /**
      * Registers this node as the first node in a new cluster.
      */
     private fun createInitialNode(ip: String) {
-        val nodeData = NodeData(security.localId, "node-1", ip, 25565, NodeState.STARTING, true)
+        val nodeData = NodeData(security.localId, "node-1", ip, 25565, NodeState.STARTING, true, security.publicKey.toBase64())
 
         database.executor().save(clusterDatabaseKey, nodeData)
 
@@ -114,7 +118,7 @@ object Cluster {
             TranslationService.tr(
                 "cluster",
                 "cluster.node.identity.alert.token",
-                "clusterToken" to security.clusterToken
+                "clusterToken" to security.publicKey.toBase64()
             )
         )
     }
@@ -163,5 +167,40 @@ object Cluster {
                 "cluster.node.mark.online.success"
             )
         )
+    }
+
+    private fun registerNewNodeWithQuorum(nodes: List<NodeData>, ip: String) {
+        val quorumSize = (nodes.size / 2) + 1
+        val newNodeData = NodeData(
+            id = security.localId,
+            name = "node-${nodes.size + 1}",
+            hostname = ip,
+            port = 25565,
+            state = NodeState.STARTING,
+            publicKey = security.publicKey.toBase64()
+        )
+
+        val approvals = mutableListOf<String>()
+        for (existingNode in nodes.filter { it.state == NodeState.ONLINE }) {
+            val approval = requestApprovalFromNode(existingNode, newNodeData)
+            if (approval != null) approvals.add(approval)
+            if (approvals.size >= quorumSize) break
+        }
+
+        if (approvals.size < quorumSize) {
+            throw IllegalStateException("Quorum not reached. Node cannot join cluster.")
+        }
+
+        security.quorumSignatures.addAll(approvals)
+        database.executor().save(clusterDatabaseKey, newNodeData)
+
+        logger.info("Node ${security.localId} joined cluster with quorum (${approvals.size}/${nodes.size})")
+    }
+
+    private fun requestApprovalFromNode(existingNode: NodeData, newNode: NodeData): String? {
+        // TODO: echte gRPC Kommunikation einbauen
+        // z.B. Node überprüft PublicKey und signiert den Join-Request
+        val approvalSignature = security.sign(newNode.id.toBytes()) // signed NodeID with Key
+        return approvalSignature
     }
 }

@@ -11,6 +11,7 @@ data class NodeData(
     val port: Int,
     var state: NodeState,
     val head: Boolean = false,
+    val publicKey: String,
     val firstConnection: Long = System.currentTimeMillis(),
     val lastConnection: Long = System.currentTimeMillis()
 ) {

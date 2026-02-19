@@ -297,7 +297,7 @@ class SqlExecutor(
             clazz.isEnum -> "VARCHAR(50)"
             clazz.kotlin == Int::class -> "INT"
             clazz.kotlin == Long::class -> "BIGINT"
-            clazz.kotlin == String::class -> "VARCHAR(255)"
+            clazz.kotlin == String::class -> "VARCHAR(512)"
             clazz.kotlin == Boolean::class -> "BOOLEAN"
             clazz.kotlin == Double::class -> "DOUBLE"
             clazz.kotlin == Float::class -> "FLOAT"
