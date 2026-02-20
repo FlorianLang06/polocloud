@@ -1,5 +1,6 @@
 package dev.httpmarco.polocloud.cli
 
+import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.jline.jansi.AnsiConsole
 import kotlin.system.exitProcess
 
@@ -12,21 +13,26 @@ fun registerHook() {
     }, SHUTDOWN_HOOK))
 }
 
-fun exitPolocloud(cleanShutdown: Boolean = true, shouldUpdate: Boolean = false) {
-
+fun exitPolocloud(cleanShutdown: Boolean = true) {
     if (inShutdown) {
+        logger.warn(TranslationService.tr("cli", "cli.shutdown.already_in_progress"))
         return
     }
 
     inShutdown = true
+    logger.info(TranslationService.tr("cli", "cli.shutdown.initiating"))
 
-    //TODO translation
+    //TODO some shutdown logic between the two translations
 
-    //AnsiConsole.systemUninstall() TODO does currently not work
+    val key = if (cleanShutdown) {
+        "cli.shutdown.clean"
+    } else {
+        "cli.shutdown.forced"
+    }
 
-//    if (shouldUpdate) {
-//        Updater.update()
-//    }
+
+    logger.info(TranslationService.tr("cli", key))
+    AnsiConsole.systemUninstall()
 
     if (Thread.currentThread().name != SHUTDOWN_HOOK) {
         exitProcess(0)

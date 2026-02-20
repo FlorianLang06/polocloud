@@ -16,5 +16,7 @@ dependencies {
     polocloudRuntime(libs.log4j.core)
     polocloudRuntime(libs.log4j.slf4j)
 
+    polocloudRuntime(libs.polocloud.i18n)
+
     compileOnly(projects.common)
 }
