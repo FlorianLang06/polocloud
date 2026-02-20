@@ -49,4 +49,11 @@ dependencies {
     // cli / system
     compileOnly(libs.oshi)
     runtimeOnly(libs.oshi)
+
+    testImplementation(libs.bundles.junit)
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

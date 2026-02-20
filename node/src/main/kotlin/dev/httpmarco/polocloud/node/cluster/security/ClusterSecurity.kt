@@ -3,9 +3,10 @@ package dev.httpmarco.polocloud.node.cluster.security
 import dev.httpmarco.polocloud.common.utils.toBytes
 import dev.httpmarco.polocloud.common.utils.toUUID
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.LOCAL_SECURITY_PATH
+import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.attribute.DosFileAttributeView
 import java.security.KeyFactory
 import java.security.KeyPair
@@ -33,7 +34,7 @@ import kotlin.io.path.writeBytes
  * - PublicKey can be shared with other nodes to verify signatures
  * - All sensitive data is stored in binary format in [LOCAL_SECURITY_PATH]
  */
-class ClusterSecurity {
+class ClusterSecurity(val securityLocalPath: Path) {
 
     private val logger = LoggerFactory.getLogger(ClusterSecurity::class.java)
 
@@ -74,10 +75,10 @@ class ClusterSecurity {
      * @return Pair of [UUID] and [KeyPair], or null if file missing/corrupt
      */
     private fun readFromFile(): Pair<UUID, KeyPair>? {
-        if (!LOCAL_SECURITY_PATH.exists()) return null
+        if (!securityLocalPath.exists()) return null
 
         return try {
-            val data = LOCAL_SECURITY_PATH.readBytes()
+            val data = securityLocalPath.readBytes()
             var offset = 0
 
             // UUID
@@ -109,7 +110,7 @@ class ClusterSecurity {
      * @return Pair of newly generated [UUID] and [KeyPair]
      */
     private fun regenerate(): Pair<UUID, KeyPair> {
-        val parent = LOCAL_SECURITY_PATH.parent ?: throw IllegalStateException("LOCAL_SECURITY_PATH must have a parent directory")
+        val parent = securityLocalPath.parent ?: throw IllegalStateException("LOCAL_SECURITY_PATH must have a parent directory")
         parent.createDirectories()
 
         val localId = UUID.randomUUID()
@@ -147,10 +148,10 @@ class ClusterSecurity {
         offset = writeLengthPrefixedBytes(pubBytes, data, offset)
         writeLengthPrefixedBytes(privBytes, data, offset)
 
-        LOCAL_SECURITY_PATH.writeBytes(data)
+        securityLocalPath.writeBytes(data)
 
         try {
-            val dosView = Files.getFileAttributeView(LOCAL_SECURITY_PATH, DosFileAttributeView::class.java)
+            val dosView = Files.getFileAttributeView(securityLocalPath, DosFileAttributeView::class.java)
             dosView?.setHidden(true)
         } catch (_: Exception) {}
     }

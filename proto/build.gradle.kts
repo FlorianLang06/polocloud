@@ -73,13 +73,10 @@ protobuf {
     generateProtoTasks {
         all().forEach { task ->
             task.builtins {
-                // Kotlin Message-Klassen
                 create("kotlin")
             }
             task.plugins {
-                // gRPC Java (Pflicht)
                 id("grpc")
-                // gRPC Kotlin (Coroutines)
                 id("grpckt")
             }
         }

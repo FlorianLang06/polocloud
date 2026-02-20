@@ -22,8 +22,7 @@ dependencies {
     compileOnly(libs.hikariCp)
     compileOnly(libs.gson)
     compileOnly(libs.polocloud.i18n)
-    compileOnly("redis.clients:jedis:7.2.1")
-    compileOnly("org.mongodb:mongodb-driver-sync:5.6.3")
+    compileOnly(libs.bundles.database.drivers)
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     compileOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
 
@@ -45,10 +44,9 @@ dependencies {
     testImplementation(libs.postgreSql)
     testImplementation(libs.polocloud.i18n)
     testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")     // Test API
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")      // Engine zum Ausführen
-    testImplementation("org.junit.jupiter:junit-jupiter-params:6.0.3")  // Optional: für @ParameterizedTest
 
+
+    testImplementation(libs.bundles.junit)
     testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.database.drivers)
 
