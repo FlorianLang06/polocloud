@@ -31,6 +31,13 @@ gson = "2.13.2"
 # testing
 testcontainers = "2.0.3"
 
+# database driver
+mongodb = "5.6.3"
+mysql = "9.6.0"
+redis = "7.2.1"
+mariadb = "3.5.7"
+h2 = "2.4.240"
+
 [libraries]
 
 # polocloud
@@ -74,6 +81,14 @@ testcontainers-mongodb = { group = "org.testcontainers", name = "testcontainers-
 testcontainers-mysql = { group = "org.testcontainers", name = "testcontainers-mysql", version.ref = "testcontainers" }
 testcontainers-cassandra = { group = "org.testcontainers", name = "testcontainers-cassandra", version.ref = "testcontainers" }
 
+# database driver
+mongodb = { group = "org.mongodb", name = "mongodb-driver-sync", version.ref = "mongodb" }
+mysql = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql" }
+redis = { group = "redis.clients", name = "jedis", version.ref = "redis" }
+mariadb = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version.ref = "mariadb" }
+h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
+
+
 [plugins]
 
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
@@ -90,3 +105,4 @@ cli = ["jline", "jansi"]
 database = ["hikariCp", "postgreSql"]
 kotlin = ["kotlinx-serialization-json", "kotlinx-coroutines-core"]
 testcontainers = ["testcontainers", "testcontainers-junit", "testcontainers-postgresql", "testcontainers-mariadb", "testcontainers-mongodb", "testcontainers-mysql", "testcontainers-cassandra"]
+database-drivers = ["mongodb", "mysql", "redis", "mariadb", "h2"]

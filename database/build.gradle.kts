@@ -26,6 +26,7 @@ dependencies {
     compileOnly("org.mongodb:mongodb-driver-sync:5.6.3")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     compileOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
+
     runtimeOnly(projects.common)
     runtimeOnly(libs.bundles.logging)
     runtimeOnly(libs.hikariCp)
@@ -33,14 +34,9 @@ dependencies {
     runtimeOnly(libs.polocloud.i18n)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
-    runtimeOnly("org.mongodb:mongodb-driver-sync:5.6.3")
-    runtimeOnly("com.mysql:mysql-connector-j:9.6.0")
-    runtimeOnly("redis.clients:jedis:7.2.1")
-    runtimeOnly("org.mariadb.jdbc:mariadb-java-client:3.5.7")
     runtimeOnly("org.junit.platform:junit-platform-suite:1.10.0")
-    runtimeOnly("com.h2database:h2:2.4.240")
-    runtimeOnly("org.mongodb:mongodb-driver-sync:5.6.3")
-    runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    runtimeOnly(libs.bundles.database.drivers)
 
     testImplementation(libs.gson)
     testImplementation(projects.common)
@@ -54,14 +50,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:6.0.3")  // Optional: für @ParameterizedTest
 
     testImplementation(libs.bundles.testcontainers)
+    testImplementation(libs.bundles.database.drivers)
 
-    testImplementation("org.mongodb:mongodb-driver-sync:5.6.3")
-    testImplementation("com.mysql:mysql-connector-j:9.6.0")
-    testImplementation("redis.clients:jedis:7.2.1")
-    testImplementation("org.mariadb.jdbc:mariadb-java-client:3.5.7")
     testImplementation("org.junit.platform:junit-platform-suite:1.10.0")
-    testImplementation("com.h2database:h2:2.4.240")
-    testImplementation("org.mongodb:mongodb-driver-sync:5.6.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }
 

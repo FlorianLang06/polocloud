@@ -33,27 +33,14 @@ public final class PolocloudProcess {
      * @return {@code 0} if the CLI started successfully, {@code 1} otherwise
      */
     public int start() {
-        PolocloudClassLoader classLoader = null;
-
         try {
             prepareRuntimeEnvironment();
-
-            classLoader = createApplicationClassLoader();
-            Thread.currentThread().setContextClassLoader(classLoader);
-
-            invokeMain(classLoader);
+            invokeMain(createApplicationClassLoader());
             return 0;
-
-        } catch (InvocationTargetException e) {
-            System.err.println("Polocloud CLI terminated with an exception:");
-            e.getTargetException().printStackTrace(System.err);
         } catch (Exception e) {
             System.err.println("Failed to start Polocloud CLI");
             e.printStackTrace(System.err);
-        } finally {
-            closeClassLoaderQuietly(classLoader);
         }
-
         return 1;
     }
 
@@ -81,10 +68,7 @@ public final class PolocloudProcess {
             urls.add(path.toUri().toURL());
         }
 
-        return new PolocloudClassLoader(
-                urls.toArray(new URL[0]),
-                ClassLoader.getSystemClassLoader()
-        );
+        return new PolocloudClassLoader(urls.toArray(new URL[0]));
     }
 
     /**
@@ -97,17 +81,6 @@ public final class PolocloudProcess {
         elements.add(PolocloudParameters.BOOT_KOTLIN);
         elements.add(PolocloudParameters.expenderRuntimeCache("common"));
         elements.add(PolocloudParameters.expenderRuntimeCache("cli"));
-
-        if(false) {
-            elements.add(PolocloudParameters.expenderRuntimeCache("installer"));
-        } else {
-            if(false) {
-                elements.add(PolocloudParameters.expenderRuntimeCache("cli"));
-            }
-            if(false) {
-                elements.add(PolocloudParameters.expenderRuntimeCache("node"));
-            }
-        }
         return elements;
     }
 
@@ -115,15 +88,27 @@ public final class PolocloudProcess {
      * Invokes the CLI main method via reflection.
      *
      * @param classLoader the class loader used to load the CLI
-     * @throws Exception if the main method cannot be invoked
      */
-    private void invokeMain(ClassLoader classLoader) throws Exception {
+    private void invokeMain(ClassLoader classLoader) throws ClassNotFoundException, NoSuchMethodException, InterruptedException {
         String mainClassName = resolveMainClassName();
-
         Class<?> mainClass = Class.forName(mainClassName, true, classLoader);
         Method mainMethod = mainClass.getMethod("main", String[].class);
 
-        mainMethod.invoke(null, (Object) new String[0]);
+        Thread mainThread = new Thread(() -> {
+            Thread.currentThread().setContextClassLoader(classLoader);
+            try {
+                mainMethod.invoke(null, (Object) new String[0]);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Cannot access main method", e);
+            } catch (InvocationTargetException e) {
+                // Root Cause weitergeben
+                throw new RuntimeException("Exception in main()", e.getCause());
+            }
+        }, "Polocloud-Main-Thread");
+
+        mainThread.setUncaughtExceptionHandler((t, ex) -> ex.printStackTrace(System.err));
+        mainThread.start();
+        mainThread.join();
     }
 
     /**

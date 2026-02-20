@@ -24,10 +24,9 @@ public final class PolocloudClassLoader extends URLClassLoader {
      * Creates a new Polocloud class loader.
      *
      * @param urls   the classpath URLs
-     * @param parent the parent class loader
      */
-    public PolocloudClassLoader(URL[] urls, ClassLoader parent) {
-        super(urls, parent);
+    public PolocloudClassLoader(URL[] urls) {
+        super(urls, null);
     }
 
     /**
