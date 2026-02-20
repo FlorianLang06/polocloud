@@ -9,7 +9,7 @@ slf4j = "2.0.17"
 
 # database
 hikariCp = "7.0.2"
-postgreSql = "42.7.9"
+postgreSql = "42.7.10"
 
 # configuration
 gson = "2.13.2"
