@@ -6,7 +6,7 @@ plugins {
     id("java-library")
 }
 
-val grpcVersion = "1.78.0"
+val grpcVersion = "1.79.0"
 val grpcKotlinVersion = "1.5.0"
 val protobufVersion = "3.25.8"
 
