@@ -49,9 +49,9 @@ dependencies {
     testImplementation(libs.postgreSql)
     testImplementation(libs.polocloud.i18n)
     testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.0")     // Test API
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.0")      // Engine zum Ausführen
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.0")  // Optional: für @ParameterizedTest
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")     // Test API
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")      // Engine zum Ausführen
+    testImplementation("org.junit.jupiter:junit-jupiter-params:6.0.3")  // Optional: für @ParameterizedTest
     testImplementation("org.testcontainers:testcontainers:1.21.4")
     testImplementation("org.testcontainers:junit-jupiter:1.21.4")
     testImplementation("org.testcontainers:postgresql:1.21.4")
