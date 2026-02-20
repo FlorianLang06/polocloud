@@ -25,6 +25,8 @@ dependencies {
     runtimeOnly(projects.common)
     runtimeOnly(projects.database)
 
+    testImplementation(projects.common)
+
     // grpc
     compileOnly(libs.bundles.grpc)
     runtimeOnly(libs.bundles.grpc)

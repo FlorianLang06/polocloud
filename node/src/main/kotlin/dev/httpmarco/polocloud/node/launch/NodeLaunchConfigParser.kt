@@ -12,6 +12,6 @@ object NodeLaunchConfigParser {
                 key to value
             }
 
-        return NodeLaunchConfig(localPath = map["local-path"]?.let { Path.of(it) } ?: Path.of("local"))
+        return NodeLaunchConfig(rootDir = map["directory"]?.let { Path.of(it) } ?: Path.of(""))
     }
 }
