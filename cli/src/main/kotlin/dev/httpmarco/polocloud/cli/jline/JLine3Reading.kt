@@ -1,5 +1,6 @@
 package dev.httpmarco.polocloud.cli.jline
 
+import dev.httpmarco.polocloud.cli.command.CommandService
 import dev.httpmarco.polocloud.cli.exitPolocloud
 import dev.httpmarco.polocloud.cli.logger
 import org.jline.jansi.Ansi
@@ -9,7 +10,7 @@ import org.jline.reader.UserInterruptException
 class JLine3Reading(
     private var terminal: JLine3Terminal,
     private val lineReader: LineReader,
-    //private val commandService: CommandService
+    private val commandService: CommandService
 ) : Thread() {
 
     override fun run() {
@@ -42,11 +43,11 @@ class JLine3Reading(
 //                    continue
 //                }
 
-//                val tokens = line.split(" ").filter { it.isNotBlank() }
-//                val commandName = tokens.firstOrNull() ?: continue
-//                val args = tokens.drop(1).toTypedArray()
-//
-//                commandService.call(commandName, args)
+                val tokens = line.split(" ").filter { it.isNotBlank() }
+                val commandName = tokens.firstOrNull() ?: continue
+                val args = tokens.drop(1).toTypedArray()
+
+                commandService.call(commandName, args)
             } catch (_: UserInterruptException) {
                 // pressing Ctrl+C or similar to interrupt reading
                 exitPolocloud(cleanShutdown = false)

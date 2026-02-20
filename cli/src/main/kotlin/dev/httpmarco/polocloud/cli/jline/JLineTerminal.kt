@@ -1,5 +1,6 @@
 package dev.httpmarco.polocloud.cli.jline;
 
+import dev.httpmarco.polocloud.cli.command.CommandService
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.LineReaderImpl
@@ -9,6 +10,8 @@ import java.nio.charset.StandardCharsets
 
 
 class JLine3Terminal {
+
+    val commandService = CommandService()
 
     var prompt: String? = null
 
@@ -29,13 +32,11 @@ class JLine3Terminal {
         .variable(LineReader.BELL_STYLE, "none")
         .build() as LineReaderImpl
 
-    val jLine3Reading = JLine3Reading(this, this.lineReader
-//        , this.commandService
-    )
+    val jLine3Reading = JLine3Reading(this, this.lineReader, this.commandService)
 
     fun clearScreen() {
-        terminal.puts(InfoCmp.Capability.clear_screen);
-        terminal.flush();
+        this.terminal.puts(InfoCmp.Capability.clear_screen);
+        this.terminal.flush();
     }
 
     fun display(message: String) {
@@ -70,15 +71,11 @@ class JLine3Terminal {
     fun resetPrompt() {
         //TODO update this prompt on connection with node
         //this.updatePrompt("&bpolocloud&8@&7" + polocloudVersion() + " &8» &7")
-        this.updatePrompt("&bpolocloud&8-&7cli &8» &7")
+        this.updatePrompt("&bpolocloud&8@&7cli &8» &7")
     }
 
     fun shutdown() {
-        try {
-            terminal.writer().println()
-            terminal.flush()
-        } finally {
-            terminal.close()
-        }
+        this.terminal.close()
+        this.jLine3Reading.interrupt()
     }
 }
