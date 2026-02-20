@@ -23,8 +23,9 @@ fun main() {
     // register a clean hook for good shutdown
     registerHook()
 
-    Thread.currentThread().uncaughtExceptionHandler = Thread.UncaughtExceptionHandler { _, throwable ->
-        // todo fix logging here -> bad logs are printed with the logger
+    // fallback exception handler
+    Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+        System.err.println("Fatal bootstrap error in thread '${thread.name}'")
         throwable.printStackTrace()
     }
 

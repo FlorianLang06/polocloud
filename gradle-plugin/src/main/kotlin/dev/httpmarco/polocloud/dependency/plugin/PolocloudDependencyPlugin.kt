@@ -6,10 +6,10 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.kotlin.dsl.attributes
-import java.net.URL
 import java.nio.charset.StandardCharsets
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
+import java.net.URI
 
 /**
  * Gradle plugin that embeds a `dependencies.index` file into the produced JAR.
@@ -49,60 +49,55 @@ class PolocloudDependencyPlugin : Plugin<Project> {
 
                 blobFile.parentFile.mkdirs()
 
-                val primaryRepo = project.repositories
+                val repositories = project.repositories
                     .filterIsInstance<MavenArtifactRepository>()
-                    .firstOrNull()
-                    ?.url
-                    ?.toString()
-                    ?: "https://repo.maven.apache.org/maven2"
-
-                val dependencies = extension.projects.mapNotNull { notation ->
-                    parseDependency(notation, primaryRepo)
-                }
+                    .map { it.url.toString() }
+                    .ifEmpty { listOf("https://repo.maven.apache.org/maven2") }
 
                 doFirst {
-                    blobFile.writeText(
-                        dependencies.joinToString("\n") { it.toNotation() },
-                        StandardCharsets.UTF_8
-                    )
+
+                    val dependencies = extension.projects.flatMap {
+                        resolveDependencies(project, it)
+                    }
+
+                    if (dependencies.isNotEmpty()) {
+                        blobFile.writeText(
+                            dependencies.joinToString("\n") { it.toNotation() },
+                            StandardCharsets.UTF_8
+                        )
+                    }
                 }
 
-                if (!dependencies.isEmpty()) {
-                    from(project.layout.buildDirectory) {
-                        include("dependencies.index")
-                        into("/")
-                    }
+                from(blobFile) {
+                    into("/")
                 }
             }
         }
     }
 
-    /**
-     * Parses a Gradle dependency notation (`group:artifact:version`)
-     * and converts it into a [Dependency] object.
-     */
-    private fun parseDependency(
-        notation: String,
-        repositoryUrl: String
-    ): Dependency? {
-        val parts = notation.split(":")
-        if (parts.size < 3) return null
+    private fun resolveDependencies(project: Project, notation: String): List<Dependency> {
 
-        val groupId = parts[0]
-        val artifactId = parts[1]
-        val version = parts[2]
+        val dependency = project.dependencies.create(notation)
+        val detached = project.configurations.detachedConfiguration(dependency)
 
-        val path = groupId.replace(".", "/")
-        val jarUrl =
-            "${repositoryUrl.trimEnd('/')}/$path/$artifactId/$version/$artifactId-$version.jar"
+        val resolved = detached.resolvedConfiguration
 
-        return Dependency(
-            groupId = groupId,
-            artifactId = artifactId,
-            version = version,
-            url = jarUrl,
-            checksum = fetchChecksum(jarUrl)
-        )
+        return resolved.resolvedArtifacts.map { artifact ->
+
+            val file = artifact.file
+
+            Dependency(
+                groupId = artifact.moduleVersion.id.group,
+                artifactId = artifact.name,
+                version = artifact.moduleVersion.id.version,
+                url = file.toURI().toString(),
+                checksum = file.inputStream().use {
+                    java.security.MessageDigest.getInstance("SHA-256")
+                        .digest(it.readBytes())
+                        .joinToString("") { "%02x".format(it) }
+                }
+            )
+        }
     }
 }
 
@@ -117,7 +112,7 @@ class PolocloudDependencyPlugin : Plugin<Project> {
  */
 fun fetchChecksum(jarUrl: String): String {
 
-    fun load(url: String): String = URL(url).readText().trim().split(" ")[0]
+    fun load(url: String): String = URI(url).toURL().readText().trim().split(" ")[0]
 
     return runCatching {
         load("$jarUrl.sha256")
