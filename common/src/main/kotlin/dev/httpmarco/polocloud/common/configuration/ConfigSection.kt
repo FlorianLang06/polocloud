@@ -4,6 +4,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 
 class ConfigSection(private val path: Path) {
@@ -19,6 +20,7 @@ class ConfigSection(private val path: Path) {
             val content = Files.readString(path)
             json.decodeFromString(serializer, content)
         } else {
+            path.parent.createDirectories()
             path.toFile().createNewFile()
             val content = json.encodeToString(serializer, default)
             Files.writeString(path, content)
