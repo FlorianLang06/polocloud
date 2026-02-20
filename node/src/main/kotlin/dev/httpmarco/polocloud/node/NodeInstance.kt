@@ -2,60 +2,117 @@ package dev.httpmarco.polocloud.node
 
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
-import dev.httpmarco.polocloud.common.utils.TerminalUtils
-import dev.httpmarco.polocloud.common.utils.toBytes
-import dev.httpmarco.polocloud.common.utils.toUUID
+import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.i18n.model.Language
+import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.Cluster
-import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
-import java.util.UUID
-import kotlin.io.path.createDirectories
-import kotlin.io.path.exists
-import kotlin.io.path.readBytes
-import kotlin.io.path.writeBytes
 
 /**
- * Singleton representing the local PoloCloud node.
+ * Represents a running PoloCloud node instance.
  *
- * Responsible for:
- * 1. Loading configuration
- * 2. Initializing GRPC endpoint
- * 3. Establishing database connection
+ * Responsibilities:
+ * - Load and manage node configuration
+ * - Initialize and manage the gRPC endpoint
+ * - Join and interact with the cluster
+ *
+ * Lifecycle:
+ * 1. Constructed with bootstrap information
+ * 2. Configuration is loaded
+ * 3. start() initializes networking and cluster integration
+ * 4. close() gracefully shuts down the node
  */
-object NodeInstance {
+class NodeInstance(
+    /**
+     * Bootstrap information created during application startup.
+     * Contains resolved filesystem paths and runtime launch parameters.
+     */
+    private val launchConfig: NodeLaunchConfig
+) {
 
-    val config: NodeInstanceConfiguration by lazy { generateConfiguration() }
+    /**
+     * Node configuration loaded from the local node configuration file.
+     */
+    val config: NodeInstanceConfiguration
 
-    /** GRPC endpoint for inter-node communication */
-    val endpoint: GrpcEndpoint by lazy { GrpcEndpoint(config.bindAddress) }
+    /**
+     * gRPC endpoint used for inter-node communication.
+     */
+    val endpoint: GrpcEndpoint
+
+    /**
+     * Cluster abstraction handling node discovery and cluster state.
+     */
+    val cluster: Cluster
 
     init {
-        TerminalUtils.clear()
-
         TranslationService.init()
-        TranslationService.defaultLanguage("en_US")
-        // TODO get language from config and ask the user on setup with e.g. TranslationService#defaultLanguage("database")
-        TranslationService.preloadAsync("database", Language("en_US"))
-        TranslationService.preloadAsync("cluster", Language("en_US"))
-        //TODO preLoad all translation packs e.g. database when cluster is enabled and db is needed
 
-        // connect GRPC endpoint
-        endpoint.connect()
+        // Load persisted configuration (or create default if missing)
+        config = loadConfiguration()
 
-        Cluster.detect()
+        // Prepare networking endpoint based on configuration
+        endpoint = GrpcEndpoint(config.bindAddress)
 
-        // TODO load required services (e.g. database) and ensure connectivity before marking the node as online
-
-        // finally mark the node as online in the cluster
-        Cluster.markOnline()
+        // Initialize cluster component
+        cluster = Cluster(config, launchConfig)
     }
 
-    fun generateConfiguration(): NodeInstanceConfiguration {
-        return ConfigSection(LOCAL_NODE_PATH).readOrCreate(
+    /**
+     * Starts the node instance.
+     *
+     * This will:
+     * - Connect the gRPC endpoint
+     * - Perform cluster detection
+     * - Mark this node as online in the cluster
+     */
+    fun start() {
+        initializeNetwork()
+        initializeCluster()
+    }
+
+    /**
+     * Gracefully shuts down the node instance.
+     *
+     * Intended for:
+     * - JVM shutdown hooks
+     * - Kubernetes SIGTERM handling
+     * - Manual restarts
+     *
+     * Currently not implemented.
+     */
+    fun close() {
+        // TODO:
+        // 1. Mark node as offline in cluster
+        // 2. Shutdown cluster services
+        // 3. Shutdown gRPC endpoint
+    }
+
+    /**
+     * Establishes the gRPC connection.
+     */
+    private fun initializeNetwork() {
+        endpoint.connect()
+    }
+
+    /**
+     * Performs cluster discovery and marks the node as online.
+     */
+    private fun initializeCluster() {
+        cluster.detect()
+        cluster.markOnline()
+    }
+
+    /**
+     * Loads the node configuration from disk.
+     *
+     * If no configuration file exists, a default configuration
+     * will be created and persisted automatically.
+     */
+    private fun loadConfiguration(): NodeInstanceConfiguration {
+        return ConfigSection(launchConfig.localNodePath).readOrCreate(
             NodeInstanceConfiguration.serializer(),
-            NodeInstanceConfiguration()
+            NodeInstanceConfiguration(database = DatabaseCredentials.H2(launchConfig.localDataPath.toString() + "/polocloud.h2.db"))
         )
     }
 }

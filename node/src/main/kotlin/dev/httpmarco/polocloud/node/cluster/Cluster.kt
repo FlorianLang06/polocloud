@@ -4,16 +4,16 @@ import dev.httpmarco.polocloud.common.utils.publicIpAddress
 import dev.httpmarco.polocloud.common.utils.toBytes
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.NodeInstance
+import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
 import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
 import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import dev.httpmarco.polocloud.node.cluster.security.toBase64
+import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
 
 /**
  * Central cluster lifecycle manager.
@@ -31,12 +31,12 @@ import java.util.UUID
  *
  * Critical startup failures result in an IllegalStateException.
  */
-object Cluster {
+class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig) {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
     private val clusterDatabaseKey = DatabaseKey(NodeData::class)
-    private val database = NodeInstance.config.database.factory()
-    private val security = ClusterSecurity()
+    private val database = config.database.factory()
+    private val security = ClusterSecurity(launchConfig.localSecurityPath)
     private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
 
     init {
@@ -221,5 +221,10 @@ object Cluster {
         // z.B. Node überprüft PublicKey und signiert den Join-Request
         val approvalSignature = security.sign(newNode.id.toBytes()) // signed NodeID with Key
         return approvalSignature
+    }
+
+    fun state(): NodeState {
+        return (database.executor().findById(clusterDatabaseKey, security.localId)
+            ?: throw LocalNodeFindingException()).state
     }
 }
