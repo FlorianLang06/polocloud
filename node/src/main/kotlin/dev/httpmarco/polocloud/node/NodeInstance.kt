@@ -82,8 +82,8 @@ class NodeInstance(
      * Currently not implemented.
      */
     fun close() {
+        cluster.markStopping()
         // TODO:
-        // 1. Mark node as offline in cluster
         // 2. Shutdown cluster services
         // 3. Shutdown gRPC endpoint
     }

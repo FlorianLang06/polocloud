@@ -159,30 +159,45 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
         )
     }
 
-    fun markOnline() {
-        val localNode =
-            database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
+    fun markStopping() {
+        this.changeState(NodeState.STOPPING, {
+            return@changeState it.state == NodeState.ONLINE || it.state == NodeState.CRASHED
+        })
+    }
 
-        if (localNode.state == NodeState.CRASHED || localNode.state == NodeState.OFFLINE || localNode.state == NodeState.STOPPING) {
+    fun markOnline() {
+        this.changeState(NodeState.ONLINE) {
+            return@changeState it.state == NodeState.CRASHED || it.state == NodeState.OFFLINE || it.state == NodeState.STOPPING
+        }
+    }
+
+    private fun changeState(state: NodeState, predicate: (NodeData) -> Boolean) {
+        val localNode = findSelf()
+
+        if (!predicate.invoke(localNode)) {
             logger.warn(
                 TranslationService.tr(
                     "cluster",
-                    "cluster.node.mark.online.failed",
+                    "cluster.node.mark.${state.name.lowercase()}.failed",
                     "currentState" to localNode.state.name
                 )
             )
-            return
         }
-        localNode.state = NodeState.ONLINE
+
+        localNode.state = state
         database.executor().save(clusterDatabaseKey, localNode)
         // todo alert to other nodes that this node is now online
 
         logger.info(
             TranslationService.tr(
                 "cluster",
-                "cluster.node.mark.online.success"
+                "cluster.node.mark.${state.name.lowercase()}.success"
             )
         )
+    }
+
+    fun findSelf(): NodeData {
+        return database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
     }
 
     private fun registerNewNodeWithQuorum(nodes: List<NodeData>, ip: String) {
