@@ -52,13 +52,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")     // Test API
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.3")      // Engine zum Ausführen
     testImplementation("org.junit.jupiter:junit-jupiter-params:6.0.3")  // Optional: für @ParameterizedTest
-    testImplementation("org.testcontainers:testcontainers:2.0.3")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.3")
-    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.3")
-    testImplementation("org.testcontainers:testcontainers-mongodb:2.0.3")
-    testImplementation("org.testcontainers:testcontainers-mysql:2.0.3")
-    testImplementation("org.testcontainers:testcontainers-mariadb:2.0.3")
-    testImplementation("org.testcontainers:testcontainers-cassandra:2.0.3")
+
+    testImplementation(libs.bundles.testcontainers)
 
     testImplementation("org.mongodb:mongodb-driver-sync:5.6.3")
     testImplementation("com.mysql:mysql-connector-j:9.6.0")

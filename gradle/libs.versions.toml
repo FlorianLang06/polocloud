@@ -28,6 +28,8 @@ postgreSql = "42.7.10"
 # configuration
 gson = "2.13.2"
 
+# testing
+testcontainers = "2.0.3"
 
 [libraries]
 
@@ -63,6 +65,14 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 
+# testing
+testcontainers = { group = "org.testcontainers", name = "testcontainers", version.ref = "testcontainers" }
+testcontainers-junit = { group = "org.testcontainers", name = "testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgresql = { group = "org.testcontainers", name = "testcontainers-postgresql", version.ref = "testcontainers" }
+testcontainers-mariadb = { group = "org.testcontainers", name = "testcontainers-mariadb", version.ref = "testcontainers" }
+testcontainers-mongodb = { group = "org.testcontainers", name = "testcontainers-mongodb", version.ref = "testcontainers" }
+testcontainers-mysql = { group = "org.testcontainers", name = "testcontainers-mysql", version.ref = "testcontainers" }
+testcontainers-cassandra = { group = "org.testcontainers", name = "testcontainers-cassandra", version.ref = "testcontainers" }
 
 [plugins]
 
@@ -79,3 +89,4 @@ logging = ["log4j-api", "log4j-core", "log4j-slf4j"]
 cli = ["jline", "jansi"]
 database = ["hikariCp", "postgreSql"]
 kotlin = ["kotlinx-serialization-json", "kotlinx-coroutines-core"]
+testcontainers = ["testcontainers", "testcontainers-junit", "testcontainers-postgresql", "testcontainers-mariadb", "testcontainers-mongodb", "testcontainers-mysql", "testcontainers-cassandra"]
