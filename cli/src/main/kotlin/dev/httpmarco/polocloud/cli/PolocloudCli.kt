@@ -11,13 +11,13 @@ import org.apache.logging.log4j.core.LoggerContext
 var logger = initLogging()
 
 object PolocloudCli {
-    val terminal: JLine3Terminal = JLine3Terminal()
 
-    init {
-        this.terminal.jLine3Reading.start()
-
+    fun start() {
+        val terminal: JLine3Terminal = JLine3Terminal()
+        terminal.jLine3Reading.start()
 
     }
+
 }
 
 fun initLogging(debugMode: Boolean = false): Logger {

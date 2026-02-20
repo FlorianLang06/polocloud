@@ -21,7 +21,7 @@ class LoggingCli(
         val formatted = layout.toSerializable(event).toString()
 
         if (!shutdownProcess()) {
-            PolocloudCli.terminal.displayApproved(formatted)
+          //  PolocloudCli.terminal.displayApproved(formatted)
         } else {
             print(formatted)
         }

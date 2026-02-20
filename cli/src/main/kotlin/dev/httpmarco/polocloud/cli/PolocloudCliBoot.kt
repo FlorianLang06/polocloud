@@ -28,5 +28,6 @@ fun main() {
         throwable.printStackTrace()
     }
 
-    PolocloudCli
+    PolocloudCli.start()
+    Thread.currentThread().join()
 }
