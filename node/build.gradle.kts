@@ -1,44 +1,52 @@
 plugins {
-    kotlin("jvm") version "2.3.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     id("dev.httpmarco.polocloud")
-    kotlin("plugin.serialization") version "1.9.10"
 }
 
 polocloud {
     mainClass = "dev.httpmarco.polocloud.node.PolocloudNodeLauncher"
-
-
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
-    maven {
+    maven("https://central.sonatype.com/repository/maven-snapshots/") {
         name = "polocloud-snapshots"
-        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
     }
 }
 
 dependencies {
-    compileOnly(projects.common)
-    compileOnly(libs.bundles.grpc)
-    compileOnly(libs.bundles.logging)
-    compileOnly(libs.postgreSql)
-    compileOnly(libs.hikariCp)
-    compileOnly(libs.polocloud.i18n)
-    compileOnly(projects.database)
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    compileOnly("com.github.oshi:oshi-core:6.9.3")
 
-    runtimeOnly(libs.bundles.grpc)
+    // internal modules
+    compileOnly(projects.common)
+    compileOnly(projects.database)
+
     runtimeOnly(projects.common)
-    runtimeOnly(libs.bundles.logging)
-    runtimeOnly(libs.hikariCp)
-    runtimeOnly(libs.postgreSql)
-    runtimeOnly(libs.polocloud.i18n)
     runtimeOnly(projects.database)
-    runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-    runtimeOnly("com.github.oshi:oshi-core:6.9.3")
+
+    // grpc
+    compileOnly(libs.bundles.grpc)
+    runtimeOnly(libs.bundles.grpc)
+    runtimeOnly(libs.bundles.grpc.runtime)
+
+    // logging
+    compileOnly(libs.bundles.logging)
+    runtimeOnly(libs.bundles.logging)
+
+    // database
+    compileOnly(libs.bundles.database)
+    runtimeOnly(libs.bundles.database)
+
+    // kotlin
+    compileOnly(libs.bundles.kotlin)
+    runtimeOnly(libs.bundles.kotlin)
+
+    // polocloud
+    compileOnly(libs.polocloud.i18n)
+    runtimeOnly(libs.polocloud.i18n)
+
+    // cli / system
+    compileOnly(libs.oshi)
+    runtimeOnly(libs.oshi)
 }

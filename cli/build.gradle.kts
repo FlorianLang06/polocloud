@@ -11,7 +11,7 @@ polocloud {
 
 dependencies {
     polocloudRuntime(libs.jline)
-    polocloudRuntime(libs.slf4j)
+    polocloudRuntime(libs.slf4j.api)
     polocloudRuntime(libs.log4j.api)
     polocloudRuntime(libs.log4j.core)
     polocloudRuntime(libs.log4j.slf4j)
