@@ -33,7 +33,7 @@ dependencies {
     runtimeOnly(libs.polocloud.i18n)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
-    runtimeOnly("org.mongodb:mongodb-driver-sync:4.11.0")
+    runtimeOnly("org.mongodb:mongodb-driver-sync:5.6.3")
     runtimeOnly("com.mysql:mysql-connector-j:9.6.0")
     runtimeOnly("redis.clients:jedis:7.2.1")
     runtimeOnly("org.mariadb.jdbc:mariadb-java-client:3.2.0")
@@ -60,7 +60,7 @@ dependencies {
     testImplementation("org.testcontainers:mariadb:1.21.4")
     testImplementation("org.testcontainers:cassandra:1.21.4")
 
-    testImplementation("org.mongodb:mongodb-driver-sync:4.11.0")
+    testImplementation("org.mongodb:mongodb-driver-sync:5.6.3")
     testImplementation("com.mysql:mysql-connector-j:9.6.0")
     testImplementation("redis.clients:jedis:7.2.1")
     testImplementation("org.mariadb.jdbc:mariadb-java-client:3.2.0")
