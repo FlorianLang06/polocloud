@@ -1,5 +1,7 @@
 package dev.httpmarco.polocloud.cli
 
+import dev.httpmarco.polocloud.cli.config.InstallerConfig
+import dev.httpmarco.polocloud.cli.config.InstallerConfigLoader
 import dev.httpmarco.polocloud.cli.logging.CliLogger
 import dev.httpmarco.polocloud.cli.terminal.CliTerminal
 import dev.httpmarco.polocloud.i18n.api.TranslationService
@@ -17,6 +19,7 @@ var logger = CliLogger.initLogging()
  */
 object PolocloudCli {
     val terminal: CliTerminal = CliTerminal()
+    val installerConfig: InstallerConfig = InstallerConfigLoader.load() // TODO rewrite into own config
 
     init {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -33,7 +36,7 @@ object PolocloudCli {
         this.terminal.clearScreen()
 
         TranslationService.init()
-        TranslationService.defaultLanguage("en_US") // TODO get local from installer config
+        TranslationService.defaultLanguage(installerConfig.language)
         TranslationService.preloadAsync("cli")
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to "")) //TODO show version
 

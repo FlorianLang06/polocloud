@@ -1,7 +1,8 @@
 import dev.httpmarco.polocloud.dependency.plugin.polocloudRuntime
 
 plugins {
-    kotlin("jvm") version "2.3.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     id("dev.httpmarco.polocloud")
 }
 
@@ -17,6 +18,7 @@ dependencies {
     polocloudRuntime(libs.log4j.slf4j)
 
     polocloudRuntime(libs.polocloud.i18n)
+    polocloudRuntime(libs.kotlinx.serialization.json)
 
     compileOnly(projects.common)
 }
