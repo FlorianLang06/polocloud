@@ -23,13 +23,13 @@ fun exitPolocloud(cleanShutdown: Boolean = true) {
     logger.info(TranslationService.tr("cli", "cli.shutdown.initiating"))
 
     //TODO some shutdown logic between the two translations
+    PolocloudCli.stop()
 
     val key = if (cleanShutdown) {
         "cli.shutdown.clean"
     } else {
         "cli.shutdown.forced"
     }
-
 
     logger.info(TranslationService.tr("cli", key))
     AnsiConsole.systemUninstall()
