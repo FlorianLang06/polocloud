@@ -15,16 +15,27 @@ class ConfigSection(private val path: Path) {
         ignoreUnknownKeys = true
         classDiscriminator = "type" // für polymorphe sealed classes
     }
+
     fun <T> readOrCreate(serializer: KSerializer<T>, default: T): T {
         return if (path.exists()) {
             val content = Files.readString(path)
             json.decodeFromString(serializer, content)
         } else {
-            path.parent.createDirectories()
-            path.toFile().createNewFile()
+            path.parent?.createDirectories()
+
             val content = json.encodeToString(serializer, default)
             Files.writeString(path, content)
+
             default
+        }
+    }
+
+    fun <T> read(serializer: KSerializer<T>): T? {
+        return if (path.exists()) {
+            val content = Files.readString(path)
+            json.decodeFromString(serializer, content)
+        } else {
+            null
         }
     }
 

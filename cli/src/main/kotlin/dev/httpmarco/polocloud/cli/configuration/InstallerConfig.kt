@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.cli.config
+package dev.httpmarco.polocloud.cli.configuration
 
 import kotlinx.serialization.Serializable
 

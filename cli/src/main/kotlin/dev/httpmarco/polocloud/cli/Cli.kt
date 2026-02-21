@@ -1,10 +1,13 @@
 package dev.httpmarco.polocloud.cli
 
-import dev.httpmarco.polocloud.cli.config.InstallerConfig
-import dev.httpmarco.polocloud.cli.config.InstallerConfigLoader
+import dev.httpmarco.polocloud.cli.configuration.CliConfiguration
+import dev.httpmarco.polocloud.cli.configuration.InstallerConfig
 import dev.httpmarco.polocloud.cli.logging.CliLogger
 import dev.httpmarco.polocloud.cli.terminal.CliTerminal
+import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.i18n.api.TranslationService
+import dev.httpmarco.polocloud.i18n.model.Language
+import java.io.File
 
 /**
  * Application-wide logger instance, initialized once at startup.
@@ -18,8 +21,8 @@ var logger = CliLogger.initLogging()
  * starting the command reading loop, and handling graceful shutdown.
  */
 object PolocloudCli {
+    val config: CliConfiguration = loadConfiguration()
     val terminal: CliTerminal = CliTerminal()
-    val installerConfig: InstallerConfig = InstallerConfigLoader.load() // TODO rewrite into own config
 
     init {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -36,7 +39,7 @@ object PolocloudCli {
         this.terminal.clearScreen()
 
         TranslationService.init()
-        TranslationService.defaultLanguage(installerConfig.language)
+        TranslationService.defaultLanguage(config.locale)
         TranslationService.preloadAsync("cli")
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to "")) //TODO show version
 
@@ -50,5 +53,53 @@ object PolocloudCli {
     fun stop() {
         this.terminal.shutdown()
     }
+
+    /**
+     * Resolves the CLI runtime configuration.
+     *
+     * The configuration is loaded from the primary CLI configuration source
+     * (e.g. {@code polocloud-cli.json}). If no configuration exists yet,
+     * a new one will be created automatically using an initial bootstrap configuration.
+     *
+     * The bootstrap configuration may derive values from the installer configuration
+     * (if available). This allows transferring selected setup parameters
+     * such as the language into the runtime configuration during first startup.
+     *
+     * Once the CLI configuration has been created, it becomes the single
+     * source of truth and the installer configuration is no longer consulted.
+     *
+     * @return the resolved {@link CliConfiguration}, never {@code null}
+     */
+    private fun loadConfiguration(): CliConfiguration {
+        val path = File("polocloud-cli.json").toPath()
+        val section = ConfigSection(path)
+
+        return section.readOrCreate(
+            CliConfiguration.serializer(),
+            resolveInitialConfiguration()
+        )
+    }
+
+    /**
+     * Determines the initial CLI configuration used during first-time startup.
+     *
+     * If an installer configuration is present, relevant values (e.g. language)
+     * are transferred into the initial CLI configuration.
+     *
+     * If no installer configuration is available, a default configuration is returned.
+     *
+     * This method is only relevant when no persistent CLI configuration exists yet.
+     */
+    private fun resolveInitialConfiguration(): CliConfiguration {
+        val installerPath = File(".installer/config.json").toPath()
+
+        val installer = ConfigSection(installerPath)
+            .read(InstallerConfig.serializer())
+
+        return installer?.let {
+            CliConfiguration(locale = Language.of(it.language))
+        } ?: CliConfiguration()
+    }
+
 
 }
