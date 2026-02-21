@@ -4,6 +4,7 @@ import dev.httpmarco.polocloud.common.Closeable
 import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.utils.publicIpAddress
 import dev.httpmarco.polocloud.common.utils.toBytes
+import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
@@ -35,11 +36,11 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig) : Closeable {
+class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunchConfig) : Closeable {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
     private val clusterDatabaseKey = DatabaseKey(NodeData::class)
-    private val database = config.database.factory()
+    private val database = resolveDatabaseCredentials().factory()
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
     private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
 
@@ -263,7 +264,14 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun state() : NodeState {
+    fun state(): NodeState {
         return localNodeState.load()
+    }
+
+    fun resolveDatabaseCredentials(): DatabaseCredentials {
+        if (launchConfig.database != null) {
+            return launchConfig.database
+        }
+        return config.database
     }
 }

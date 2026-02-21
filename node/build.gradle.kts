@@ -26,6 +26,7 @@ dependencies {
     runtimeOnly(projects.database)
 
     testImplementation(projects.common)
+    testImplementation(projects.database)
 
     // grpc
     compileOnly(libs.bundles.grpc)
@@ -52,6 +53,7 @@ dependencies {
     compileOnly(libs.oshi)
     runtimeOnly(libs.oshi)
 
+    testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.junit)
     testImplementation(kotlin("test"))
     testImplementation("org.awaitility:awaitility:4.2.0")

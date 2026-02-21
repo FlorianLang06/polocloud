@@ -33,7 +33,7 @@ class SqlConnectionFactory(credentials: DatabaseCredentials) :
      */
     override fun connect(credentials: DatabaseCredentials) {
         val jdbcUrl = when (credentials) {
-            is DatabaseCredentials.DatabaseRelated -> "jdbc:mariadb://${credentials.address.asString()}/${credentials.database}"
+            is DatabaseCredentials.DatabaseRelated -> "jdbc:${credentials.javaClass.simpleName.lowercase()}://${credentials.address.asString()}/${credentials.database}"
             is DatabaseCredentials.H2 -> "jdbc:h2:file:./${credentials.path}"
             else -> {
                 logger.error(

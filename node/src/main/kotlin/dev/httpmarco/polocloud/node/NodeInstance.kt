@@ -32,7 +32,7 @@ class NodeInstance(
      * Bootstrap information created during application startup.
      * Contains resolved filesystem paths and runtime launch parameters.
      */
-    private val launchConfig: NodeLaunchConfig
+    val launchConfig: NodeLaunchConfig
 ) : Closeable {
 
     /**
@@ -169,11 +169,8 @@ class NodeInstance(
         val launchAddress = launchConfig.address
         val defaultAddress = config.bindAddress
 
-        val hostname = launchAddress.hostname.takeIf { it.isNotBlank() }
-            ?: defaultAddress.hostname
-
-        val port = launchAddress.port.takeIf { it > 0 }
-            ?: defaultAddress.port
+        val hostname = launchAddress?.hostname.takeIf { it!!.isNotBlank() } ?: defaultAddress.hostname
+        val port = launchAddress?.port.takeIf { it!! > 0 } ?: defaultAddress.port
 
         require(port in 1..65535) { "Port must be between 1 and 65535 but was $port" }
 

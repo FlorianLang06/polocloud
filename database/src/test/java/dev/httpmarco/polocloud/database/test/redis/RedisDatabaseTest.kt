@@ -13,11 +13,7 @@ import org.testcontainers.junit.jupiter.Container
 class RedisDatabaseTest : GeneralDatabaseTest() {
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return RedisConnectionFactory()
-    }
-
-    override fun credentials(): DatabaseCredentials {
-        return DatabaseCredentials(Address(redis.host, redis.firstMappedPort), "test", null)
+        return RedisConnectionFactory(DatabaseCredentials.Redis(Address(redis.host, redis.firstMappedPort), "test", null))
     }
 
     companion object {
