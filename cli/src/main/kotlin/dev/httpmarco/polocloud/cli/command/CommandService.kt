@@ -3,34 +3,70 @@ package dev.httpmarco.polocloud.cli.command
 import dev.httpmarco.polocloud.cli.command.impl.ShutdownCommand
 import java.util.Arrays
 
+/**
+ * Central registry and dispatcher for all CLI commands.
+ *
+ * Commands are registered on startup and looked up by name or alias on each input.
+ * Parsing and execution is delegated to [CommandParser].
+ *
+ * Built-in commands are registered automatically in [init].
+ */
 class CommandService {
-    val commands = ArrayList<Command>()
-    val parser = CommandParser(this)
+
+    private val registeredCommands = mutableListOf<Command>()
+    private val parser = CommandParser(this)
 
     init {
-        this.registerCommand(ShutdownCommand())
+        registerCommand(ShutdownCommand())
     }
 
-    fun commandsByName(name: String): MutableList<Command> {
-        return commands.stream().filter {
-            it!!.name.equals(name, ignoreCase = true) || Arrays.stream(it.aliases).anyMatch({ s -> s.equals(name, ignoreCase = true) })
-        }.toList()
-    }
-
-    fun registerCommand(command: Command) {
-        this.commands.add(command)
-    }
-
-    fun registerCommands(vararg commands: Command) {
-        for (command in commands) {
-            registerCommand(command)
+    /**
+     * Returns all commands that match the given [name] (case-insensitive),
+     * including commands registered under that name as an alias.
+     *
+     * @param name The command name or alias to look up.
+     * @return A list of matching commands (usually zero or one).
+     */
+    fun findByName(name: String): List<Command> {
+        return registeredCommands.filter { command ->
+            command.name.equals(name, ignoreCase = true) ||
+                    command.aliases.any { it.equals(name, ignoreCase = true) }
         }
     }
 
-    fun unregisterCommand(command: Command) {
-        this.commands.remove(command)
+    /**
+     * Registers a single [command] in the command registry.
+     *
+     * @param command The command to register.
+     */
+    fun registerCommand(command: Command) {
+        registeredCommands.add(command)
     }
 
+    /**
+     * Registers multiple [commands] at once.
+     *
+     * @param commands The commands to register.
+     */
+    fun registerCommands(vararg commands: Command) {
+        commands.forEach(::registerCommand)
+    }
+
+    /**
+     * Removes a [command] from the registry.
+     *
+     * @param command The command to unregister.
+     */
+    fun unregisterCommand(command: Command) {
+        registeredCommands.remove(command)
+    }
+
+    /**
+     * Parses and dispatches the command identified by [commandId] with the given [args].
+     *
+     * @param commandId The command name or alias entered by the user.
+     * @param args The arguments following the command name.
+     */
     fun call(commandId: String, args: Array<String>) {
         parser.parse(commandId, args)
     }

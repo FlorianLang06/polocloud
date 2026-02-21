@@ -6,7 +6,7 @@ plugins {
 }
 
 polocloud {
-    mainClass = "dev.httpmarco.polocloud.cli.PolocloudCliBootKt"
+    mainClass = "dev.httpmarco.polocloud.cli.CliBootKt"
 }
 
 dependencies {
