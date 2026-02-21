@@ -1,7 +1,7 @@
 package dev.httpmarco.polocloud.database.test
 
+import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
-import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.junit.jupiter.api.*
@@ -29,11 +29,11 @@ abstract class GeneralDatabaseTest {
     @BeforeEach
     fun setup() {
         factory = factory()
-        factory.globalConnect(credentials())
+        factory.connect()
 
         assertTrue(factory.isValid())
 
-        key = DatabaseKey("testdb", TestObject::class.java)
+        key = DatabaseKey(TestObject::class)
 
         // ensure clean state
         factory.executor().destroy(key)
@@ -42,7 +42,7 @@ abstract class GeneralDatabaseTest {
     @AfterEach
     fun cleanup() {
         factory.executor().destroy(key)
-        factory.close()
+        factory.close(ShutdownMode.GRACEFUL)
     }
 
     @Test

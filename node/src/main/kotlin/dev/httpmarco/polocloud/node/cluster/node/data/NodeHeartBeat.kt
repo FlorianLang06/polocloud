@@ -3,6 +3,7 @@ package dev.httpmarco.polocloud.node.cluster.node.data
 import dev.httpmarco.polocloud.database.EntryIdentifier
 import dev.httpmarco.polocloud.database.EntryRef
 import dev.httpmarco.polocloud.database.RepositoryName
+import java.util.UUID
 import kotlin.time.Instant
 
 /**
@@ -19,7 +20,7 @@ import kotlin.time.Instant
 @RepositoryName("nodes_heartbeats")
 data class NodeHeartBeat(
     @EntryIdentifier val id: String,
-    @EntryRef(clazz = NodeData::class) val nodeId: String,
+    @EntryRef(clazz = NodeData::class) val nodeId: UUID,
     val heartBeatAt: Instant,
     val cpuUsage: Double,
     val memoryUsage: Double,

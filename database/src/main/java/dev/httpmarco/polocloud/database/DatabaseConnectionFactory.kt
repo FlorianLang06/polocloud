@@ -1,8 +1,11 @@
 package dev.httpmarco.polocloud.database
 
 import dev.httpmarco.polocloud.common.Closeable
+import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactory
 import dev.httpmarco.polocloud.database.sql.SqlExecutor
 import dev.httpmarco.polocloud.i18n.api.TranslationService
+import org.apache.logging.log4j.LogManager
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
@@ -20,12 +23,12 @@ abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val cr
     /**
      * Logger used for database connection lifecycle messages.
      */
-    private val logger = LoggerFactory.getLogger(DatabaseConnectionFactory::class.java)
+    protected val logger: Logger = LoggerFactory.getLogger(DatabaseConnectionFactory::class.java)
 
     /**
      * Current state of the database connection.
      *
-     * Initially set to [dev.httpmarco.polocloud.database.DatabaseState.UNKNOWN] and should be updated
+     * Initially set to [DatabaseState.UNKNOWN] and should be updated
      * by concrete implementations when connecting or closing the connection.
      */
     var state = DatabaseState.UNKNOWN
@@ -40,14 +43,14 @@ abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val cr
     /**
      * Returns an SQL executor used to execute queries and updates.
      *
-     * @return a database-specific [dev.httpmarco.polocloud.database.sql.SqlExecutor] implementation
+     * @return a database-specific [SqlExecutor] implementation
      */
     abstract fun executor(): DatabaseExecutor
 
     /**
      * Checks whether the database connection is currently valid.
      *
-     * @return true if the connection state is [dev.httpmarco.polocloud.database.DatabaseState.CONNECTED], otherwise false
+     * @return true if the connection state is [DatabaseState.CONNECTED], otherwise false
      *
      * If the database is not connected, a log message is emitted to prevent
      * invalid database operations.

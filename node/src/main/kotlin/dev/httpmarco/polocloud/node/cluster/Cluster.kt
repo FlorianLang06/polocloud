@@ -1,7 +1,10 @@
 package dev.httpmarco.polocloud.node.cluster
 
+import dev.httpmarco.polocloud.common.Closeable
+import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.utils.publicIpAddress
 import dev.httpmarco.polocloud.common.utils.toBytes
+import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
@@ -14,6 +17,8 @@ import dev.httpmarco.polocloud.node.cluster.security.toBase64
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * Central cluster lifecycle manager.
@@ -31,13 +36,17 @@ import org.slf4j.LoggerFactory
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig) {
+class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunchConfig) : Closeable {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
     private val clusterDatabaseKey = DatabaseKey(NodeData::class)
-    private val database = config.database.factory()
+    private val database = resolveDatabaseCredentials().factory()
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
-    private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
+    private val heartBeatService = NodeHeartBeatService(security.localId, factory = database)
+
+    // the local node state - this is the source of truth for the node's current state and is updated during lifecycle transitions
+    @OptIn(ExperimentalAtomicApi::class)
+    var localNodeState = AtomicReference(NodeState.OFFLINE)
 
     init {
         initializeDatabase()
@@ -167,10 +176,17 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
 
     fun markOnline() {
         this.changeState(NodeState.ONLINE) {
-            return@changeState it.state == NodeState.CRASHED || it.state == NodeState.OFFLINE || it.state == NodeState.STOPPING
+            return@changeState it.state == NodeState.STARTING || it.state == NodeState.SYNCING
         }
     }
 
+    fun markStopped() {
+        this.changeState(NodeState.STOPPED) {
+            return@changeState it.state == NodeState.STOPPING || it.state == NodeState.CRASHED
+        }
+    }
+
+    @OptIn(ExperimentalAtomicApi::class)
     private fun changeState(state: NodeState, predicate: (NodeData) -> Boolean) {
         val localNode = findSelf()
 
@@ -178,12 +194,15 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
             logger.warn(
                 TranslationService.tr(
                     "cluster",
-                    "cluster.node.mark.${state.name.lowercase()}.failed",
-                    "currentState" to localNode.state.name
+                    "cluster.node.mark.failed",
+                    "currentState" to localNode.state.name,
+                    "state" to state.name
+
                 )
             )
         }
 
+        localNodeState.store(state)
         localNode.state = state
         database.executor().save(clusterDatabaseKey, localNode)
         // todo alert to other nodes that this node is now online
@@ -191,7 +210,8 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
         logger.info(
             TranslationService.tr(
                 "cluster",
-                "cluster.node.mark.${state.name.lowercase()}.success"
+                "cluster.node.mark.success",
+                "state" to state.name
             )
         )
     }
@@ -238,8 +258,20 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
         return approvalSignature
     }
 
+    override fun close(mode: ShutdownMode) {
+        this.heartBeatService.stopScheduler()
+        this.database.close(mode)
+    }
+
+    @OptIn(ExperimentalAtomicApi::class)
     fun state(): NodeState {
-        return (database.executor().findById(clusterDatabaseKey, security.localId)
-            ?: throw LocalNodeFindingException()).state
+        return localNodeState.load()
+    }
+
+    fun resolveDatabaseCredentials(): DatabaseCredentials {
+        if (launchConfig.database != null) {
+            return launchConfig.database
+        }
+        return config.database
     }
 }

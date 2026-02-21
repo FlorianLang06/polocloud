@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property factory The database connection used for saving heartbeats.
  */
 class NodeHeartBeatService(
-    val localId: String,
+    val localId: UUID,
     val factory: DatabaseConnectionFactory<*>
 ) {
 

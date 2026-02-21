@@ -21,7 +21,7 @@ data class Address(
 ) {
 
     init {
-        require(port in 1..65535) { "Port must be between 1 and 65535, but was $port" }
+        require(port in 1..65535 ) { "Port must be between 1 and 65535, but was $port" }
         require(hostname.isNotBlank()) { "Hostname cannot be blank" }
     }
 

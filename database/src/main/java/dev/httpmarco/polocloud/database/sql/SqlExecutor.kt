@@ -1,6 +1,7 @@
 package dev.httpmarco.polocloud.database.sql
 
 import dev.httpmarco.polocloud.database.*
+import dev.httpmarco.polocloud.database.exeption.FactoryNotPresentException
 import dev.httpmarco.polocloud.database.filtering.And
 import dev.httpmarco.polocloud.database.filtering.Filter
 import org.apache.logging.log4j.LogManager
@@ -51,7 +52,9 @@ class SqlExecutor(
      * @throws IllegalStateException if no [EntryIdentifier] field exists
      */
     override fun <T : Any> save(key: DatabaseKey<T>, value: T) {
-        if (!factory.isValid()) return
+        if (!factory.isValid()) {
+            throw FactoryNotPresentException()
+        }
 
         ensureTableExists(key)
         val meta = resolveMeta(key)
@@ -127,7 +130,9 @@ class SqlExecutor(
         vararg filters: Filter
     ): List<T> {
 
-        if (!factory.isValid()) return emptyList()
+        if (!factory.isValid()) {
+            throw FactoryNotPresentException()
+        }
 
         ensureTableExists(key)
         val meta = resolveMeta(key)
@@ -216,7 +221,9 @@ class SqlExecutor(
      * @return affected row count or -1 if invalid
      */
     fun update(sql: String, vararg params: Any?): Int {
-        if (!factory.isValid()) return -1
+        if (!factory.isValid()) {
+            throw FactoryNotPresentException()
+        }
 
         val ds = factory.dataSource
             ?: throw IllegalStateException("DataSource not initialized")
@@ -260,7 +267,9 @@ class SqlExecutor(
         mapper: SqlMapper<T>
     ): List<T> {
 
-        if (!factory.isValid()) return emptyList()
+        if (!factory.isValid()) {
+            throw FactoryNotPresentException()
+        }
 
         val ds = factory.dataSource
             ?: throw IllegalStateException("DataSource not initialized")
@@ -294,6 +303,11 @@ class SqlExecutor(
      * If not, it will be created dynamically.
      */
     private fun <T : Any> ensureTableExists(key: DatabaseKey<T>) {
+
+        if(!factory.isValid()) {
+            throw FactoryNotPresentException()
+        }
+
         val ds = factory.dataSource
             ?: throw IllegalStateException("DataSource not initialized")
 
@@ -332,7 +346,6 @@ class SqlExecutor(
         return when (value) {
             is KotlinInstant -> Timestamp.from(JavaInstant.ofEpochMilli(value.toEpochMilliseconds()))
             is Enum<*> -> value.name
-            is UUID -> value.toString()
             else -> value
         }
     }
@@ -344,9 +357,6 @@ class SqlExecutor(
             when {
                 field.type.isEnum && value is String ->
                     java.lang.Enum.valueOf(field.type as Class<out Enum<*>>, value)
-
-                field.type == UUID::class.java && value is String ->
-                    UUID.fromString(value)
 
                 field.type.kotlin == KotlinInstant::class -> when (value) {
                     is Timestamp -> KotlinInstant.fromEpochMilliseconds(value.time)
@@ -370,10 +380,10 @@ class SqlExecutor(
             clazz.kotlin == Long::class -> "BIGINT"
             clazz.kotlin == String::class -> "VARCHAR(512)"
             clazz.kotlin == Boolean::class -> "BOOLEAN"
-            clazz.kotlin == Double::class -> "DOUBLE"
+            clazz.kotlin == Double::class -> "DOUBLE PRECISION"
             clazz.kotlin == Float::class -> "FLOAT"
             clazz.kotlin == KotlinInstant::class -> "TIMESTAMP"
-            clazz == UUID::class.java -> "VARCHAR(36)"
+            clazz == UUID::class.java -> "UUID"
             else -> "TEXT"
         }
 

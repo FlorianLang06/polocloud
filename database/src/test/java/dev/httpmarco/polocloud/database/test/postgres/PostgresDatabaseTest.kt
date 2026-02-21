@@ -6,8 +6,8 @@ import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.database.sql.SqlConnectionFactory
 import dev.httpmarco.polocloud.database.test.GeneralDatabaseTest
 import org.junit.jupiter.api.DisplayName
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.postgresql.PostgreSQLContainer
 
 @DisplayName("PostgreSQL")
 internal class PostgresDatabaseTest  : GeneralDatabaseTest() {
@@ -15,7 +15,7 @@ internal class PostgresDatabaseTest  : GeneralDatabaseTest() {
     companion object {
         @Container
         @JvmStatic
-        val postgres = PostgreSQLContainer<Nothing>("postgres:16-alpine").apply {
+        val postgres = PostgreSQLContainer("postgres:16-alpine").apply {
             withDatabaseName("testdb")
             withUsername("test")
             withPassword("test")
@@ -23,10 +23,6 @@ internal class PostgresDatabaseTest  : GeneralDatabaseTest() {
     }
 
     override fun factory(): DatabaseConnectionFactory<*> {
-        return SqlConnectionFactory()
-    }
-
-    override fun credentials(): DatabaseCredentials {
-        return SqlDatabaseCredentials("postgresql", Address(postgres.host, postgres.firstMappedPort), "test", "test", "testdb")
+        return SqlConnectionFactory(DatabaseCredentials.PostgreSQL(Address(postgres.host, postgres.firstMappedPort), "test", "test", "testdb"))
     }
 }

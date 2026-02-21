@@ -7,6 +7,7 @@ enum class NodeState {
     SYNCING,
     ONLINE,
     STOPPING,
+    STOPPED,
     CRASHED
 
 }
