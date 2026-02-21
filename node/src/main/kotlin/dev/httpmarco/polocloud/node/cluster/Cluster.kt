@@ -41,6 +41,9 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
     private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
 
+    // the local node state - this is the source of truth for the node's current state and is updated during lifecycle transitions
+    var localNodeState = NodeState.OFFLINE
+
     init {
         initializeDatabase()
         logIdentity()
@@ -194,6 +197,7 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
             )
         }
 
+        localNodeState = state
         localNode.state = state
         database.executor().save(clusterDatabaseKey, localNode)
         // todo alert to other nodes that this node is now online
@@ -249,11 +253,8 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
         return approvalSignature
     }
 
-    fun state(): NodeState {
-        return (database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()).state
-    }
-
     override fun close(mode: ShutdownMode) {
+        this.heartBeatService.stopScheduler()
         this.database.close(mode)
     }
 }

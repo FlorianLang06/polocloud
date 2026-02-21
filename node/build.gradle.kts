@@ -54,6 +54,7 @@ dependencies {
 
     testImplementation(libs.bundles.junit)
     testImplementation(kotlin("test"))
+    testImplementation("org.awaitility:awaitility:4.2.0")
 }
 
 tasks.test {

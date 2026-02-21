@@ -4,14 +4,16 @@ import dev.httpmarco.polocloud.common.ShutdownMode
 
 class NodeShutdownHandler(val instance: NodeInstance) {
 
-    companion object {
-        var shutdownProcess = false;
+    var running = false
+
+    init {
+        this.registerShutdownHook()
     }
 
     fun registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(Thread {
-            if (shutdownProcess) return@Thread
-            shutdownProcess = true
+            if (running) return@Thread
+            running = true
             instance.close(ShutdownMode.FORCE)
         })
     }

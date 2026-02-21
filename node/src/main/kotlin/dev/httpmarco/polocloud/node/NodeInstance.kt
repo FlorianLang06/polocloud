@@ -50,16 +50,19 @@ class NodeInstance(
      */
     val cluster: Cluster
 
-    init {
-        NodeShutdownHandler(this).registerShutdownHook()
+    /**
+     * Shutdown handler responsible for graceful shutdown logic and JVM shutdown hook registration.
+     */
+    val shutdownHandler = NodeShutdownHandler(this)
 
+    init {
         TranslationService.init()
 
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
 
         // Prepare networking endpoint based on configuration
-        endpoint = GrpcEndpoint(detectAddress())
+        endpoint = GrpcEndpoint(resolveBindAddress())
 
         // Initialize cluster component
         cluster = Cluster(config, launchConfig)
@@ -73,11 +76,21 @@ class NodeInstance(
      * - Perform cluster detection
      * - Mark this node as online in the cluster
      */
+    @Synchronized
     fun start() {
-        initializeNetwork()
-        initializeCluster()
+        if (cluster.localNodeState != NodeState.OFFLINE) {
+            // Node is already started or in the process of starting, ignore subsequent start calls
+            throw IllegalStateException("Node is already starting or started. Current state: ${cluster.localNodeState}")
+        }
 
-        Thread.currentThread().join()
+        try {
+            initializeNetwork()
+            initializeCluster()
+        } catch (ex: Exception) {
+            // If any initialization step fails, ensure we attempt to clean up resources before rethrowing the exception
+            close(ShutdownMode.GRACEFUL)
+            throw ex
+        }
     }
 
     /**
@@ -90,19 +103,23 @@ class NodeInstance(
      *
      * Currently not implemented.
      */
-    override fun close(mode : ShutdownMode) {
-        if (cluster.state() == NodeState.STOPPING || cluster.state() == NodeState.STOPPED) {
+    @Synchronized
+    override fun close(mode: ShutdownMode) {
+        if (cluster.localNodeState == NodeState.OFFLINE) {
+            // Node was never started, nothing to do
+            return
+        }
+
+        if (cluster.localNodeState == NodeState.STOPPING || cluster.localNodeState == NodeState.STOPPED) {
             return
         }
 
         cluster.markStopping()
-        // TODO:
-        // 2. Shutdown cluster services
         endpoint.close(mode)
-
         cluster.markStopped()
+        cluster.close(mode)
 
-        if(!NodeShutdownHandler.shutdownProcess) {
+        if (!shutdownHandler.running) {
             exitProcess(0)
         }
     }
@@ -135,12 +152,26 @@ class NodeInstance(
         )
     }
 
-    private fun detectAddress(): Address {
+    /**
+     * Resolves the effective bind address of this node.
+     *
+     * <p>Resolution priority:</p>
+     * <ol>
+     *     <li>Address provided via {@link NodeLaunchConfig}</li>
+     *     <li>Bind address from persisted configuration</li>
+     * </ol>
+     *
+     * @return the resolved {@link Address} used for the gRPC endpoint
+     */
+    private fun resolveBindAddress(): Address {
         val launchAddress = launchConfig.address
         val defaultAddress = config.bindAddress
 
-        val hostname = launchAddress.hostname.takeIf { it.isNotEmpty() } ?: defaultAddress.hostname
-        val port = launchAddress.port.takeIf { it != 1 } ?: defaultAddress.port
+        val hostname = launchAddress.hostname.takeIf { it.isNotBlank() }
+            ?: defaultAddress.hostname
+
+        val port = launchAddress.port.takeIf { it > 0 }
+            ?: defaultAddress.port
 
         return Address(hostname, port)
     }
