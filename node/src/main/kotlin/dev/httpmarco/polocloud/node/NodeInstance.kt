@@ -59,7 +59,7 @@ class NodeInstance(
 
     init {
         TranslationService.init()
-        TranslationService.defaultLanguage(Locale.ENGLISH) //TODO read config value
+        TranslationService.defaultLanguage(Locale.US) //TODO read config value
         TranslationService.preloadAsync("node")
         TranslationService.preloadAsync("database")
 
