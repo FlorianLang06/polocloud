@@ -232,7 +232,7 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
         security.quorumSignatures.addAll(approvals)
         database.executor().save(clusterDatabaseKey, newNodeData)
 
-        logger.info("Node ${security.localId} joined cluster with quorum (${approvals.size}/${nodes.size})")
+        logger.info("Node ${security.localId} er with quorum (${approvals.size}/${nodes.size})")
     }
 
     private fun requestApprovalFromNode(existingNode: NodeData, newNode: NodeData): String? {

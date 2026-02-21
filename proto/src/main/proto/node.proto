@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_package = "dev.httpmarco.polocloud.proto";
+option java_outer_classname = "NodeProto";
+
+package node;
+
+service NodeService {
+  rpc RequestApproval (JoinRequest) returns (ApprovalResponse);
+}
+
+message JoinRequest {
+  string nodeId = 1;
+  string publicKey = 2;
+}
+
+message ApprovalResponse {
+  bool approved = 1;
+  string signature = 2;
+}
