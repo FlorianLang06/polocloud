@@ -16,8 +16,8 @@ repositories {
 
 dependencies {
     api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
-
-    api("io.grpc:grpc-kotlin-stub:$grpcKotlinVersion")
+    api("io.grpc:grpc-kotlin-stub:${grpcKotlinVersion}")
+    api("io.grpc:grpc-stub:${grpcVersion}")
     api("io.grpc:grpc-protobuf:$grpcVersion")
     api("io.grpc:grpc-netty-shaded:$grpcVersion")
 

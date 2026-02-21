@@ -2,6 +2,7 @@ syntax = "proto3";
 
 option java_package = "dev.httpmarco.polocloud.proto";
 option java_outer_classname = "NodeProto";
+option java_multiple_files = true;
 
 package node;
 

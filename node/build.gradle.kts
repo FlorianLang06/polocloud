@@ -21,12 +21,15 @@ dependencies {
     // internal modules
     compileOnly(projects.common)
     compileOnly(projects.database)
+    compileOnly(projects.proto)
 
     runtimeOnly(projects.common)
     runtimeOnly(projects.database)
+    runtimeOnly(projects.proto)
 
     testImplementation(projects.common)
     testImplementation(projects.database)
+    testImplementation(projects.proto)
 
     // grpc
     compileOnly(libs.bundles.grpc)

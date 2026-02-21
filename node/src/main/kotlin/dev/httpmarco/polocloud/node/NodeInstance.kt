@@ -11,6 +11,7 @@ import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.Cluster
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
+import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
 import kotlin.system.exitProcess
 
 /**
@@ -62,7 +63,7 @@ class NodeInstance(
         config = loadConfiguration()
 
         // Prepare networking endpoint based on configuration
-        endpoint = GrpcEndpoint(resolveBindAddress())
+        endpoint = GrpcEndpoint(resolveBindAddress(), NodeServiceImpl())
 
         // Initialize cluster component
         cluster = Cluster(config, launchConfig)

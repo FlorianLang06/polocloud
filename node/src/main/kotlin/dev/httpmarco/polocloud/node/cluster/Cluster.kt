@@ -235,8 +235,7 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
         logger.info("Node ${security.localId} er with quorum (${approvals.size}/${nodes.size})")
     }
 
-    private fun requestApprovalFromNode(existingNode: NodeData, newNode: NodeData): String? {
-        // TODO: echte gRPC Kommunikation einbauen
+    private fun requestApprovalFromNode(existingNode: NodeData, newNode: NodeData): String {
         // z.B. Node überprüft PublicKey und signiert den Join-Request
         val approvalSignature = security.sign(newNode.id.toBytes()) // signed NodeID with Key
         return approvalSignature
