@@ -33,7 +33,7 @@ object PolocloudCli {
         this.terminal.clearScreen()
 
         TranslationService.init()
-        TranslationService.defaultLanguage("en_US") // TODO get local from config
+        TranslationService.defaultLanguage("en_US") // TODO get local from installer config
         TranslationService.preloadAsync("cli")
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to "")) //TODO show version
 
