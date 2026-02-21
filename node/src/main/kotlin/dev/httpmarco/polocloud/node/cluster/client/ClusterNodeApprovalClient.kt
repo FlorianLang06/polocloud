@@ -1,0 +1,54 @@
+package dev.httpmarco.polocloud.node.cluster.client
+
+import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
+import dev.httpmarco.polocloud.proto.JoinRequest
+import dev.httpmarco.polocloud.proto.NodeServiceGrpcKt
+import io.grpc.ManagedChannel
+import io.grpc.ManagedChannelBuilder
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.TimeUnit
+
+class ClusterNodeApprovalClient {
+
+    fun requestApproval(
+        existingNode: NodeData,
+        newNode: NodeData
+    ): String {
+
+        val channel = createChannel(existingNode)
+
+        return try {
+            val stub = NodeServiceGrpcKt.NodeServiceCoroutineStub(channel)
+
+            val request = JoinRequest.newBuilder()
+                .setNodeId(newNode.id.toString())
+                .setPublicKey(newNode.publicKey)
+                .build()
+
+            val response = runBlocking {
+                stub.requestApproval(request)
+            }
+
+            if (!response.approved) {
+                throw IllegalStateException("Node rejected join request.")
+            }
+
+            response.signature
+
+        } finally {
+            shutdownChannel(channel)
+        }
+    }
+
+    private fun createChannel(node: NodeData): ManagedChannel {
+        return ManagedChannelBuilder
+            .forAddress(node.hostname, node.port)
+            .usePlaintext() // 🔥 später TLS
+            .build()
+    }
+
+    private fun shutdownChannel(channel: ManagedChannel) {
+        channel.shutdown()
+        channel.awaitTermination(3, TimeUnit.SECONDS)
+    }
+}

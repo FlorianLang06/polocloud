@@ -3,24 +3,15 @@ package dev.httpmarco.polocloud.node.cluster
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
 import dev.httpmarco.polocloud.common.ShutdownMode
-import dev.httpmarco.polocloud.common.utils.publicIpAddress
-import dev.httpmarco.polocloud.common.utils.toBytes
 import dev.httpmarco.polocloud.database.DatabaseCredentials
-import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
-import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
 import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
-import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
+import dev.httpmarco.polocloud.node.cluster.node.NodeStateService
+import dev.httpmarco.polocloud.node.cluster.quorum.QuorumService
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
-import dev.httpmarco.polocloud.node.cluster.security.toBase64
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.UUID
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * Central cluster lifecycle manager.
@@ -38,28 +29,35 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunchConfig) : Closeable {
+class Cluster(bindAddress: Address, val config: NodeInstanceConfiguration, val launchConfig: NodeLaunchConfig) : Closeable {
 
-    private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
-    private val clusterDatabaseKey = DatabaseKey(NodeData::class)
-    private val database = resolveDatabaseCredentials().factory()
+    private val logger = LoggerFactory.getLogger(Cluster::class.java)
+    private val database =  resolveDatabaseCredentials().factory()
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
-    private val heartBeatService = NodeHeartBeatService(security.localId, factory = database)
-
-    // the local node state - this is the source of truth for the node's current state and is updated during lifecycle transitions
-    @OptIn(ExperimentalAtomicApi::class)
-    var localNodeState = AtomicReference(NodeState.OFFLINE)
+    private val quorumService = QuorumService(security)
+    private val bootstrapService = ClusterBootstrapService(database, security, bindAddress, quorumService)
+    private val stateService = NodeStateService(database, security)
+    private val heartBeatService = NodeHeartBeatService(security.localId, database)
 
     init {
         initializeDatabase()
-        logIdentity()
     }
 
-    /**
-     * Establishes and validates the database connection.
-     *
-     * @throws IllegalStateException if the database connection is not valid.
-     */
+    fun detect() {
+        bootstrapService.detectAndRegister()
+        heartBeatService.startScheduler()
+    }
+
+    fun markOnline() = stateService.markOnline()
+    fun markStopping() = stateService.markStopping()
+    fun markStopped() = stateService.markStopped()
+    fun state() = stateService.localState()
+
+    override fun close(mode: ShutdownMode) {
+        heartBeatService.stopScheduler()
+        bootstrapService.close(mode)
+    }
+
     private fun initializeDatabase() {
         database.connect()
 
@@ -74,207 +72,10 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
         }
     }
 
-    /**
-     * Logs the detected local node identity.
-     */
-    private fun logIdentity() {
-        logger.info(
-            TranslationService.tr(
-                "cluster",
-                "cluster.node.identity.detected",
-                "nodeId" to security.localId
-            )
-        )
-    }
-
-    /**
-     * Performs cluster detection and registration logic.
-     *
-     * Behavior:
-     * - If no nodes exist → this node becomes the first cluster node.
-     * - If this node exists → validates consistency.
-     * - If this node does not exist → registers as new cluster member.
-     *
-     * @throws IllegalStateException if critical cluster inconsistencies occur.
-     */
-    fun detect() {
-        val executor = database.executor()
-        val nodes = executor.findAll(clusterDatabaseKey)
-
-        val publicIp = publicIpAddress()
-            ?: throw IllegalStateException("Unable to determine public IP address.")
-
-        when {
-            nodes.isEmpty() -> createInitialNode(publicIp)
-            nodes.any { it.id == security.localId } -> validateExistingNode(nodes)
-            else -> registerNewNodeWithQuorum(nodes, publicIp)
-        }
-        heartBeatService.startScheduler()
-    }
-
-    /**
-     * Registers this node as the first node in a new cluster.
-     */
-    private fun createInitialNode(ip: String) {
-        val nodeData = generateNodeData(
-            index = 1,
-            address = Address(ip, 25565),
-            state = NodeState.STARTING,
-            head = true
-        )
-
-        database.executor().save(clusterDatabaseKey, nodeData)
-
-        logger.info(
-            TranslationService.tr(
-                "cluster",
-                "cluster.node.identity.created"
-            )
-        )
-
-        logger.info(
-            TranslationService.tr(
-                "cluster",
-                "cluster.node.identity.alert.token",
-                "clusterToken" to security.publicKey.toBase64()
-            )
-        )
-    }
-
-    /**
-     * Validates consistency of an already registered node.
-     */
-    private fun validateExistingNode(nodes: List<NodeData>) {
-        val currentNode = nodes.first { it.id == security.localId }
-
-        // Optional: Validate IP consistency to prevent split-brain
-        val currentIp = publicIpAddress()
-        if (currentIp != null && currentNode.hostname != currentIp) {
-            throw IllegalStateException(
-                "Node IP mismatch detected. Possible split-brain condition."
-            )
-        }
-        logger.info(
-            TranslationService.tr(
-                "cluster",
-                "cluster.node.validate.local.success"
-            )
-        )
-    }
-
-    fun markStopping() {
-        this.changeState(NodeState.STOPPING, {
-            return@changeState it.state == NodeState.ONLINE || it.state == NodeState.CRASHED
-        })
-    }
-
-    fun markOnline() {
-        this.changeState(NodeState.ONLINE) {
-            return@changeState it.state == NodeState.STARTING || it.state == NodeState.SYNCING
-        }
-    }
-
-    fun markStopped() {
-        this.changeState(NodeState.STOPPED) {
-            return@changeState it.state == NodeState.STOPPING || it.state == NodeState.CRASHED
-        }
-    }
-
-    @OptIn(ExperimentalAtomicApi::class)
-    private fun changeState(state: NodeState, predicate: (NodeData) -> Boolean) {
-        val localNode = findSelf()
-
-        if (!predicate.invoke(localNode)) {
-            logger.warn(
-                TranslationService.tr(
-                    "cluster",
-                    "cluster.node.mark.failed",
-                    "currentState" to localNode.state.name,
-                    "state" to state.name
-
-                )
-            )
-        }
-
-        localNodeState.store(state)
-        localNode.state = state
-        database.executor().save(clusterDatabaseKey, localNode)
-        // todo alert to other nodes that this node is now online
-
-        logger.info(
-            TranslationService.tr(
-                "cluster",
-                "cluster.node.mark.success",
-                "state" to state.name
-            )
-        )
-    }
-
-    fun findSelf(): NodeData {
-        return database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()
-    }
-
-    private fun registerNewNodeWithQuorum(nodes: List<NodeData>, ip: String) {
-        val quorumSize = (nodes.size / 2) + 1
-        val newNodeData = generateNodeData(security.localId, nodes.size + 1, Address(ip, 25565), state())
-
-        val approvals = mutableListOf<String>()
-        for (existingNode in nodes.filter { it.state == NodeState.ONLINE }) {
-            val approval = requestApprovalFromNode(existingNode, newNodeData)
-            if (approval != null) approvals.add(approval)
-            if (approvals.size >= quorumSize) break
-        }
-
-        if (approvals.size < quorumSize) {
-            throw IllegalStateException("Quorum not reached. Node cannot join cluster.")
-        }
-
-        security.quorumSignatures.addAll(approvals)
-        database.executor().save(clusterDatabaseKey, newNodeData)
-
-        logger.info("Node ${security.localId} er with quorum (${approvals.size}/${nodes.size})")
-    }
-
-    private fun requestApprovalFromNode(existingNode: NodeData, newNode: NodeData): String {
-        // z.B. Node überprüft PublicKey und signiert den Join-Request
-        val approvalSignature = security.sign(newNode.id.toBytes()) // signed NodeID with Key
-        return approvalSignature
-    }
-
-    override fun close(mode: ShutdownMode) {
-        this.heartBeatService.stopScheduler()
-        this.database.close(mode)
-    }
-
-    @OptIn(ExperimentalAtomicApi::class)
-    fun state(): NodeState {
-        return localNodeState.load()
-    }
-
     fun resolveDatabaseCredentials(): DatabaseCredentials {
         if (launchConfig.database != null) {
             return launchConfig.database
         }
         return config.database
-    }
-
-    private fun generateNodeData(
-        id: UUID = security.localId,
-        index: Int,
-        address: Address,
-        state: NodeState,
-        head: Boolean = false
-    ): NodeData {
-        return NodeData(
-            id = id,
-            index = index,
-            hostname = address.hostname,
-            port = address.port,
-            state = state,
-            publicKey = security.publicKey.toBase64(),
-            head = head,
-            version = "1.0.0", //todo
-            gitCommitHash = "01293012ke,0" // todo
-        )
     }
 }

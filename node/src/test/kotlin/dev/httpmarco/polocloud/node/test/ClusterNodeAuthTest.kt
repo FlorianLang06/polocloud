@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ClusterNodeAuthTest {
 
+    private val nodeCount = Random.nextInt(1, 10)
     private val clusterInstances = arrayListOf<NodeInstance>()
 
     companion object {
@@ -39,7 +40,9 @@ class ClusterNodeAuthTest {
     @BeforeTest
     fun setupCluster() {
         postgres.start()
-        repeat(Random.nextInt(1, 10)) { i ->
+        System.out.printf("Waiting for node initialization...: $nodeCount")
+
+        repeat(nodeCount) { i ->
             val config = NodeLaunchConfig(
                 rootDir = Path("testing-${UUID.randomUUID()}"),
                 address = LOCAL_ADDRESS.withPort(5600 + i),

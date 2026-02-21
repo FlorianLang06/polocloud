@@ -70,7 +70,7 @@ class NodeInstance(
         endpoint = GrpcEndpoint(resolveBindAddress(), NodeServiceImpl())
 
         // Initialize cluster component
-        cluster = Cluster(config, launchConfig)
+        cluster = Cluster(resolveBindAddress(), config, launchConfig)
     }
 
     /**

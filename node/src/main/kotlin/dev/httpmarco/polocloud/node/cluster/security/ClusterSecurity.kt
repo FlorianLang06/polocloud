@@ -32,7 +32,7 @@ import kotlin.io.path.writeBytes
  * Security:
  * - PrivateKey remains only on the local node
  * - PublicKey can be shared with other nodes to verify signatures
- * - All sensitive data is stored in binary format in [LOCAL_SECURITY_PATH]
+ * - All sensitive data is stored in binary format in a hidden file on disk
  */
 class ClusterSecurity(val securityLocalPath: Path) {
 
