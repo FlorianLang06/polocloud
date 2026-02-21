@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.cli.jline
+package dev.httpmarco.polocloud.cli.terminal
 
 import dev.httpmarco.polocloud.cli.command.CommandService
 import dev.httpmarco.polocloud.cli.exitPolocloud
@@ -7,11 +7,36 @@ import org.jline.jansi.Ansi
 import org.jline.reader.LineReader
 import org.jline.reader.UserInterruptException
 
-class JLine3Reading(
-    private var terminal: JLine3Terminal,
+/**
+ * Background thread that manages the interactive CLI session lifecycle.
+ *
+ * This thread continuously reads user input from the terminal and acts as the
+ * central interaction coordinator of the CLI. Depending on the current
+ * terminal state, it may:
+ *
+ * - Forward input to an active setup controller
+ * - Redirect commands to a screen/recording service
+ * - Parse and dispatch standard commands to the [CommandService]
+ *
+ * It also maintains prompt state and ensures the console remains visually
+ * consistent (e.g. handling blank input cleanup).
+ *
+ * On user interruption (`Ctrl+C`, [UserInterruptException]) the application
+ * exits immediately without performing a clean shutdown. Any other exceptions
+ * during input handling or command execution are caught and logged so that
+ * the interactive loop can continue running.
+ *
+ * @param terminal The active [CliTerminal] instance responsible for prompt
+ *                 and terminal state handling.
+ * @param lineReader The JLine [LineReader] used for interactive input reading.
+ * @param commandService The [CommandService] used to execute parsed commands
+ *                       when no special interaction mode is active.
+ */
+class ReadingThread(
+    private var terminal: CliTerminal,
     private val lineReader: LineReader,
     private val commandService: CommandService
-) : Thread() {
+) : Thread("reading-thread") {
 
     override fun run() {
         this.terminal.resetPrompt()

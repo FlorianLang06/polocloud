@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.core.LoggerContext
 
-object PolocloudLogger {
+object CliLogger {
     fun initLogging(debugMode: Boolean = false): Logger {
         val ctx = LoggerContext.getContext(false)
         val config = ctx.configuration
@@ -29,6 +29,6 @@ object PolocloudLogger {
         rootLoggerConfig.addAppender(appender, rootLoggerConfig.level, null)
 
         ctx.updateLoggers()
-        return LogManager.getLogger("PoloCloud")
+        return LogManager.getLogger("PoloCloud CLI")
     }
 }

@@ -1,6 +1,6 @@
 package dev.httpmarco.polocloud.cli.logging
 
-import dev.httpmarco.polocloud.cli.jline.JLine3Colors
+import dev.httpmarco.polocloud.cli.terminal.AnsiColors
 import org.apache.logging.log4j.core.LogEvent
 import org.apache.logging.log4j.core.config.plugins.Plugin
 import org.apache.logging.log4j.core.config.plugins.PluginFactory
@@ -37,7 +37,7 @@ class LoggingLayout : AbstractStringLayout(StandardCharsets.UTF_8) {
             .first()
 
 
-        msg.append(JLine3Colors.translate("&7$timestamp &8| $levelColor${event.level}&8: &7$messageText\n"))
+        msg.append(AnsiColors.translate("&7$timestamp &8| $levelColor${event.level}&8: &7$messageText\n"))
 
         val throwable = event.thrown ?: event.thrownProxy?.throwable
 
@@ -50,18 +50,18 @@ class LoggingLayout : AbstractStringLayout(StandardCharsets.UTF_8) {
 
 
     private fun appendThrowable(t: Throwable, msg: StringBuilder) {
-        msg.append(JLine3Colors.translate("&c${t::class.java.name}: ${t.message}\n"))
+        msg.append(AnsiColors.translate("&c${t::class.java.name}: ${t.message}\n"))
 
         t.stackTrace.forEach { element ->
             msg.append(
-                JLine3Colors.translate(
+                AnsiColors.translate(
                     "&7\tat ${element.className}.${element.methodName}(${element.fileName}:${element.lineNumber})\n"
                 )
             )
         }
 
         t.cause?.let { cause ->
-            msg.append(JLine3Colors.translate("&7Caused by:\n"))
+            msg.append(AnsiColors.translate("&7Caused by:\n"))
             appendThrowable(cause, msg)
         }
     }

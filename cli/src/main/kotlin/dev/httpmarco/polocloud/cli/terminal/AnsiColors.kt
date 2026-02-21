@@ -1,21 +1,21 @@
-package dev.httpmarco.polocloud.cli.jline
+package dev.httpmarco.polocloud.cli.terminal
 
 import org.jline.jansi.Ansi
 
 /**
- * Represents legacy Minecraft-style color codes (e.g. &a, &c, &r)
- * and translates them into ANSI escape sequences using JLine 3.
+ * Represents legacy Minecraft-style color codes (e.g. `&a`, `&c`, `&r`)
+ * and translates them into ANSI escape sequences for use in the CLI terminal.
  *
- * This enum is designed for CLI applications and supports both
- * normal and bright ANSI foreground colors.
+ * Supports all 16 standard Minecraft color codes as well as a reset (`&r`) instruction.
+ * Colors can be rendered in normal or bright mode depending on the entry configuration.
  *
- * Example usage:
- * ```
- * val message = JLine3Colors.translate("&aSuccess &7- &cError")
- * println(message)
+ * Example:
+ * ```kotlin
+ * val colored = AnsiColor.translate("&aSuccess &7- &cError")
+ * println(colored)
  * ```
  */
-enum class JLine3Colors(
+enum class AnsiColors(
     /**
      * The legacy color code (e.g. "&a", "&c", "&r").
      */
