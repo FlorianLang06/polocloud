@@ -1,5 +1,6 @@
 package dev.httpmarco.polocloud.node.test
 
+import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.files.deleteComplete
 import dev.httpmarco.polocloud.node.NodeInstance
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
@@ -29,7 +30,7 @@ class ClusterNodeAuthTest {
 
     @AfterTest
     fun teardown() {
-        instance.close()
+        instance.close(ShutdownMode.GRACEFUL)
         launchConfig.rootDir.deleteComplete()
     }
 }

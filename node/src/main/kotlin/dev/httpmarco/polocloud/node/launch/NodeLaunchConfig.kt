@@ -1,9 +1,11 @@
 package dev.httpmarco.polocloud.node.launch
 
+import dev.httpmarco.polocloud.common.Address
 import java.nio.file.Path
 
 data class NodeLaunchConfig(
     val rootDir: Path,
+    val address: Address = Address("-", 1)
 ) {
 
     val localPath: Path
@@ -17,4 +19,5 @@ data class NodeLaunchConfig(
 
     val localSecurityPath: Path
         get() = localDataPath.resolve(".security")
+
 }

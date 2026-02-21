@@ -1,5 +1,7 @@
 package dev.httpmarco.polocloud.node.cluster
 
+import dev.httpmarco.polocloud.common.Closeable
+import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.utils.publicIpAddress
 import dev.httpmarco.polocloud.common.utils.toBytes
 import dev.httpmarco.polocloud.database.DatabaseKey
@@ -31,7 +33,7 @@ import org.slf4j.LoggerFactory
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig) {
+class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig) : Closeable {
 
     private val logger: Logger = LoggerFactory.getLogger(Cluster::class.java)
     private val clusterDatabaseKey = DatabaseKey(NodeData::class)
@@ -167,7 +169,13 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
 
     fun markOnline() {
         this.changeState(NodeState.ONLINE) {
-            return@changeState it.state == NodeState.CRASHED || it.state == NodeState.OFFLINE || it.state == NodeState.STOPPING
+            return@changeState it.state == NodeState.STARTING || it.state == NodeState.SYNCING
+        }
+    }
+
+    fun markStopped() {
+        this.changeState(NodeState.STOPPED) {
+            return@changeState it.state == NodeState.STOPPING || it.state == NodeState.CRASHED
         }
     }
 
@@ -178,8 +186,10 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
             logger.warn(
                 TranslationService.tr(
                     "cluster",
-                    "cluster.node.mark.${state.name.lowercase()}.failed",
-                    "currentState" to localNode.state.name
+                    "cluster.node.mark.failed",
+                    "currentState" to localNode.state.name,
+                    "state" to state.name
+
                 )
             )
         }
@@ -191,7 +201,8 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
         logger.info(
             TranslationService.tr(
                 "cluster",
-                "cluster.node.mark.${state.name.lowercase()}.success"
+                "cluster.node.mark.success",
+                "state" to state.name
             )
         )
     }
@@ -239,7 +250,10 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
     }
 
     fun state(): NodeState {
-        return (database.executor().findById(clusterDatabaseKey, security.localId)
-            ?: throw LocalNodeFindingException()).state
+        return (database.executor().findById(clusterDatabaseKey, security.localId) ?: throw LocalNodeFindingException()).state
+    }
+
+    override fun close(mode: ShutdownMode) {
+        this.database.close(mode)
     }
 }

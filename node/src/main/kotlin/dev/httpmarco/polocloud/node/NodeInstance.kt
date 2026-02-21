@@ -1,12 +1,17 @@
 package dev.httpmarco.polocloud.node
 
+import dev.httpmarco.polocloud.common.Address
+import dev.httpmarco.polocloud.common.Closeable
+import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.Cluster
+import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
+import kotlin.system.exitProcess
 
 /**
  * Represents a running PoloCloud node instance.
@@ -28,7 +33,7 @@ class NodeInstance(
      * Contains resolved filesystem paths and runtime launch parameters.
      */
     private val launchConfig: NodeLaunchConfig
-) {
+) : Closeable {
 
     /**
      * Node configuration loaded from the local node configuration file.
@@ -46,13 +51,15 @@ class NodeInstance(
     val cluster: Cluster
 
     init {
+        NodeShutdownHandler(this).registerShutdownHook()
+
         TranslationService.init()
 
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
 
         // Prepare networking endpoint based on configuration
-        endpoint = GrpcEndpoint(config.bindAddress)
+        endpoint = GrpcEndpoint(detectAddress())
 
         // Initialize cluster component
         cluster = Cluster(config, launchConfig)
@@ -69,6 +76,8 @@ class NodeInstance(
     fun start() {
         initializeNetwork()
         initializeCluster()
+
+        Thread.currentThread().join()
     }
 
     /**
@@ -81,11 +90,21 @@ class NodeInstance(
      *
      * Currently not implemented.
      */
-    fun close() {
+    override fun close(mode : ShutdownMode) {
+        if (cluster.state() == NodeState.STOPPING || cluster.state() == NodeState.STOPPED) {
+            return
+        }
+
         cluster.markStopping()
         // TODO:
         // 2. Shutdown cluster services
-        // 3. Shutdown gRPC endpoint
+        endpoint.close(mode)
+
+        cluster.markStopped()
+
+        if(!NodeShutdownHandler.shutdownProcess) {
+            exitProcess(0)
+        }
     }
 
     /**
@@ -114,5 +133,15 @@ class NodeInstance(
             NodeInstanceConfiguration.serializer(),
             NodeInstanceConfiguration(database = DatabaseCredentials.H2(launchConfig.localDataPath.toString() + "/polocloud.h2.db"))
         )
+    }
+
+    private fun detectAddress(): Address {
+        val launchAddress = launchConfig.address
+        val defaultAddress = config.bindAddress
+
+        val hostname = launchAddress.hostname.takeIf { it.isNotEmpty() } ?: defaultAddress.hostname
+        val port = launchAddress.port.takeIf { it != 1 } ?: defaultAddress.port
+
+        return Address(hostname, port)
     }
 }

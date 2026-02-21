@@ -2,6 +2,7 @@ package dev.httpmarco.polocloud.common.grpc
 
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
+import dev.httpmarco.polocloud.common.ShutdownMode
 import io.grpc.BindableService
 import io.grpc.Server
 import io.grpc.ServerBuilder
@@ -67,24 +68,38 @@ class GrpcEndpoint(
      * Updates the health status to NOT_SERVING, then shuts down the server.
      * If the server does not terminate within 5 seconds, it is forcibly shut down.
      */
-    override fun close() {
+    override fun close(mode: ShutdownMode) {
         val s = server ?: run {
             logger.warn("gRPC server is not running, nothing to close")
             return
         }
 
         logger.info("Shutting down gRPC server on port {}", address.port)
+
         healthManager.setStatus(
             "",
             io.grpc.health.v1.HealthCheckResponse.ServingStatus.NOT_SERVING
         )
 
-        s.shutdown()
-        if (!s.awaitTermination(5, TimeUnit.SECONDS)) {
-            logger.warn("gRPC server did not terminate in 5 seconds, forcing shutdown")
+        if (mode == ShutdownMode.FORCE) {
+            logger.warn("Forcing immediate shutdown of gRPC server")
             s.shutdownNow()
-        } else {
-            logger.info("gRPC server terminated gracefully")
+            return
+        }
+
+        s.shutdown()
+
+        try {
+            if (!s.awaitTermination(5, TimeUnit.SECONDS)) {
+                logger.warn("gRPC server did not terminate in 5 seconds, forcing shutdown")
+                s.shutdownNow()
+            } else {
+                logger.info("gRPC server terminated gracefully")
+            }
+        } catch (_: InterruptedException) {
+            logger.warn("Shutdown interrupted, forcing immediate shutdown")
+            s.shutdownNow()
+            Thread.currentThread().interrupt()
         }
     }
 }

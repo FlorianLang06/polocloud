@@ -2,6 +2,7 @@ package dev.httpmarco.polocloud.database.sql
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
@@ -131,49 +132,61 @@ class SqlConnectionFactory(credentials: DatabaseCredentials) :
     /**
      * Closes the DataSource and releases all connections.
      */
-    override fun close() {
-        dataSource?.let {
+    override fun close(mode: ShutdownMode) {
+        val ds = dataSource ?: run {
+            logger.warn("DataSource is not initialized, nothing to close")
+            return
+        }
+
+        logger.info(
+            TranslationService.tr(
+                "database",
+                "database.pool.shutdown",
+                "pool" to ds.poolName,
+                "mode" to mode.name
+            )
+        )
+
+        try {
+            if (mode == ShutdownMode.FORCE) {
+                logger.warn("Forcing immediate shutdown of database pool {}", ds.poolName)
+
+                // Optional: Falls HikariDataSource
+                if (ds is com.zaxxer.hikari.HikariDataSource) {
+                    ds.hikariPoolMXBean?.softEvictConnections()
+                }
+            }
+
+            ds.close()
+
+            state = DatabaseState.CLOSED
 
             logger.info(
                 TranslationService.tr(
                     "database",
-                    "database.pool.shutdown",
-                    "pool" to it.poolName
+                    "database.pool.closed",
+                    "pool" to ds.poolName
                 )
             )
 
-            try {
-                it.close()
-
-                state = DatabaseState.CLOSED
-
-                logger.info(
-                    TranslationService.tr(
-                        "database",
-                        "database.pool.close_failed",
-                        "pool" to it.poolName
-                    )
+            logger.info(
+                TranslationService.tr(
+                    "database",
+                    "database.connection.closed"
                 )
+            )
 
-                logger.info(
-                    TranslationService.tr(
-                        "database",
-                        "database.connection.closed"
-                    )
-                )
-            } catch (e: Exception) {
-                logger.error(
-                    TranslationService.tr(
-                        "database",
-                        "database.pool.close_failed",
-                        "pool" to it.poolName
-                    ),
-                    e
-                )
-            } finally {
-                dataSource = null
-            }
+        } catch (e: Exception) {
+            logger.error(
+                TranslationService.tr(
+                    "database",
+                    "database.pool.close_failed",
+                    "pool" to ds.poolName
+                ),
+                e
+            )
+        } finally {
+            dataSource = null
         }
     }
-
 }

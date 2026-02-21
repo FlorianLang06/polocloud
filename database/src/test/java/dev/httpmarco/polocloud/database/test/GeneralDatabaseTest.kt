@@ -29,7 +29,7 @@ abstract class GeneralDatabaseTest {
     @BeforeEach
     fun setup() {
         factory = factory()
-        factory.globalConnect(credentials())
+        factory.connect(credentials())
 
         assertTrue(factory.isValid())
 

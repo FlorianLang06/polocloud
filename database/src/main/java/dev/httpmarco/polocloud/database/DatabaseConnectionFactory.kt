@@ -1,8 +1,10 @@
 package dev.httpmarco.polocloud.database
 
 import dev.httpmarco.polocloud.common.Closeable
+import dev.httpmarco.polocloud.database.nosql.redis.RedisConnectionFactory
 import dev.httpmarco.polocloud.database.sql.SqlExecutor
 import dev.httpmarco.polocloud.i18n.api.TranslationService
+import org.apache.logging.log4j.LogManager
 import org.slf4j.LoggerFactory
 
 /**
@@ -20,7 +22,7 @@ abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val cr
     /**
      * Logger used for database connection lifecycle messages.
      */
-    private val logger = LoggerFactory.getLogger(DatabaseConnectionFactory::class.java)
+    protected val logger = LoggerFactory.getLogger(DatabaseConnectionFactory::class.java)
 
     /**
      * Current state of the database connection.
