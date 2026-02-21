@@ -346,7 +346,6 @@ class SqlExecutor(
         return when (value) {
             is KotlinInstant -> Timestamp.from(JavaInstant.ofEpochMilli(value.toEpochMilliseconds()))
             is Enum<*> -> value.name
-            is UUID -> value.toString()
             else -> value
         }
     }
@@ -358,9 +357,6 @@ class SqlExecutor(
             when {
                 field.type.isEnum && value is String ->
                     java.lang.Enum.valueOf(field.type as Class<out Enum<*>>, value)
-
-                field.type == UUID::class.java && value is String ->
-                    UUID.fromString(value)
 
                 field.type.kotlin == KotlinInstant::class -> when (value) {
                     is Timestamp -> KotlinInstant.fromEpochMilliseconds(value.time)
@@ -384,10 +380,10 @@ class SqlExecutor(
             clazz.kotlin == Long::class -> "BIGINT"
             clazz.kotlin == String::class -> "VARCHAR(512)"
             clazz.kotlin == Boolean::class -> "BOOLEAN"
-            clazz.kotlin == Double::class -> "DOUBLE"
+            clazz.kotlin == Double::class -> "DOUBLE PRECISION"
             clazz.kotlin == Float::class -> "FLOAT"
             clazz.kotlin == KotlinInstant::class -> "TIMESTAMP"
-            clazz == UUID::class.java -> "VARCHAR(36)"
+            clazz == UUID::class.java -> "UUID"
             else -> "TEXT"
         }
 

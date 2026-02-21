@@ -42,7 +42,7 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
     private val clusterDatabaseKey = DatabaseKey(NodeData::class)
     private val database = resolveDatabaseCredentials().factory()
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
-    private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
+    private val heartBeatService = NodeHeartBeatService(security.localId, factory = database)
 
     // the local node state - this is the source of truth for the node's current state and is updated during lifecycle transitions
     @OptIn(ExperimentalAtomicApi::class)

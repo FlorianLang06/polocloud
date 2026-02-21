@@ -169,11 +169,15 @@ class NodeInstance(
         val launchAddress = launchConfig.address
         val defaultAddress = config.bindAddress
 
-        val hostname = launchAddress?.hostname.takeIf { it!!.isNotBlank() } ?: defaultAddress.hostname
-        val port = launchAddress?.port.takeIf { it!! > 0 } ?: defaultAddress.port
+        if (launchAddress != null) {
 
-        require(port in 1..65535) { "Port must be between 1 and 65535 but was $port" }
+            val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname
+            val port = launchAddress.port.takeIf { it > 0 } ?: defaultAddress.port
 
-        return Address(hostname, port)
+            require(port in 1..65535) { "Port must be between 1 and 65535 but was $port" }
+
+            return Address(hostname, port)
+        }
+        return config.bindAddress
     }
 }
