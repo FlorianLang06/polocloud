@@ -12,6 +12,7 @@ import dev.httpmarco.polocloud.node.cluster.Cluster
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
+import java.util.Locale
 import kotlin.system.exitProcess
 
 /**
@@ -58,6 +59,9 @@ class NodeInstance(
 
     init {
         TranslationService.init()
+        TranslationService.defaultLanguage(Locale.ENGLISH) //TODO read config value
+        TranslationService.preloadAsync("node")
+        TranslationService.preloadAsync("database")
 
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
