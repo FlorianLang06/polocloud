@@ -3,7 +3,9 @@ package dev.httpmarco.polocloud.node.configuration
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.LOCAL_ADDRESS
 import dev.httpmarco.polocloud.database.DatabaseCredentials
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+import java.util.Locale
 
 @Serializable
 open class NodeInstanceConfiguration(

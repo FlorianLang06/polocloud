@@ -27,7 +27,7 @@ import kotlin.time.Instant
 @RepositoryName("nodes")
 data class NodeData(
     @EntryIdentifier val id: UUID = UUID.randomUUID(),
-    val name: String,
+    val index: Int,
     val hostname: String,
     val port: Int,
     var state: NodeState,
@@ -48,4 +48,8 @@ data class NodeData(
     }
 
     fun isOnline() = state == NodeState.ONLINE
+
+    fun name() : String {
+        return "node-$index"
+    }
 }

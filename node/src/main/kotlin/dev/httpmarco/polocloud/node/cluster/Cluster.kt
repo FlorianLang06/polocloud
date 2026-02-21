@@ -1,5 +1,6 @@
 package dev.httpmarco.polocloud.node.cluster
 
+import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
 import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.utils.publicIpAddress
@@ -17,6 +18,7 @@ import dev.httpmarco.polocloud.node.cluster.security.toBase64
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
@@ -105,28 +107,20 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
         when {
             nodes.isEmpty() -> createInitialNode(publicIp)
             nodes.any { it.id == security.localId } -> validateExistingNode(nodes)
-            //    else -> registerNewNode(executor, nodes, publicIp)
+            else -> registerNewNodeWithQuorum(nodes, publicIp)
         }
-
         heartBeatService.startScheduler()
     }
-
 
     /**
      * Registers this node as the first node in a new cluster.
      */
     private fun createInitialNode(ip: String) {
-        // todo add version and git commit hash
-        val nodeData = NodeData(
-            security.localId,
-            "node-1",
-            ip,
-            25565,
-            NodeState.STARTING,
-            true,
-            security.publicKey.toBase64(),
-            "1.0.0",
-            "01293012ke,0"
+        val nodeData = generateNodeData(
+            index = 1,
+            address = Address(ip, 25565),
+            state = NodeState.STARTING,
+            head = true
         )
 
         database.executor().save(clusterDatabaseKey, nodeData)
@@ -222,17 +216,7 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
 
     private fun registerNewNodeWithQuorum(nodes: List<NodeData>, ip: String) {
         val quorumSize = (nodes.size / 2) + 1
-        val newNodeData = NodeData(
-            id = security.localId,
-            name = "node-${nodes.size + 1}",
-            hostname = ip,
-            port = 25565,
-            state = NodeState.STARTING,
-            publicKey = security.publicKey.toBase64(),
-            head = false,
-            version = "1.0.0", //todo
-            gitCommitHash = "01293012ke,0" // todo
-        )
+        val newNodeData = generateNodeData(security.localId, nodes.size + 1, Address(ip, 25565), state())
 
         val approvals = mutableListOf<String>()
         for (existingNode in nodes.filter { it.state == NodeState.ONLINE }) {
@@ -273,5 +257,25 @@ class Cluster(val config: NodeInstanceConfiguration, val launchConfig: NodeLaunc
             return launchConfig.database
         }
         return config.database
+    }
+
+    private fun generateNodeData(
+        id: UUID = security.localId,
+        index: Int,
+        address: Address,
+        state: NodeState,
+        head: Boolean = false
+    ): NodeData {
+        return NodeData(
+            id = id,
+            index = index,
+            hostname = address.hostname,
+            port = address.port,
+            state = state,
+            publicKey = security.publicKey.toBase64(),
+            head = head,
+            version = "1.0.0", //todo
+            gitCommitHash = "01293012ke,0" // todo
+        )
     }
 }
