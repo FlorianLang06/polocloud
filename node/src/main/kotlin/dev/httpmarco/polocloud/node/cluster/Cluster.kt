@@ -16,6 +16,8 @@ import dev.httpmarco.polocloud.node.cluster.security.toBase64
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 /**
  * Central cluster lifecycle manager.
@@ -42,7 +44,8 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
     private val heartBeatService = NodeHeartBeatService(security.localId.toString(), factory = database)
 
     // the local node state - this is the source of truth for the node's current state and is updated during lifecycle transitions
-    var localNodeState = NodeState.OFFLINE
+    @OptIn(ExperimentalAtomicApi::class)
+    var localNodeState = AtomicReference(NodeState.OFFLINE)
 
     init {
         initializeDatabase()
@@ -182,6 +185,7 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
         }
     }
 
+    @OptIn(ExperimentalAtomicApi::class)
     private fun changeState(state: NodeState, predicate: (NodeData) -> Boolean) {
         val localNode = findSelf()
 
@@ -197,7 +201,7 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
             )
         }
 
-        localNodeState = state
+        localNodeState.store(state)
         localNode.state = state
         database.executor().save(clusterDatabaseKey, localNode)
         // todo alert to other nodes that this node is now online
@@ -256,5 +260,10 @@ class Cluster(config: NodeInstanceConfiguration, launchConfig: NodeLaunchConfig)
     override fun close(mode: ShutdownMode) {
         this.heartBeatService.stopScheduler()
         this.database.close(mode)
+    }
+
+    @OptIn(ExperimentalAtomicApi::class)
+    fun state() : NodeState {
+        return localNodeState.load()
     }
 }

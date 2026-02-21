@@ -78,9 +78,9 @@ class NodeInstance(
      */
     @Synchronized
     fun start() {
-        if (cluster.localNodeState != NodeState.OFFLINE) {
+        if (cluster.state() != NodeState.OFFLINE) {
             // Node is already started or in the process of starting, ignore subsequent start calls
-            throw IllegalStateException("Node is already starting or started. Current state: ${cluster.localNodeState}")
+            throw IllegalStateException("Node is already starting or started. Current state: ${cluster.state()}")
         }
 
         try {
@@ -105,18 +105,20 @@ class NodeInstance(
      */
     @Synchronized
     override fun close(mode: ShutdownMode) {
-        if (cluster.localNodeState == NodeState.OFFLINE) {
+        if (cluster.state() == NodeState.OFFLINE) {
             // Node was never started, nothing to do
             return
         }
 
-        if (cluster.localNodeState == NodeState.STOPPING || cluster.localNodeState == NodeState.STOPPED) {
+        if (cluster.state() == NodeState.STOPPING || cluster.state() == NodeState.STOPPED) {
             return
         }
 
         cluster.markStopping()
         endpoint.close(mode)
         cluster.markStopped()
+
+        // finally close database and other resources
         cluster.close(mode)
 
         if (!shutdownHandler.running) {
@@ -172,6 +174,8 @@ class NodeInstance(
 
         val port = launchAddress.port.takeIf { it > 0 }
             ?: defaultAddress.port
+
+        require(port in 1..65535) { "Port must be between 1 and 65535 but was $port" }
 
         return Address(hostname, port)
     }

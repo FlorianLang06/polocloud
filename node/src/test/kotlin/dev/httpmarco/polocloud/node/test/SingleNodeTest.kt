@@ -67,7 +67,7 @@ class SingleNodeTest {
             .untilAsserted {
                 Assertions.assertEquals(
                     NodeState.STOPPED,
-                    instance.cluster.localNodeState,
+                    instance.cluster.state(),
                     "Node did not reach STOPPED state after graceful shutdown"
                 )
             }
@@ -81,7 +81,7 @@ class SingleNodeTest {
             await().atMost(5, TimeUnit.SECONDS)
                 .pollInterval(50, TimeUnit.MILLISECONDS)
                 .untilAsserted {
-                    val state = instance.cluster.localNodeState
+                    val state = instance.cluster.state()
                     Assertions.assertTrue(
                         state == NodeState.STOPPED || state == NodeState.OFFLINE,
                         "Node state must be STOPPED or OFFLINE but was $state"
@@ -106,7 +106,7 @@ class SingleNodeTest {
             .untilAsserted {
                 Assertions.assertEquals(
                     NodeState.ONLINE,
-                    instance.cluster.localNodeState,
+                    instance.cluster.state(),
                     "Node did not reach ONLINE state within $timeoutSeconds seconds"
                 )
             }
