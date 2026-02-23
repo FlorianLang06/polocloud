@@ -3,7 +3,7 @@
 # kotlin
 kotlin = "2.3.0"
 kotlinSerializationPlugin = "1.9.10"
-kotlinxSerialization = "1.6.0"
+kotlinxSerialization = "1.10.0"
 kotlinxCoroutines = "1.10.2"
 
 # polocloud
