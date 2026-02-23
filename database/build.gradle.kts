@@ -23,7 +23,7 @@ dependencies {
     compileOnly(libs.gson)
     compileOnly(libs.polocloud.i18n)
     compileOnly(libs.bundles.database.drivers)
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     compileOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
 
     runtimeOnly(projects.common)
@@ -31,7 +31,7 @@ dependencies {
     runtimeOnly(libs.hikariCp)
     runtimeOnly(libs.postgreSql)
     runtimeOnly(libs.polocloud.i18n)
-    runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
     runtimeOnly("org.junit.platform:junit-platform-suite:1.10.0")
 
@@ -51,7 +51,7 @@ dependencies {
     testImplementation(libs.bundles.database.drivers)
 
     testImplementation("org.junit.platform:junit-platform-suite:1.10.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 }
 
 tasks.test {
