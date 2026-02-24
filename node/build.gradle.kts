@@ -59,7 +59,7 @@ dependencies {
     testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.junit)
     testImplementation(kotlin("test"))
-    testImplementation("org.awaitility:awaitility:4.2.0")
+    testImplementation("org.awaitility:awaitility:4.3.0")
 }
 
 tasks.test {
