@@ -35,7 +35,7 @@ junit = "6.0.3"
 # database driver
 mongodb = "5.6.3"
 mysql = "9.6.0"
-redis = "7.2.1"
+redis = "7.3.0"
 mariadb = "3.5.7"
 h2 = "2.4.240"
 
