@@ -33,7 +33,7 @@ dependencies {
     runtimeOnly(libs.polocloud.i18n)
     runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     runtimeOnly("org.jetbrains.kotlin:kotlin-reflect:2.3.10")
-    runtimeOnly("org.junit.platform:junit-platform-suite:1.10.0")
+    runtimeOnly("org.junit.platform:junit-platform-suite:6.0.3")
 
     runtimeOnly(libs.bundles.database.drivers)
 
@@ -50,7 +50,7 @@ dependencies {
     testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.database.drivers)
 
-    testImplementation("org.junit.platform:junit-platform-suite:1.10.0")
+    testImplementation("org.junit.platform:junit-platform-suite:6.0.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
 }
 
