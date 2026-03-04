@@ -29,11 +29,12 @@ import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(database : DatabaseConnectionFactory<*>,bindAddress: Address, launchConfig: NodeLaunchConfig) : Closeable {
+class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, launchConfig: NodeLaunchConfig) :
+    Closeable {
 
     private val nodeRepository = NodeRepository(database)
-    private val endpoint = GrpcEndpoint(bindAddress, NodeServiceImpl(nodeRepository))
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
+    private val endpoint = GrpcEndpoint(bindAddress, security.certFile(), security.keyFile(), NodeServiceImpl(nodeRepository))
     private val quorumService = QuorumService()
     private val bootstrapService = ClusterBootstrapService(database, security, bindAddress, quorumService)
     private val stateService = NodeStateService(nodeRepository, security)

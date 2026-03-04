@@ -8,6 +8,7 @@ import io.grpc.Server
 import io.grpc.ServerBuilder
 import io.grpc.protobuf.services.HealthStatusManager
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
@@ -22,6 +23,8 @@ import java.util.concurrent.TimeUnit
  */
 class GrpcEndpoint(
     private val address: Address,
+    private val certFile: File,
+    private val keyFile: File,
     vararg services: BindableService
 ) : Closeable {
 
@@ -45,6 +48,7 @@ class GrpcEndpoint(
 
         logger.info("Starting gRPC server on port {}", address.port)
         val builder = ServerBuilder.forPort(address.port)
+            .useTransportSecurity(certFile, keyFile)
             .addService(healthManager.healthService)
 
         services.forEach { service ->
