@@ -3,40 +3,48 @@ package dev.httpmarco.polocloud.node.cluster.security
 import dev.httpmarco.polocloud.common.utils.toBytes
 import dev.httpmarco.polocloud.common.utils.toUUID
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
-import org.slf4j.LoggerFactory
+import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
+import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.attribute.DosFileAttributeView
-import java.security.KeyFactory
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.PrivateKey
-import java.security.PublicKey
-import java.security.Signature
-import java.util.Base64
-import java.util.UUID
+import java.security.*
+import java.security.cert.X509Certificate
+import java.util.*
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
-import kotlin.io.path.readBytes
 import kotlin.io.path.writeBytes
+import java.util.Base64
+import java.util.Date
+import java.math.BigInteger
+import java.io.File
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 
 /**
- * Manages the cluster security for a local node.
+ * Manages the cluster security for a local node with TLS support.
  *
  * Responsibilities:
- * - Persistent storage of the local node ID and RSA KeyPair
- * - Signing and verifying arbitrary data for cluster authentication
- * - Temporary storage of quorum approval signatures during node join
+ * - Generates or loads a persistent RSA key pair.
+ * - Creates a self-signed X.509 certificate for TLS usage.
+ * - Stores private key and certificate on disk for gRPC TLS.
+ * - Signs and verifies arbitrary data for cluster authentication.
  *
  * Security:
- * - PrivateKey remains only on the local node
- * - PublicKey can be shared with other nodes to verify signatures
- * - All sensitive data is stored in binary format in a hidden file on disk
+ * - PrivateKey remains only on the local node.
+ * - PublicKey and Certificate can be shared with other nodes or clients.
+ * - All sensitive data is stored in DER binary format in hidden files on disk.
+ *
+ * TLS Usage:
+ * - The generated `node.key` and `node.crt` can be directly used for gRPC TLS.
  */
 class ClusterSecurity(val securityLocalPath: Path) {
 
-    private val logger = LoggerFactory.getLogger(ClusterSecurity::class.java)
+    private val logger = org.slf4j.LoggerFactory.getLogger(ClusterSecurity::class.java)
 
     /** Temporary list of quorum approval signatures collected during join process */
     val quorumSignatures = mutableListOf<String>()
@@ -50,137 +58,126 @@ class ClusterSecurity(val securityLocalPath: Path) {
     /** Public key of this node */
     val publicKey: PublicKey
 
+    /** Self-signed X.509 certificate for TLS */
+    val certificate: X509Certificate
+
     init {
-        val (id, keyPair) = loadOrCreate()
+        Security.addProvider(BouncyCastleProvider())
+        val (id, keyPair, cert) = loadOrCreate()
         localId = id
         privateKey = keyPair.private
         publicKey = keyPair.public
+        certificate = cert
     }
 
     /**
-     * Loads the node ID and KeyPair from disk, or generates new ones if missing or corrupted.
+     * Loads existing TLS files or regenerates new keypair and certificate.
      *
-     * @return Pair of [UUID] and [KeyPair]
+     * @return Triple containing [UUID], [KeyPair], and self-signed [X509Certificate]
      */
-    private fun loadOrCreate(): Pair<UUID, KeyPair> = readFromFile() ?: regenerate()
+    private fun loadOrCreate(): Triple<UUID, KeyPair, X509Certificate> {
+        val certFile = securityLocalPath.resolve("node.crt")
+        val keyFile = securityLocalPath.resolve("node.key")
+        if (certFile.exists() && keyFile.exists()) {
+            return try {
+                val keyBytes = Files.readAllBytes(keyFile)
+                val certBytes = Files.readAllBytes(certFile)
 
-    /**
-     * Reads the local security file and reconstructs UUID and KeyPair.
-     *
-     * File format:
-     * 16 bytes UUID +
-     * 4 bytes public key length + public key bytes +
-     * 4 bytes private key length + private key bytes
-     *
-     * @return Pair of [UUID] and [KeyPair], or null if file missing/corrupt
-     */
-    private fun readFromFile(): Pair<UUID, KeyPair>? {
-        if (!securityLocalPath.exists()) return null
+                val keyFactory = KeyFactory.getInstance("RSA", "BC")
+                val privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(keyBytes))
+                val publicKey = keyFactory.generatePublic(X509EncodedKeySpec(certBytes))
 
-        return try {
-            val data = securityLocalPath.readBytes()
-            var offset = 0
+                val cert = generateCertificate(KeyPair(publicKey, privateKey), "CN=local-node")
 
-            // UUID
-            val uuidBytes = data.copyOfRange(offset, 0 + 16)
-            offset += 16
-            val localId = uuidBytes.toUUID()
-
-            // PublicKey
-            val (publicBytes, offsetAfterPub) = readLengthPrefixedBytes(data, offset)
-            offset = offsetAfterPub
-
-            // PrivateKey
-            val (privateBytes, _) = readLengthPrefixedBytes(data, offset)
-
-            val keyFactory = KeyFactory.getInstance("RSA")
-            val publicKey = keyFactory.generatePublic(java.security.spec.X509EncodedKeySpec(publicBytes))
-            val privateKey = keyFactory.generatePrivate(java.security.spec.PKCS8EncodedKeySpec(privateBytes))
-
-            localId to KeyPair(publicKey, privateKey)
-        } catch (e: Exception) {
-            logger.warn("Failed to read ClusterSecurity file: ${e.message}")
-            null
+                Triple(UUID.randomUUID(), KeyPair(publicKey, privateKey), cert)
+            } catch (e: Exception) {
+                logger.warn("Failed to read existing TLS files: ${e.message}")
+                regenerate()
+            }
+        } else {
+            return regenerate()
         }
     }
 
     /**
-     * Generates a new UUID and RSA KeyPair, then persists them to disk.
+     * Generates a new RSA key pair, a self-signed certificate, and stores them on disk.
      *
-     * @return Pair of newly generated [UUID] and [KeyPair]
+     * @return Triple containing [UUID], [KeyPair], and self-signed [X509Certificate]
      */
-    private fun regenerate(): Pair<UUID, KeyPair> {
-        val parent = securityLocalPath.parent ?: throw IllegalStateException("LOCAL_SECURITY_PATH must have a parent directory")
+    private fun regenerate(): Triple<UUID, KeyPair, X509Certificate> {
+        val parent = securityLocalPath
         parent.createDirectories()
 
         val localId = UUID.randomUUID()
-        val keyGen = KeyPairGenerator.getInstance("RSA")
-        keyGen.initialize(2048)
+        val keyGen = KeyPairGenerator.getInstance("RSA", "BC")
+        keyGen.initialize(2048, SecureRandom())
         val keyPair = keyGen.generateKeyPair()
 
-        writeToFile(localId, keyPair)
-        logger.info(TranslationService.tr("cluster", "cluster.security.regenerated"))
-        return localId to keyPair
-    }
+        val cert = generateCertificate(keyPair, "CN=local-node")
 
-    /**
-     * Writes UUID and KeyPair to disk in binary format.
-     *
-     * Format:
-     * [16 bytes UUID][4 bytes pub length][pub bytes][4 bytes priv length][priv bytes]
-     *
-     * @param localId Node UUID
-     * @param keyPair Node KeyPair
-     */
-    private fun writeToFile(localId: UUID, keyPair: KeyPair) {
-        val localIdBytes = localId.toBytes()
-        val pubBytes = keyPair.public.encoded
-        val privBytes = keyPair.private.encoded
+        val certFile = parent.resolve("node.crt")
+        val keyFile = parent.resolve("node.key")
 
-        val data = ByteArray(16 + 4 + pubBytes.size + 4 + privBytes.size)
-        var offset = 0
-
-        // UUID
-        localIdBytes.copyInto(data, offset)
-        offset += 16
-
-        // PublicKey length + bytes
-        offset = writeLengthPrefixedBytes(pubBytes, data, offset)
-        writeLengthPrefixedBytes(privBytes, data, offset)
-
-        securityLocalPath.writeBytes(data)
+        certFile.writeBytes(cert.encoded)
+        keyFile.writeBytes(keyPair.private.encoded)
 
         try {
-            val dosView = Files.getFileAttributeView(securityLocalPath, DosFileAttributeView::class.java)
-            dosView?.setHidden(true)
+            Files.getFileAttributeView(certFile, DosFileAttributeView::class.java)?.setHidden(true)
+            Files.getFileAttributeView(keyFile, DosFileAttributeView::class.java)?.setHidden(true)
         } catch (_: Exception) {}
+
+        logger.info(TranslationService.tr("cluster", "cluster.security.regenerated"))
+        return Triple(localId, keyPair, cert)
     }
 
     /**
-     * Signs arbitrary data with the node's private key.
+     * Generates a self-signed X.509 certificate for a given key pair and distinguished name.
      *
-     * @param data Bytes to sign
-     * @return Base64-encoded signature
+     * @param keyPair RSA key pair
+     * @param dn Distinguished name (e.g., "CN=local-node")
+     * @return Self-signed [X509Certificate]
+     */
+    private fun generateCertificate(keyPair: KeyPair, dn: String): X509Certificate {
+        val now = Date()
+        val expiry = Date(now.time + 365L * 24 * 60 * 60 * 1000) // 1 year
+
+        val builder: X509v3CertificateBuilder = JcaX509v3CertificateBuilder(
+            X500Name(dn),
+            BigInteger.valueOf(System.currentTimeMillis()),
+            now,
+            expiry,
+            X500Name(dn),
+            keyPair.public
+        )
+
+        val signer = JcaContentSignerBuilder("SHA256withRSA").setProvider("BC").build(keyPair.private)
+        return JcaX509CertificateConverter().setProvider("BC").getCertificate(builder.build(signer))
+    }
+
+    /**
+     * Signs arbitrary data using the node's private key.
+     *
+     * @param data Byte array to sign
+     * @return Base64-encoded signature string
      */
     fun sign(data: ByteArray): String {
-        val signature = Signature.getInstance("SHA256withRSA")
+        val signature = Signature.getInstance("SHA256withRSA", "BC")
         signature.initSign(privateKey)
         signature.update(data)
-        val signedBytes = signature.sign()
-        return Base64.getEncoder().encodeToString(signedBytes)
+        return Base64.getEncoder().encodeToString(signature.sign())
     }
 
     /**
      * Verifies a signature with a given public key.
      *
-     * @param data Original data bytes
+     * @param data Original byte array
      * @param signatureB64 Base64-encoded signature
-     * @param pubKey PublicKey to verify with
-     * @return true if signature is valid
+     * @param pubKey Public key to verify with
+     * @return true if signature is valid, false otherwise
      */
     fun verify(data: ByteArray, signatureB64: String, pubKey: PublicKey): Boolean {
         return try {
-            val signature = Signature.getInstance("SHA256withRSA")
+            val signature = Signature.getInstance("SHA256withRSA", "BC")
             signature.initVerify(pubKey)
             signature.update(data)
             signature.verify(Base64.getDecoder().decode(signatureB64))
@@ -188,32 +185,8 @@ class ClusterSecurity(val securityLocalPath: Path) {
             false
         }
     }
-
-    private fun readLengthPrefixedBytes(data: ByteArray, startOffset: Int): Pair<ByteArray, Int> {
-        var offset = startOffset
-        val length = ((data[offset].toInt() and 0xFF) shl 24) or
-                ((data[offset + 1].toInt() and 0xFF) shl 16) or
-                ((data[offset + 2].toInt() and 0xFF) shl 8) or
-                (data[offset + 3].toInt() and 0xFF)
-        offset += 4
-        val bytes = data.copyOfRange(offset, offset + length)
-        offset += length
-        return bytes to offset
-    }
-
-    private fun writeLengthPrefixedBytes(src: ByteArray, dest: ByteArray, offset: Int): Int {
-        var currentOffset = offset
-        val len = src.size
-        dest[currentOffset++] = ((len shr 24) and 0xFF).toByte()
-        dest[currentOffset++] = ((len shr 16) and 0xFF).toByte()
-        dest[currentOffset++] = ((len shr 8) and 0xFF).toByte()
-        dest[currentOffset++] = (len and 0xFF).toByte()
-        src.copyInto(dest, currentOffset)
-        currentOffset += len
-        return currentOffset
-    }
 }
 
-/** Convenience Base64 helpers */
+/** Base64 encoding helpers for convenience */
 fun PublicKey.toBase64(): String = Base64.getEncoder().encodeToString(this.encoded)
 fun PrivateKey.toBase64(): String = Base64.getEncoder().encodeToString(this.encoded)

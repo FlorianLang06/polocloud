@@ -39,6 +39,9 @@ redis = "7.3.0"
 mariadb = "3.5.7"
 h2 = "2.4.240"
 
+# tls
+bcprov = "1.83"
+
 [libraries]
 
 # polocloud
@@ -93,6 +96,9 @@ redis = { group = "redis.clients", name = "jedis", version.ref = "redis" }
 mariadb = { group = "org.mariadb.jdbc", name = "mariadb-java-client", version.ref = "mariadb" }
 h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
 
+# tls
+bcprov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bcprov" }
+bcpkix = { group = "org.bouncycastle", name = "bcpkix-jdk18on", version.ref = "bcprov" }
 
 [plugins]
 
@@ -111,3 +117,4 @@ kotlin = ["kotlinx-serialization-json", "kotlinx-coroutines-core"]
 testcontainers = ["testcontainers", "testcontainers-junit", "testcontainers-postgresql", "testcontainers-mariadb", "testcontainers-mongodb", "testcontainers-mysql", "testcontainers-cassandra"]
 database-drivers = ["mongodb", "mysql", "redis", "mariadb", "h2"]
 junit = ["junit-api", "junit-engine", "junit-params"]
+tls = ["bcprov", "bcpkix"]

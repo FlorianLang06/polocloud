@@ -56,6 +56,10 @@ dependencies {
     compileOnly(libs.oshi)
     runtimeOnly(libs.oshi)
 
+    // security
+    compileOnly(libs.bundles.tls)
+    runtimeOnly(libs.bundles.tls)
+
     testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.junit)
     testImplementation(kotlin("test"))
