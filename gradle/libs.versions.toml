@@ -11,7 +11,7 @@ polocloud-i18n = "3.0.0-pre.8-SNAPSHOT"
 
 # cli
 jline = "3.30.6"
-oshi = "6.9.3"
+oshi = "6.10.0"
 
 # grpc
 grpc = "1.79.0"
