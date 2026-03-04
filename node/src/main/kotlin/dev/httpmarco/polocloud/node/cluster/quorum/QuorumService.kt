@@ -3,11 +3,8 @@ package dev.httpmarco.polocloud.node.cluster.quorum
 import dev.httpmarco.polocloud.node.cluster.client.ClusterNodeApprovalClient
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
-import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 
-class QuorumService(
-    private val security: ClusterSecurity,
-) {
+class QuorumService {
 
     fun requestJoin(
         nodes: List<NodeData>,
@@ -20,7 +17,11 @@ class QuorumService(
 
         for (node in nodes.filter { it.state == NodeState.ONLINE }) {
             val approval = approvalClient.requestApproval(node, newNode)
-            approvals += approval
+
+           // if (approval.approved) {
+             //   approvals += approval.signature
+            //}
+
             if (approvals.size >= quorumSize) break
         }
 

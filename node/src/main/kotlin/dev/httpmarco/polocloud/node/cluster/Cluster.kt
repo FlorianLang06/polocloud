@@ -3,15 +3,15 @@ package dev.httpmarco.polocloud.node.cluster
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
 import dev.httpmarco.polocloud.common.ShutdownMode
-import dev.httpmarco.polocloud.database.DatabaseCredentials
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
+import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
 import dev.httpmarco.polocloud.node.cluster.node.NodeStateService
 import dev.httpmarco.polocloud.node.cluster.quorum.QuorumService
+import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
-import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
-import org.slf4j.LoggerFactory
+import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
 
 /**
  * Central cluster lifecycle manager.
@@ -29,21 +29,18 @@ import org.slf4j.LoggerFactory
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(bindAddress: Address, val config: NodeInstanceConfiguration, val launchConfig: NodeLaunchConfig) : Closeable {
+class Cluster(database : DatabaseConnectionFactory<*>,bindAddress: Address, launchConfig: NodeLaunchConfig) : Closeable {
 
-    private val logger = LoggerFactory.getLogger(Cluster::class.java)
-    private val database =  resolveDatabaseCredentials().factory()
+    private val nodeRepository = NodeRepository(database)
+    private val endpoint = GrpcEndpoint(bindAddress, NodeServiceImpl(nodeRepository))
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
-    private val quorumService = QuorumService(security)
+    private val quorumService = QuorumService()
     private val bootstrapService = ClusterBootstrapService(database, security, bindAddress, quorumService)
-    private val stateService = NodeStateService(database, security)
+    private val stateService = NodeStateService(nodeRepository, security)
     private val heartBeatService = NodeHeartBeatService(security.localId, database)
 
-    init {
-        initializeDatabase()
-    }
-
     fun detect() {
+        this.endpoint.connect()
         bootstrapService.detectAndRegister()
         heartBeatService.startScheduler()
     }
@@ -54,28 +51,8 @@ class Cluster(bindAddress: Address, val config: NodeInstanceConfiguration, val l
     fun state() = stateService.localState()
 
     override fun close(mode: ShutdownMode) {
+        endpoint.close(mode);
         heartBeatService.stopScheduler()
         bootstrapService.close(mode)
-    }
-
-    private fun initializeDatabase() {
-        database.connect()
-
-        if (!database.isValid()) {
-            logger.error(
-                TranslationService.tr(
-                    "cluster",
-                    "cluster.node.database.failed"
-                )
-            )
-            throw IllegalStateException("Cluster database connection is not valid.")
-        }
-    }
-
-    fun resolveDatabaseCredentials(): DatabaseCredentials {
-        if (launchConfig.database != null) {
-            return launchConfig.database
-        }
-        return config.database
     }
 }

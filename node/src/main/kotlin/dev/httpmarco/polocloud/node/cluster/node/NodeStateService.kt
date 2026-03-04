@@ -1,19 +1,17 @@
 package dev.httpmarco.polocloud.node.cluster.node
 
-import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
-import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
 import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
+import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class NodeStateService(
-    private val database: DatabaseConnectionFactory<*>,
+    private val repository: NodeRepository,
     private val security: ClusterSecurity
 ) {
 
-    private val clusterKey = DatabaseKey(NodeData::class)
     @OptIn(ExperimentalAtomicApi::class)
     private val stateRef = AtomicReference(NodeState.OFFLINE)
 
@@ -43,13 +41,13 @@ class NodeStateService(
 
         stateRef.store(newState)
         node.state = newState
-        database.executor().save(clusterKey, node)
+        repository.save(node)
     }
 
     private fun findSelf(): NodeData {
-        return database.executor().findById(clusterKey, security.localId) ?: throw LocalNodeFindingException()
+        return repository.findNode(security.localId) ?: throw LocalNodeFindingException()
     }
 
     @OptIn(ExperimentalAtomicApi::class)
-    fun localState() : NodeState = stateRef.load()
+    fun localState(): NodeState = stateRef.load()
 }

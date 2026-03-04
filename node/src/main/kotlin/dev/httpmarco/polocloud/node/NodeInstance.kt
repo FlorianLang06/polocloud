@@ -4,14 +4,14 @@ import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
 import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
-import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
+import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.Cluster
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
-import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
+import org.slf4j.LoggerFactory
 import java.util.Locale
 import kotlin.system.exitProcess
 
@@ -37,15 +37,12 @@ class NodeInstance(
     val launchConfig: NodeLaunchConfig
 ) : Closeable {
 
+    private val logger = LoggerFactory.getLogger(NodeInstance::class.java)
+
     /**
      * Node configuration loaded from the local node configuration file.
      */
     val config: NodeInstanceConfiguration
-
-    /**
-     * gRPC endpoint used for inter-node communication.
-     */
-    val endpoint: GrpcEndpoint
 
     /**
      * Cluster abstraction handling node discovery and cluster state.
@@ -57,20 +54,23 @@ class NodeInstance(
      */
     val shutdownHandler = NodeShutdownHandler(this)
 
+    /**
+     * Database connection factory resolved from launch parameters or persisted configuration.
+     */
+    val database: DatabaseConnectionFactory<*>
+
     init {
         TranslationService.init()
         TranslationService.defaultLanguage(Locale.US) //TODO read config value
-        TranslationService.preloadAsync("node")
         TranslationService.preloadAsync("database")
 
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
 
-        // Prepare networking endpoint based on configuration
-        endpoint = GrpcEndpoint(resolveBindAddress(), NodeServiceImpl())
+        database = resolveDatabaseCredentials().factory()
 
         // Initialize cluster component
-        cluster = Cluster(resolveBindAddress(), config, launchConfig)
+        cluster = Cluster(database, resolveBindAddress(), launchConfig)
     }
 
     /**
@@ -89,8 +89,8 @@ class NodeInstance(
         }
 
         try {
-            initializeNetwork()
-            initializeCluster()
+            this.initializeDatabase()
+            this.initializeCluster()
         } catch (ex: Exception) {
             // If any initialization step fails, ensure we attempt to clean up resources before rethrowing the exception
             close(ShutdownMode.GRACEFUL)
@@ -120,7 +120,6 @@ class NodeInstance(
         }
 
         cluster.markStopping()
-        endpoint.close(mode)
         cluster.markStopped()
 
         // finally close database and other resources
@@ -129,13 +128,6 @@ class NodeInstance(
         if (!shutdownHandler.running) {
             exitProcess(0)
         }
-    }
-
-    /**
-     * Establishes the gRPC connection.
-     */
-    private fun initializeNetwork() {
-        endpoint.connect()
     }
 
     /**
@@ -184,5 +176,26 @@ class NodeInstance(
             return Address(hostname, port)
         }
         return config.bindAddress
+    }
+
+    private fun initializeDatabase() {
+        database.connect()
+
+        if (!database.isValid()) {
+            logger.error(
+                TranslationService.tr(
+                    "cluster",
+                    "cluster.node.database.failed"
+                )
+            )
+            throw IllegalStateException("Cluster database connection is not valid.")
+        }
+    }
+
+    fun resolveDatabaseCredentials(): DatabaseCredentials {
+        if (launchConfig.database != null) {
+            return launchConfig.database
+        }
+        return config.database
     }
 }
