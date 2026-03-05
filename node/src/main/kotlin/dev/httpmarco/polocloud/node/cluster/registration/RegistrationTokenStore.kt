@@ -11,13 +11,10 @@ import de.mkammerer.argon2.Argon2Factory
  */
 class RegistrationTokenStore {
 
-    private var tokenHash: String
-    private var tokenPlain: String
+    private var token: Pair<String, String>? = null
 
     init {
-        val token = RegistrationTokenGenerator.generateToken()
-        tokenPlain = token.first
-        tokenHash = token.second
+        this.rotate()
     }
 
     private val argon2 = Argon2Factory.create()
@@ -30,7 +27,7 @@ class RegistrationTokenStore {
      */
     fun verify(candidate: String): Boolean {
         return try {
-            argon2.verify(tokenHash, candidate.toCharArray())
+            argon2.verify(token?.second, candidate.toCharArray())
         } catch (_: Exception) {
             false
         }
@@ -40,8 +37,6 @@ class RegistrationTokenStore {
      * Rotates the token: generates a new token and updates the hash.
      */
     fun rotate() {
-        val token = RegistrationTokenGenerator.generateToken()
-        tokenPlain = token.first
-        tokenHash = token.second
+        token = RegistrationTokenGenerator.generateToken()
     }
 }
