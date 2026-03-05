@@ -1,14 +1,16 @@
 package dev.httpmarco.polocloud.node.cluster.client
 
 import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
+import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import dev.httpmarco.polocloud.proto.JoinRequest
 import dev.httpmarco.polocloud.proto.NodeServiceGrpcKt
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 
-class ClusterNodeApprovalClient {
+class ClusterNodeApprovalClient(val security : ClusterSecurity) {
 
     fun requestApproval(
         existingNode: NodeData,
@@ -41,9 +43,10 @@ class ClusterNodeApprovalClient {
     }
 
     private fun createChannel(node: NodeData): ManagedChannel {
-        return ManagedChannelBuilder
-            .forAddress(node.hostname, node.port)
-            .usePlaintext() // 🔥 später TLS
+        return NettyChannelBuilder.forAddress(node.hostname, node.port)
+            .sslContext(GrpcSslContexts.forClient()
+                .trustManager(security.certFile())
+                .build())
             .build()
     }
 

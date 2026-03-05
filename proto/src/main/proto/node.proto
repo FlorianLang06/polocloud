@@ -7,7 +7,13 @@ option java_multiple_files = true;
 package node;
 
 service NodeService {
+  // Default login
   rpc RequestApproval (JoinRequest) returns (ApprovalResponse);
+}
+
+service NodeRegistrationService {
+  // First contact with cluster
+  rpc RegisterNode (RegisterNodeRequest) returns (RegisterNodeResponse);
 }
 
 message JoinRequest {
@@ -18,4 +24,24 @@ message JoinRequest {
 message ApprovalResponse {
   bool approved = 1;
   string signature = 2;
+}
+
+message RegisterNodeRequest {
+  string localId = 1;
+  string hostname = 2;
+  int32 port = 3;
+  string token = 4;
+  string publicKey = 5;
+  NodeVersion details = 6;
+}
+
+message RegisterNodeResponse {
+  bool accepted = 1;
+  string message = 2;
+  optional string node_id = 3;
+}
+
+message NodeVersion {
+  string version = 1;
+  string gitHash = 2;
 }

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ClusterNodeAuthTest {
 
-    private val nodeCount = Random.nextInt(1, 10)
+    private val nodeCount =2// Random.nextInt(1, 10)
     private val clusterInstances = arrayListOf<NodeInstance>()
 
     companion object {

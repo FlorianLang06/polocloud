@@ -52,7 +52,7 @@ class ClusterBootstrapService(
     private fun registerNewNode(nodes: List<NodeData>, ip: String) {
         val newNode = NodeFactory.create(security, nodes.size + 1, "127.0.0.1", bindAddress.port)
 
-        val approvals = quorumService.requestJoin(nodes, newNode, ClusterNodeApprovalClient())
+        val approvals = quorumService.requestJoin(nodes, newNode, ClusterNodeApprovalClient(security))
 
         security.quorumSignatures.addAll(approvals)
         database.executor().save(clusterKey, newNode)

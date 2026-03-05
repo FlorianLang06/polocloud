@@ -13,4 +13,6 @@ class NodeRepository(val database: DatabaseConnectionFactory<*>) {
 
     fun save(node: NodeData) = this.database.executor().save(repositoryKey, node)
 
+    fun findAll() = this.database.executor().findAll(repositoryKey)
+
 }
