@@ -24,7 +24,7 @@ class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeReposi
                 "nodeId" to request.localId
             )
 
-        if (!tokenStore.validate(request.token)) {
+        if (!tokenStore.verify(request.token)) {
             return errorResponse(
                 "cluster.registration.token.invalid",
                 "cluster.registration.token.invalid.response",

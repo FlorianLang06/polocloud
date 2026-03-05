@@ -60,6 +60,10 @@ dependencies {
     compileOnly(libs.bundles.tls)
     runtimeOnly(libs.bundles.tls)
 
+    // hashing
+    compileOnly(libs.argon2)
+    runtimeOnly(libs.argon2)
+
     testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.junit)
     testImplementation(kotlin("test"))
