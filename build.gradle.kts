@@ -7,6 +7,7 @@ allprojects {
 
     repositories {
         mavenCentral()
+        maven { url = uri("https://repo1.maven.org/maven2") }
 
         maven {
             name = "polocloud-snapshots"
