@@ -22,10 +22,19 @@ internal object PolocloudVersionLoader {
     private const val RESOURCE_PATH = "version.properties"
 
     fun load(): PolocloudVersion {
-        val props = Properties()
+        // fallback version
+        val systemVersion = System.getProperty("version")
+        if (systemVersion != null) {
+            return PolocloudVersionParser.parseOrNull(systemVersion)
+                ?: error("Invalid version in system property: $systemVersion")
+        }
 
-        val stream = PolocloudVersionLoader::class.java.getResourceAsStream(RESOURCE_PATH)
-            ?: error("version.properties not found in classpath. Did Gradle inject it correctly?")
+        val props = Properties()
+        val stream = Thread.currentThread().contextClassLoader
+            ?.getResourceAsStream(RESOURCE_PATH)
+            ?: PolocloudVersionLoader::class.java.classLoader
+                .getResourceAsStream(RESOURCE_PATH)
+            ?: error("$RESOURCE_PATH not found in classpath. Did Gradle inject it correctly?")
 
         stream.use { props.load(it) }
 
