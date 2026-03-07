@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster
+package dev.httpmarco.polocloud.node
 
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.common.Closeable
@@ -6,13 +6,8 @@ import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.grpc.GrpcEndpoint
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
-import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
-import dev.httpmarco.polocloud.node.cluster.node.NodeStateService
-import dev.httpmarco.polocloud.node.cluster.quorum.QuorumService
-import dev.httpmarco.polocloud.node.cluster.registration.RegistrationTokenStore
-import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
-import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
+import dev.httpmarco.polocloud.node.join.QuorumService
 
 /**
  * Central cluster lifecycle manager.
@@ -33,14 +28,17 @@ import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
 class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, launchConfig: NodeLaunchConfig) :
     Closeable {
 
-    private val tokenStore = RegistrationTokenStore()
-    private val nodeRepository = NodeRepository(database)
-    private val security = ClusterSecurity(launchConfig.localSecurityPath)
+    private val tokenStore = _root_ide_package_.dev.httpmarco.polocloud.node.registration.RegistrationTokenStore()
+    private val nodeRepository = _root_ide_package_.dev.httpmarco.polocloud.node.repository.NodeRepository(database)
+    private val security =
+        _root_ide_package_.dev.httpmarco.polocloud.node.security.ClusterSecurity(launchConfig.localSecurityPath)
     private val endpoint = GrpcEndpoint(bindAddress, security.certFile(), security.keyFile(), NodeServiceImpl(nodeRepository))
     private val quorumService = QuorumService()
     private val bootstrapService = ClusterBootstrapService(database, security, bindAddress, quorumService)
-    private val stateService = NodeStateService(nodeRepository, security)
-    private val heartBeatService = NodeHeartBeatService(security.localId, database)
+    private val stateService =
+        _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeStateService(nodeRepository, security)
+    private val heartBeatService =
+        _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeHeartBeatService(security.localId, database)
 
     fun detect() {
         this.endpoint.connect()

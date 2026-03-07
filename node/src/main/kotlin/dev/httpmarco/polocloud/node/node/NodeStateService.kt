@@ -1,15 +1,11 @@
-package dev.httpmarco.polocloud.node.cluster.node
+package dev.httpmarco.polocloud.node.node
 
-import dev.httpmarco.polocloud.node.cluster.exception.LocalNodeFindingException
-import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
-import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
-import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class NodeStateService(
-    private val repository: NodeRepository,
-    private val security: ClusterSecurity
+    private val repository: dev.httpmarco.polocloud.node.repository.NodeRepository,
+    private val security: dev.httpmarco.polocloud.node.security.ClusterSecurity
 ) {
 
     @OptIn(ExperimentalAtomicApi::class)
@@ -33,7 +29,7 @@ class NodeStateService(
     @OptIn(ExperimentalAtomicApi::class)
     private fun changeState(
         newState: NodeState,
-        predicate: (NodeData) -> Boolean
+        predicate: (dev.httpmarco.polocloud.node.node.data.NodeData) -> Boolean
     ) {
         val node = findSelf()
 
@@ -44,8 +40,8 @@ class NodeStateService(
         repository.save(node)
     }
 
-    private fun findSelf(): NodeData {
-        return repository.findNode(security.localId) ?: throw LocalNodeFindingException()
+    private fun findSelf(): dev.httpmarco.polocloud.node.node.data.NodeData {
+        return repository.findNode(security.localId) ?: throw _root_ide_package_.dev.httpmarco.polocloud.node.exception.LocalNodeFindingException()
     }
 
     @OptIn(ExperimentalAtomicApi::class)

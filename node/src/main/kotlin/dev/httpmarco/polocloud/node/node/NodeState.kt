@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.node
+package dev.httpmarco.polocloud.node.node
 
 enum class NodeState {
 

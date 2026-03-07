@@ -1,6 +1,6 @@
 package dev.httpmarco.polocloud.node.grpc
 
-import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
+import dev.httpmarco.polocloud.node.repository.NodeRepository
 import dev.httpmarco.polocloud.proto.ApprovalResponse
 import dev.httpmarco.polocloud.proto.JoinRequest
 import dev.httpmarco.polocloud.proto.NodeServiceGrpcKt

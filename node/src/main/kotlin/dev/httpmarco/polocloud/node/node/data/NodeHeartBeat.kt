@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.node.data
+package dev.httpmarco.polocloud.node.node.data
 
 import dev.httpmarco.polocloud.database.EntryIdentifier
 import dev.httpmarco.polocloud.database.EntryRef

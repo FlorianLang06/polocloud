@@ -1,10 +1,9 @@
-package dev.httpmarco.polocloud.node.cluster.node
+package dev.httpmarco.polocloud.node.node
 
 import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.database.filtering.Eq
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.cluster.node.data.NodeHeartBeat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,7 +35,7 @@ class NodeHeartBeatService(
 ) {
 
     private val logger = LoggerFactory.getLogger(NodeHeartBeatService::class.java)
-    private val databaseKey = DatabaseKey( NodeHeartBeat::class)
+    private val databaseKey = DatabaseKey( _root_ide_package_.dev.httpmarco.polocloud.node.node.data.NodeHeartBeat::class)
     private val sysInfo = SystemInfo()
     private val processor: CentralProcessor = sysInfo.hardware.processor
     private val memory: GlobalMemory = sysInfo.hardware.memory
@@ -87,7 +86,7 @@ class NodeHeartBeatService(
 
         val now = Clock.System.now()
         val cutoff = now - 24.hours
-        val toKeep = mutableSetOf<NodeHeartBeat>()
+        val toKeep = mutableSetOf<dev.httpmarco.polocloud.node.node.data.NodeHeartBeat>()
 
         // Keep at least one heartbeat per 10 minutes for older data
         beats.filter { it.heartBeatAt < cutoff }
@@ -120,9 +119,9 @@ class NodeHeartBeatService(
     /**
      * Generates a new heartbeat based on current system metrics.
      *
-     * @return A [NodeHeartBeat] object with CPU usage, memory usage, and TPS data.
+     * @return A [dev.httpmarco.polocloud.node.node.data.NodeHeartBeat] object with CPU usage, memory usage, and TPS data.
      */
-    fun generate(): NodeHeartBeat {
+    fun generate(): dev.httpmarco.polocloud.node.node.data.NodeHeartBeat {
         val cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100.0
         prevTicks = processor.systemCpuLoadTicks
 
@@ -136,7 +135,7 @@ class NodeHeartBeatService(
         val avgTick = tickDurations.average()
         val tps = 1000.0 / avgTick
 
-        return NodeHeartBeat(
+        return _root_ide_package_.dev.httpmarco.polocloud.node.node.data.NodeHeartBeat(
             id = UUID.randomUUID().toString(),
             nodeId = localId,
             heartBeatAt = Clock.System.now(),

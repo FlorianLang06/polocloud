@@ -1,17 +1,14 @@
-package dev.httpmarco.polocloud.node.cluster.registration
+package dev.httpmarco.polocloud.node.registration
 
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.cluster.node.NodeIndexGenerator
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
-import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
-import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
+import dev.httpmarco.polocloud.node.node.NodeIndexGenerator
 import dev.httpmarco.polocloud.proto.NodeRegistrationServiceGrpcKt
 import dev.httpmarco.polocloud.proto.RegisterNodeRequest
 import dev.httpmarco.polocloud.proto.RegisterNodeResponse
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
-class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeRepository: NodeRepository) :
+class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeRepository: dev.httpmarco.polocloud.node.repository.NodeRepository) :
     NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(RegistrationService::class.java)
@@ -45,13 +42,13 @@ class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeReposi
 
         tokenStore.rotate()
 
-        val data = NodeData(
+        val data = _root_ide_package_.dev.httpmarco.polocloud.node.node.data.NodeData(
             id = nodeId,
             index = NodeIndexGenerator.findNextFreeIndex(nodeRepository),
             port = request.port,
             hostname = request.hostname,
             // New nodes start as OFFLINE until they complete the full registration process
-            state = NodeState.OFFLINE,
+            state = _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeState.OFFLINE,
             head = false,
             publicKey = request.publicKey,
             version = request.details.version,

@@ -115,7 +115,6 @@ grpc = ["grpc-api", "grpc-stub", "grpc-services", "protobuf"]
 grpc-runtime = ["grpc-netty-shaded"]
 
 logging = ["log4j-api", "log4j-core", "log4j-slf4j"]
-cli = ["jline", "jansi"]
 database = ["hikariCp", "postgreSql"]
 kotlin = ["kotlinx-serialization-json", "kotlinx-coroutines-core"]
 testcontainers = ["testcontainers", "testcontainers-junit", "testcontainers-postgresql", "testcontainers-mariadb", "testcontainers-mongodb", "testcontainers-mysql", "testcontainers-cassandra"]

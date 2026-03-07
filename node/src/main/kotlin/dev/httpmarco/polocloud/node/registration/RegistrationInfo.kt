@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.registration
+package dev.httpmarco.polocloud.node.registration
 
 import dev.httpmarco.polocloud.common.Address
 

@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.exception
+package dev.httpmarco.polocloud.node.exception
 
 class LocalNodeFindingException : RuntimeException() {
 

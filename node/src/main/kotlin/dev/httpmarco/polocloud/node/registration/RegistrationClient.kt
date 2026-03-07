@@ -1,9 +1,8 @@
-package dev.httpmarco.polocloud.node.cluster.registration
+package dev.httpmarco.polocloud.node.registration
 
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
-import dev.httpmarco.polocloud.node.cluster.security.toBase64
+import dev.httpmarco.polocloud.node.security.toBase64
 import dev.httpmarco.polocloud.proto.NodeRegistrationServiceGrpcKt
 import dev.httpmarco.polocloud.proto.NodeVersion
 import dev.httpmarco.polocloud.proto.RegisterNodeRequest
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit
  *
  * @property security The local node's security context providing nodeId and keys.
  */
-class RegistrationClient(val security: ClusterSecurity) {
+class RegistrationClient(val security: dev.httpmarco.polocloud.node.security.ClusterSecurity) {
 
     private val logger = LoggerFactory.getLogger(RegistrationClient::class.java)
 

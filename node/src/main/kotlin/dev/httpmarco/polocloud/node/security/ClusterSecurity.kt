@@ -1,4 +1,4 @@
-package dev.httpmarco.polocloud.node.cluster.security
+package dev.httpmarco.polocloud.node.security
 
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import org.bouncycastle.asn1.x500.X500Name

@@ -1,8 +1,7 @@
-package dev.httpmarco.polocloud.node.cluster.quorum
+package dev.httpmarco.polocloud.node.join
 
-import dev.httpmarco.polocloud.node.cluster.client.ClusterNodeApprovalClient
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
-import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
+import dev.httpmarco.polocloud.node.node.NodeState
+import dev.httpmarco.polocloud.node.node.data.NodeData
 
 class QuorumService {
 

@@ -1,9 +1,9 @@
-package dev.httpmarco.polocloud.node.cluster.node.data
+package dev.httpmarco.polocloud.node.node.data
 
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.EntryIdentifier
 import dev.httpmarco.polocloud.database.RepositoryName
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
+import dev.httpmarco.polocloud.node.node.NodeState
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Instant

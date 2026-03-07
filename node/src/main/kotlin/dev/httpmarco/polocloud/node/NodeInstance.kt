@@ -8,9 +8,8 @@ import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
-import dev.httpmarco.polocloud.node.cluster.Cluster
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.configuration.NodeInstanceConfiguration
+import dev.httpmarco.polocloud.node.node.NodeState
 import org.slf4j.LoggerFactory
 import java.util.Locale
 import kotlin.system.exitProcess

@@ -2,7 +2,7 @@ package dev.httpmarco.polocloud.node.launch
 
 import dev.httpmarco.polocloud.common.Address
 import dev.httpmarco.polocloud.database.DatabaseCredentials
-import dev.httpmarco.polocloud.node.cluster.registration.RegistrationInfo
+import dev.httpmarco.polocloud.node.registration.RegistrationInfo
 import java.nio.file.Path
 
 data class NodeLaunchConfig(

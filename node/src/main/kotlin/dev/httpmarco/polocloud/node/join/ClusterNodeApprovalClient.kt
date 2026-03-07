@@ -1,7 +1,7 @@
-package dev.httpmarco.polocloud.node.cluster.client
+package dev.httpmarco.polocloud.node.join
 
-import dev.httpmarco.polocloud.node.cluster.node.data.NodeData
-import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
+import dev.httpmarco.polocloud.node.node.data.NodeData
+import dev.httpmarco.polocloud.node.security.ClusterSecurity
 import dev.httpmarco.polocloud.proto.JoinRequest
 import dev.httpmarco.polocloud.proto.NodeServiceGrpcKt
 import io.grpc.ManagedChannel
@@ -44,7 +44,8 @@ class ClusterNodeApprovalClient(val security : ClusterSecurity) {
 
     private fun createChannel(node: NodeData): ManagedChannel {
         return NettyChannelBuilder.forAddress(node.hostname, node.port)
-            .sslContext(GrpcSslContexts.forClient()
+            .sslContext(
+                GrpcSslContexts.forClient()
                 .trustManager(security.certFile())
                 .build())
             .build()

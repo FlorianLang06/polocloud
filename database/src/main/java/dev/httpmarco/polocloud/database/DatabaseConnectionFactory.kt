@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
  * - providing an SQL executor
  * - basic validation of the connection state
  */
-abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val credentials : DatabaseCredentials)  : Closeable {
+abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val credentials : C)  : Closeable {
 
     /**
      * Logger used for database connection lifecycle messages.
@@ -38,7 +38,7 @@ abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val cr
      *
      * @param credentials database access credentials
      */
-    abstract fun connect(credentials: C = this.credentials as C)
+    abstract fun connect(credentials: C = this.credentials)
 
     /**
      * Returns an SQL executor used to execute queries and updates.

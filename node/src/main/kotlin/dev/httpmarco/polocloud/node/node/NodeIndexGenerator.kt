@@ -1,10 +1,8 @@
-package dev.httpmarco.polocloud.node.cluster.node
-
-import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
+package dev.httpmarco.polocloud.node.node
 
 object NodeIndexGenerator {
 
-    fun findNextFreeIndex(repository: NodeRepository): Int {
+    fun findNextFreeIndex(repository: dev.httpmarco.polocloud.node.repository.NodeRepository): Int {
         val usedIndexes = repository.findAll()
             .map { it.index }
             .toSet()
