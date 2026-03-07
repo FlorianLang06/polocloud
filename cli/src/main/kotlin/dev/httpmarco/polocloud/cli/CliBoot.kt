@@ -3,13 +3,15 @@ package dev.httpmarco.polocloud.cli
 import dev.httpmarco.polocloud.common.dependency.DependencyRegistry
 import dev.httpmarco.polocloud.common.dependency.insert.ClasspathInsert
 import dev.httpmarco.polocloud.common.dependency.scanning.OwnBlobScanner
+import dev.httpmarco.polocloud.common.version.PolocloudVersion
 import java.nio.file.Path
 
 fun main() {
     val dependencyRegistry = DependencyRegistry(ClasspathInsert())
 
     // TODO
-    val cliJar = Path.of(".cache/dev/httpmarco/polocloud/cli/3.0.0-pre.10-SNAPSHOT/cli-3.0.0-pre.10-SNAPSHOT.jar").toFile()
+    val version = PolocloudVersion.CURRENT.toVersionString()
+    val cliJar = Path.of(".cache/dev/httpmarco/polocloud/cli/$version/cli-$version.jar").toFile()
 
     dependencyRegistry.scan(OwnBlobScanner(cliJar))
     dependencyRegistry.downloadAndRegister()

@@ -31,7 +31,6 @@ object PolocloudCli {
     }
 
     //TODO making all dot folders invisible
-    //TODO Versioning
     //TODO global Updater for all modules (cli, node)
 
     /**
