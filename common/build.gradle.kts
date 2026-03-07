@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm") version "2.3.10"
     id("dev.httpmarco.polocloud")
-    kotlin("plugin.serialization") version "1.9.10"
+    kotlin("plugin.serialization") version "2.3.10"
 }
 
 dependencies {
