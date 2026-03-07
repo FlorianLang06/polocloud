@@ -7,6 +7,7 @@ import dev.httpmarco.polocloud.common.files.deleteComplete
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.node.NodeInstance
 import dev.httpmarco.polocloud.node.cluster.node.NodeState
+import dev.httpmarco.polocloud.node.cluster.registration.RegistrationInfo
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import org.awaitility.Awaitility.await
 import java.util.UUID
@@ -23,7 +24,7 @@ import java.util.concurrent.TimeUnit
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ClusterNodeAuthTest {
 
-    private val nodeCount =2// Random.nextInt(1, 10)
+    private val nodeCount = 2// Random.nextInt(1, 10)
     private val clusterInstances = arrayListOf<NodeInstance>()
 
     companion object {
@@ -40,18 +41,42 @@ class ClusterNodeAuthTest {
     @BeforeTest
     fun setupCluster() {
         postgres.start()
-        System.out.printf("Waiting for node initialization...: $nodeCount")
+
+        println("Starting cluster with $nodeCount nodes")
+
+        var registrationToken: String? = null
+        var headAddress: Address? = null
 
         repeat(nodeCount) { i ->
+
+            val address = LOCAL_ADDRESS.withPort(5600 + i)
+
             val config = NodeLaunchConfig(
                 rootDir = Path("testing-${UUID.randomUUID()}"),
-                address = LOCAL_ADDRESS.withPort(5600 + i),
-                database = DatabaseCredentials.PostgreSQL(Address(postgres.host, postgres.firstMappedPort), "test", "test", "testdb")
+                address = address,
+                database = DatabaseCredentials.PostgreSQL(
+                    Address(postgres.host, postgres.firstMappedPort),
+                    "test",
+                    "test",
+                    "testdb"
+                ),
+                clusterRegistrationToken =
+                    if (registrationToken != null)
+                        RegistrationInfo(registrationToken, headAddress!!)
+                    else null
             )
+
             val node = NodeInstance(config)
+
             node.shutdownHandler.running = true
-            clusterInstances.add(node)
             node.start()
+
+            if (i == 0) {
+                registrationToken = node.cluster.token()
+                headAddress = address
+            }
+
+            clusterInstances.add(node)
         }
     }
 
