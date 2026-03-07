@@ -9,6 +9,7 @@ import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.cluster.node.NodeHeartBeatService
 import dev.httpmarco.polocloud.node.cluster.node.NodeStateService
 import dev.httpmarco.polocloud.node.cluster.quorum.QuorumService
+import dev.httpmarco.polocloud.node.cluster.registration.RegistrationTokenStore
 import dev.httpmarco.polocloud.node.cluster.repository.NodeRepository
 import dev.httpmarco.polocloud.node.cluster.security.ClusterSecurity
 import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
@@ -32,6 +33,7 @@ import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
 class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, launchConfig: NodeLaunchConfig) :
     Closeable {
 
+    private val tokenStore = RegistrationTokenStore()
     private val nodeRepository = NodeRepository(database)
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
     private val endpoint = GrpcEndpoint(bindAddress, security.certFile(), security.keyFile(), NodeServiceImpl(nodeRepository))
@@ -50,6 +52,7 @@ class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, laun
     fun markStopping() = stateService.markStopping()
     fun markStopped() = stateService.markStopped()
     fun state() = stateService.localState()
+    fun token() = tokenStore.currentToken()
 
     override fun close(mode: ShutdownMode) {
         endpoint.close(mode);
