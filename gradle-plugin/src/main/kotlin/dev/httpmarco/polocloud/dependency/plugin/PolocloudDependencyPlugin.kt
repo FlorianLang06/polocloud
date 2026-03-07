@@ -9,6 +9,7 @@ import org.gradle.kotlin.dsl.attributes
 import java.nio.charset.StandardCharsets
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
+import java.net.HttpURLConnection
 import java.net.URI
 
 /**
@@ -118,17 +119,18 @@ class PolocloudDependencyPlugin : Plugin<Project> {
         for (repoUrl in repositories) {
             val url = "$repoUrl/$groupPath/$artifactId/$version/$fileName"
             runCatching {
-                val connection = URI(url).toURL().openConnection()
-                connection.connectTimeout = 3000
-                connection.readTimeout = 3000
+                val connection = URI(url).toURL().openConnection() as HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.requestMethod = "HEAD"
                 connection.connect()
-                connection.getInputStream().close()
-                return url
+                val code = connection.responseCode
+                connection.disconnect()
+                if (code == 200) return url
             }
         }
 
-        // Fallback to Maven Central
-        return "https://repo1.maven.org/maven2/$groupPath/$artifactId/$version/$fileName"
+        error("Could not resolve download URL for $artifactId:$version in any configured repository: $repositories")
     }
 }
 
