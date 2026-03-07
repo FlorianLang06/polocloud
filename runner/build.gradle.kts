@@ -8,6 +8,12 @@ polocloud {
 }
 
 tasks.named<Jar>("jar") {
+    manifest {
+        attributes(
+            "Enable-Native-Access" to "ALL-UNNAMED"
+        )
+    }
+
     val subprojects = listOf(
         ":cli",
         ":common",
