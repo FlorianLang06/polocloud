@@ -6,9 +6,9 @@ import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.files.deleteComplete
 import dev.httpmarco.polocloud.database.DatabaseCredentials
 import dev.httpmarco.polocloud.node.NodeInstance
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
-import dev.httpmarco.polocloud.node.cluster.registration.RegistrationInfo
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
+import dev.httpmarco.polocloud.node.node.NodeState
+import dev.httpmarco.polocloud.node.registration.RegistrationInfo
 import org.awaitility.Awaitility.await
 import java.util.UUID
 import kotlin.io.path.Path
@@ -45,7 +45,7 @@ class ClusterNodeAuthTest {
         println("Starting cluster with $nodeCount nodes")
 
         var registrationToken: String? = null
-        var headAddress: Address? = null
+        var registrationHost: Address? = null
 
         repeat(nodeCount) { i ->
 
@@ -62,7 +62,7 @@ class ClusterNodeAuthTest {
                 ),
                 clusterRegistrationToken =
                     if (registrationToken != null)
-                        RegistrationInfo(registrationToken, headAddress!!)
+                        RegistrationInfo(registrationToken, registrationHost!!)
                     else null
             )
 
@@ -71,10 +71,12 @@ class ClusterNodeAuthTest {
             node.shutdownHandler.running = true
             node.start()
 
-            if (i == 0) {
-                registrationToken = node.cluster.token()
-                headAddress = address
+            if(registrationToken != null && registrationHost != null) {
+                error("ficken#################")
             }
+
+            registrationToken = node.cluster.token()
+            registrationHost = address
 
             clusterInstances.add(node)
         }

@@ -7,36 +7,47 @@ import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.database.DatabaseKey
 import dev.httpmarco.polocloud.node.join.ClusterNodeApprovalClient
 import dev.httpmarco.polocloud.node.join.QuorumService
+import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
+import dev.httpmarco.polocloud.node.node.NodeFactory
+import dev.httpmarco.polocloud.node.node.data.NodeData
 
 class ClusterBootstrapService(
     private val database: DatabaseConnectionFactory<*>,
     private val security: dev.httpmarco.polocloud.node.security.ClusterSecurity,
     private val bindAddress: Address,
-    private val quorumService: QuorumService
+    private val quorumService: QuorumService,
+    private val launchConfig: NodeLaunchConfig
 ) {
 
-    private val clusterKey = DatabaseKey(_root_ide_package_.dev.httpmarco.polocloud.node.node.data.NodeData::class)
+    private val clusterKey = DatabaseKey(NodeData::class)
 
     fun detectAndRegister() {
         database.connect()
         require(database.isValid()) { "Database invalid" }
 
         val nodes = database.executor().findAll(clusterKey)
-        publicIpAddress() ?: throw IllegalStateException("No public IP")
+        val ip = publicIpAddress() ?: throw IllegalStateException("No public IP")
 
-        when {
-            nodes.isEmpty() -> createInitialNode("127.0.0.1")
-            nodes.any { it.id == security.localId } -> validateExistingNode(nodes)
-            else -> registerNewNode(nodes, "127.0.0.1")
+        if(nodes.isNotEmpty()) {
+            // current cluster is already here -> join and share online state
+            return
         }
+
+        if(launchConfig.clusterRegistrationToken != null) {
+            // we register to an existing cluster, so we need to join it first
+            return
+        }
+
+        // stand alone here
+        this.createInitialNode(ip)
     }
 
     private fun createInitialNode(ip: String) {
-        val node = _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeFactory.createInitial(security, ip, bindAddress.port)
+        val node = NodeFactory.createInitial(security, ip, bindAddress.port)
         database.executor().save(clusterKey, node)
     }
 
-    private fun validateExistingNode(nodes: List<dev.httpmarco.polocloud.node.node.data.NodeData>) {
+    private fun validateExistingNode(nodes: List<NodeData>) {
         val current = nodes.first { it.id == security.localId }
         val ip = publicIpAddress()
 
@@ -45,10 +56,11 @@ class ClusterBootstrapService(
         }
     }
 
-    private fun registerNewNode(nodes: List<dev.httpmarco.polocloud.node.node.data.NodeData>, ip: String) {
-        val newNode = _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeFactory.create(security, nodes.size + 1, "127.0.0.1", bindAddress.port)
+    private fun registerNewNode(nodes: List<NodeData>, ip: String) {
+        val newNode = NodeFactory.create(security, nodes.size + 1, "127.0.0.1", bindAddress.port)
 
-        val approvals = quorumService.requestJoin(nodes, newNode,
+        val approvals = quorumService.requestJoin(
+            nodes, newNode,
             ClusterNodeApprovalClient(security)
         )
 

@@ -3,8 +3,8 @@ package dev.httpmarco.polocloud.node.test
 import dev.httpmarco.polocloud.common.ShutdownMode
 import dev.httpmarco.polocloud.common.files.deleteComplete
 import dev.httpmarco.polocloud.node.NodeInstance
-import dev.httpmarco.polocloud.node.cluster.node.NodeState
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
+import dev.httpmarco.polocloud.node.node.NodeState
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.assertDoesNotThrow

@@ -8,6 +8,11 @@ import dev.httpmarco.polocloud.database.DatabaseConnectionFactory
 import dev.httpmarco.polocloud.node.launch.NodeLaunchConfig
 import dev.httpmarco.polocloud.node.grpc.NodeServiceImpl
 import dev.httpmarco.polocloud.node.join.QuorumService
+import dev.httpmarco.polocloud.node.node.NodeHeartBeatService
+import dev.httpmarco.polocloud.node.node.NodeStateService
+import dev.httpmarco.polocloud.node.registration.RegistrationTokenStore
+import dev.httpmarco.polocloud.node.repository.NodeRepository
+import dev.httpmarco.polocloud.node.security.ClusterSecurity
 
 /**
  * Central cluster lifecycle manager.
@@ -25,25 +30,28 @@ import dev.httpmarco.polocloud.node.join.QuorumService
  *
  * Critical startup failures result in an IllegalStateException.
  */
-class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, launchConfig: NodeLaunchConfig) :
+class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, val launchConfig: NodeLaunchConfig) :
     Closeable {
 
-    private val tokenStore = _root_ide_package_.dev.httpmarco.polocloud.node.registration.RegistrationTokenStore()
-    private val nodeRepository = _root_ide_package_.dev.httpmarco.polocloud.node.repository.NodeRepository(database)
-    private val security =
-        _root_ide_package_.dev.httpmarco.polocloud.node.security.ClusterSecurity(launchConfig.localSecurityPath)
+    private val tokenStore = RegistrationTokenStore()
+    private val nodeRepository = NodeRepository(database)
+    private val security = ClusterSecurity(launchConfig.localSecurityPath)
     private val endpoint = GrpcEndpoint(bindAddress, security.certFile(), security.keyFile(), NodeServiceImpl(nodeRepository))
     private val quorumService = QuorumService()
-    private val bootstrapService = ClusterBootstrapService(database, security, bindAddress, quorumService)
-    private val stateService =
-        _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeStateService(nodeRepository, security)
-    private val heartBeatService =
-        _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeHeartBeatService(security.localId, database)
+    private val bootstrapService = ClusterBootstrapService(database, security, bindAddress, quorumService, launchConfig)
+    private val stateService = NodeStateService(nodeRepository, security)
+    private val heartBeatService = NodeHeartBeatService(security.localId, database)
 
     fun detect() {
         this.endpoint.connect()
-        bootstrapService.detectAndRegister()
-        heartBeatService.startScheduler()
+
+        if(launchConfig.clusterRegistrationToken != null) {
+
+        }
+
+
+        this.bootstrapService.detectAndRegister()
+        this.heartBeatService.startScheduler()
     }
 
     fun markOnline() = stateService.markOnline()
