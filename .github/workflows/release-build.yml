@@ -33,6 +33,17 @@ jobs:
           -Pcloud.version.channel=RELEASE
           -Pcloud.version.build=${{ github.run_number }}
 
+      - name: Publish to Maven Central
+        env:
+          ossrhUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ossrhPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          signingKey: ${{ secrets.SIGNING_KEY }}
+          signingPassword: ${{ secrets.SIGNING_PASSWORD }}
+        # TODO check if the right release gets published @HttpMarco
+        run: ./gradlew :common:publish
+          -Pcloud.version.channel=RELEASE
+          -Pcloud.version.build=${{ github.run_number }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
