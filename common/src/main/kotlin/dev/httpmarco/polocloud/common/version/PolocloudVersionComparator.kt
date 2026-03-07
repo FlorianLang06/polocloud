@@ -9,7 +9,7 @@ package dev.httpmarco.polocloud.common.version
  * 4. Channel stability ([PolocloudReleaseChannel.priority] — higher = more stable)
  * 5. Build number (numeric if possible, lexicographic fallback)
  */
-internal object CloudVersionComparator {
+internal object PolocloudVersionComparator {
 
     fun compare(a: PolocloudVersion, b: PolocloudVersion): Int {
         a.major.compareTo(b.major).takeIf { it != 0 }?.let { return it }

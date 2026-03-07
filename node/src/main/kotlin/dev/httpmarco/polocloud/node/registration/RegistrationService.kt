@@ -1,14 +1,18 @@
 package dev.httpmarco.polocloud.node.registration
 
+import dev.httpmarco.polocloud.common.version.PolocloudVersionParser
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.node.node.NodeIndexGenerator
+import dev.httpmarco.polocloud.node.node.NodeState
+import dev.httpmarco.polocloud.node.node.data.NodeData
+import dev.httpmarco.polocloud.node.repository.NodeRepository
 import dev.httpmarco.polocloud.proto.NodeRegistrationServiceGrpcKt
 import dev.httpmarco.polocloud.proto.RegisterNodeRequest
 import dev.httpmarco.polocloud.proto.RegisterNodeResponse
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
-class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeRepository: dev.httpmarco.polocloud.node.repository.NodeRepository) :
+class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeRepository: NodeRepository) :
     NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(RegistrationService::class.java)
@@ -39,21 +43,25 @@ class RegistrationService(val tokenStore: RegistrationTokenStore, val nodeReposi
 
 
         // TODO compare version - RecherGG
+        val version = request.details.version
+        val parsedVersion = PolocloudVersionParser.parseOrNull(version) //TODO handle null
+
+        //parsedVersion!!.compareTo() TODO
 
         tokenStore.rotate()
 
-        val data = _root_ide_package_.dev.httpmarco.polocloud.node.node.data.NodeData(
+        val data = NodeData(
             id = nodeId,
             index = NodeIndexGenerator.findNextFreeIndex(nodeRepository),
             port = request.port,
             hostname = request.hostname,
             // New nodes start as OFFLINE until they complete the full registration process
-            state = _root_ide_package_.dev.httpmarco.polocloud.node.node.NodeState.OFFLINE,
+            state = NodeState.OFFLINE,
             head = false,
             publicKey = request.publicKey,
-            version = request.details.version,
+            version = version,
             gitCommitHash = request.details.gitHash
-        );
+        )
 
         nodeRepository.save(data)
         logger.info(TranslationService.tr("cluster", "cluster.registration.success", "nodeId" to data.name()))

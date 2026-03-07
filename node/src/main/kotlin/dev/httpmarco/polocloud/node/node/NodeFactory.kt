@@ -1,20 +1,22 @@
 package dev.httpmarco.polocloud.node.node
 
+import dev.httpmarco.polocloud.node.node.data.NodeData
+import dev.httpmarco.polocloud.node.security.ClusterSecurity
 import dev.httpmarco.polocloud.node.security.toBase64
 
 object NodeFactory {
 
-    fun createInitial(security: dev.httpmarco.polocloud.node.security.ClusterSecurity, ip: String, port: Int): dev.httpmarco.polocloud.node.node.data.NodeData =
+    fun createInitial(security: ClusterSecurity, ip: String, port: Int): NodeData =
         create(security, 1, ip, head = true, port = port)
 
     fun create(
-        security: dev.httpmarco.polocloud.node.security.ClusterSecurity,
+        security: ClusterSecurity,
         index: Int,
         ip: String,
         port: Int,
         head: Boolean = false
-    ): dev.httpmarco.polocloud.node.node.data.NodeData =
-        _root_ide_package_.dev.httpmarco.polocloud.node.node.data.NodeData(
+    ): NodeData =
+        NodeData(
             id = security.localId,
             index = index,
             hostname = ip,

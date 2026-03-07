@@ -75,7 +75,7 @@ data class PolocloudVersion(
         major == other.major && minor == other.minor && patch == other.patch
 
     override fun compareTo(other: PolocloudVersion): Int =
-        CloudVersionComparator.compare(this, other)
+        PolocloudVersionComparator.compare(this, other)
 
     override fun toString(): String = toVersionString()
 
