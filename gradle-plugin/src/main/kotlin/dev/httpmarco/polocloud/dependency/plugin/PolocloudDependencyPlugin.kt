@@ -56,8 +56,8 @@ class PolocloudDependencyPlugin : Plugin<Project> {
 
                 doFirst {
 
-                    val dependencies = extension.projects.flatMap {
-                        resolveDependencies(project, it)
+                    val dependencies = extension.projects.flatMap { notation ->
+                        resolveDependencies(project, notation, repositories)
                     }
 
                     if (dependencies.isNotEmpty()) {
@@ -75,29 +75,60 @@ class PolocloudDependencyPlugin : Plugin<Project> {
         }
     }
 
-    private fun resolveDependencies(project: Project, notation: String): List<Dependency> {
-
+    private fun resolveDependencies(project: Project, notation: String, repositories: List<String>): List<Dependency> {
         val dependency = project.dependencies.create(notation)
         val detached = project.configurations.detachedConfiguration(dependency)
-
         val resolved = detached.resolvedConfiguration
 
         return resolved.resolvedArtifacts.map { artifact ->
-
             val file = artifact.file
+            val group = artifact.moduleVersion.id.group
+            val name = artifact.name
+            val version = artifact.moduleVersion.id.version
+
+            val groupPath = group.replace('.', '/')
+            val mavenUrl = resolveMavenUrl(repositories, groupPath, name, version)
 
             Dependency(
-                groupId = artifact.moduleVersion.id.group,
-                artifactId = artifact.name,
-                version = artifact.moduleVersion.id.version,
-                url = file.toURI().toString(),
+                groupId = group,
+                artifactId = name,
+                version = version,
+                url = mavenUrl,
                 checksum = file.inputStream().use {
                     java.security.MessageDigest.getInstance("SHA-256")
                         .digest(it.readBytes())
-                        .joinToString("") { "%02x".format(it) }
+                        .joinToString("") { b -> "%02x".format(b) }
                 }
             )
         }
+    }
+
+    /**
+     * Resolves a real download URL for the artifact by checking each configured
+     * repository in order. Falls back to Maven Central if none respond.
+     */
+    private fun resolveMavenUrl(
+        repositories: List<String>,
+        groupPath: String,
+        artifactId: String,
+        version: String
+    ): String {
+        val fileName = "$artifactId-$version.jar"
+
+        for (repoUrl in repositories) {
+            val url = "$repoUrl/$groupPath/$artifactId/$version/$fileName"
+            runCatching {
+                val connection = URI(url).toURL().openConnection()
+                connection.connectTimeout = 3000
+                connection.readTimeout = 3000
+                connection.connect()
+                connection.getInputStream().close()
+                return url
+            }
+        }
+
+        // Fallback to Maven Central
+        return "https://repo1.maven.org/maven2/$groupPath/$artifactId/$version/$fileName"
     }
 }
 

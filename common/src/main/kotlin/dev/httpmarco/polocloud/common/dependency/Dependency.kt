@@ -2,7 +2,7 @@ package dev.httpmarco.polocloud.common.dependency
 
 import dev.httpmarco.polocloud.common.dependency.checksum.FileChecksum.sha1
 import dev.httpmarco.polocloud.common.dependency.checksum.FileChecksum.sha256
-import java.net.URL
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -47,10 +47,9 @@ data class Dependency(
         }
 
         Files.createDirectories(target.parent)
-
         val tempFile = Files.createTempFile(target.parent, "$artifactId-$version", ".tmp")
 
-        URL(url).openStream().use { input ->
+        URI(url).toURL().openStream().use { input ->
             Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING)
         }
 
