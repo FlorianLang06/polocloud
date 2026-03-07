@@ -32,7 +32,11 @@ fun exitPolocloud(cleanShutdown: Boolean = true) {
     }
 
     logger.info(TranslationService.tr("cli", key))
-    AnsiConsole.systemUninstall()
+
+    if (AnsiConsole.isInstalled()) {
+        AnsiConsole.systemUninstall()
+    }
+
 
     if (Thread.currentThread().name != SHUTDOWN_HOOK) {
         exitProcess(0)

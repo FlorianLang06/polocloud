@@ -118,6 +118,14 @@ class PolocloudDependencyPlugin : Plugin<Project> {
 
         for (repoUrl in repositories) {
             val url = "$repoUrl/$groupPath/$artifactId/$version/$fileName"
+
+            // Für SNAPSHOT Versionen: echten Dateinamen aus maven-metadata.xml lesen
+            if (version.endsWith("SNAPSHOT")) {
+                val resolved = resolveSnapshotUrl(repoUrl, groupPath, artifactId, version)
+                if (resolved != null) return resolved
+                continue
+            }
+
             runCatching {
                 val connection = URI(url).toURL().openConnection() as HttpURLConnection
                 connection.connectTimeout = 5000
@@ -131,6 +139,32 @@ class PolocloudDependencyPlugin : Plugin<Project> {
         }
 
         error("Could not resolve download URL for $artifactId:$version in any configured repository: $repositories")
+    }
+
+    /**
+     * Resolves the actual JAR URL for a SNAPSHOT version by reading maven-metadata.xml.
+     * SNAPSHOT JARs have timestamped filenames like: artifactId-1.0.0-20241201.123456-1.jar
+     */
+    private fun resolveSnapshotUrl(
+        repoUrl: String,
+        groupPath: String,
+        artifactId: String,
+        version: String
+    ): String? {
+        val metadataUrl = "$repoUrl/$groupPath/$artifactId/$version/maven-metadata.xml"
+
+        return runCatching {
+            val xml = URI(metadataUrl).toURL().readText()
+
+            // Parse timestamp and buildNumber from metadata
+            val timestamp = Regex("<timestamp>(.*?)</timestamp>").find(xml)?.groupValues?.get(1) ?: return null
+            val buildNumber = Regex("<buildNumber>(.*?)</buildNumber>").find(xml)?.groupValues?.get(1) ?: return null
+
+            val baseVersion = version.removeSuffix("-SNAPSHOT")
+            val fileName = "$artifactId-$baseVersion-$timestamp-$buildNumber.jar"
+
+            "$repoUrl/$groupPath/$artifactId/$version/$fileName"
+        }.getOrNull()
     }
 }
 

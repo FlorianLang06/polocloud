@@ -5,6 +5,7 @@ import dev.httpmarco.polocloud.cli.configuration.InstallerConfig
 import dev.httpmarco.polocloud.cli.logging.CliLogger
 import dev.httpmarco.polocloud.cli.terminal.CliTerminal
 import dev.httpmarco.polocloud.common.configuration.ConfigSection
+import dev.httpmarco.polocloud.common.version.PolocloudVersion
 import dev.httpmarco.polocloud.i18n.api.TranslationService
 import dev.httpmarco.polocloud.i18n.model.Language
 import java.io.File
@@ -44,7 +45,7 @@ object PolocloudCli {
         TranslationService.init()
         TranslationService.defaultLanguage(config.locale)
         TranslationService.preloadAsync("cli")
-        logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to "")) //TODO show version
+        logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
 
         this.terminal.readingThread.start()
         logger.info(TranslationService.tr("cli", "cli.start.success"))
