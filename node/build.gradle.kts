@@ -2,11 +2,11 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
 
-    id("dev.httpmarco.polocloud")
+    id("de.polocloud")
 }
 
 polocloud {
-    mainClass = "dev.httpmarco.polocloud.node.PolocloudNodeLauncher"
+    mainClass = "de.polocloud.node.PolocloudNodeLauncher"
 }
 
 repositories {

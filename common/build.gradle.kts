@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.gradle.git.properties)
 
-    id("dev.httpmarco.polocloud")
+    id("de.polocloud")
 }
 
 dependencies {

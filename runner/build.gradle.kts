@@ -1,11 +1,11 @@
 plugins {
     java
 
-    id("dev.httpmarco.polocloud")
+    id("de.polocloud")
 }
 
 polocloud {
-    mainClass = "dev.httpmarco.polocloud.runner.PolocloudRuntimeLauncher"
+    mainClass = "de.polocloud.runner.PolocloudRuntimeLauncher"
 }
 
 tasks.named<Jar>("jar") {

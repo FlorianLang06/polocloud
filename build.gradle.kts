@@ -2,7 +2,7 @@
 allprojects {
     apply(from = rootProject.file("gradle/version.gradle.kts"))
 
-    group = "dev.httpmarco.polocloud"
+    group = "de.polocloud"
     // version is now set by gradle/version.gradle.kts — do NOT set it here
 
     repositories {

@@ -1,14 +1,14 @@
-import dev.httpmarco.polocloud.dependency.plugin.polocloudRuntime
+import de.polocloud.dependency.plugin.polocloudRuntime
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
 
-    id("dev.httpmarco.polocloud")
+    id("de.polocloud")
 }
 
 polocloud {
-    mainClass = "dev.httpmarco.polocloud.cli.CliBootKt"
+    mainClass = "de.polocloud.cli.CliBootKt"
 }
 
 dependencies {
