@@ -1,7 +1,10 @@
 package dev.httpmarco.polocloud.runner;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.DosFileAttributeView;
 
 /**
  * Holds constant parameters, paths, and environment variable names
@@ -103,5 +106,34 @@ public final class PolocloudParameters {
                 version(),
                 project + "-" + version() + ".jar"
         ));
+    }
+
+    /**
+     * Ensures the runtime cache directory exists and is marked as hidden on Windows.
+     *
+     * <p>This method must be called once at launcher startup, before any other component
+     * attempts to write into the cache directory.</p>
+     *
+     * @throws RuntimeException if the cache directory cannot be created
+     */
+    public static void ensureCacheDirectory() {
+        if (Files.exists(EXPENDER_RUNTIME_CACHE)) {
+            return;
+        }
+
+        try {
+            Files.createDirectories(EXPENDER_RUNTIME_CACHE);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create cache directory: " + EXPENDER_RUNTIME_CACHE, e);
+        }
+
+        try {
+            DosFileAttributeView view = Files.getFileAttributeView(EXPENDER_RUNTIME_CACHE, DosFileAttributeView.class);
+            if (view != null) {
+                view.setHidden(true);
+            }
+        } catch (IOException ignored) {
+            // Not a Windows filesystem – hidden attribute is not supported
+        }
     }
 }

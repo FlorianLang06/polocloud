@@ -28,6 +28,8 @@ final class PolocloudRuntimeLauncher {
      * @param args command-line arguments (currently unused)
      */
     public static void main(String[] args) {
+        PolocloudParameters.ensureCacheDirectory();
+
         final PolocloudRuntimeBootValidator validator = new PolocloudRuntimeBootValidator();
 
         if (!validator.isValid()) {
