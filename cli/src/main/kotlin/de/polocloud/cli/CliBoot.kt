@@ -11,7 +11,7 @@ fun main() {
 
     // TODO
     val version = PolocloudVersion.CURRENT.toVersionString()
-    val cliJar = Path.of(".cache/dev/httpmarco/polocloud/cli/$version/cli-$version.jar").toFile()
+    val cliJar = Path.of(".cache/de/polocloud/cli/$version/cli-$version.jar").toFile()
 
     dependencyRegistry.scan(OwnBlobScanner(cliJar))
     dependencyRegistry.downloadAndRegister()

@@ -6,7 +6,7 @@ import de.polocloud.cli.command.arguments.TerminalArgument
 /**
  * A greedy argument that captures all remaining input tokens as a single joined string.
  *
- * When [dev.httpmarco.polocloud.cli.command.CommandParser] encounters a [StringArrayArgument] as the last argument in a syntax,
+ * When [de.polocloud.cli.command.CommandParser] encounters a [StringArrayArgument] as the last argument in a syntax,
  * it joins all remaining tokens (from the current position onward) with spaces and passes
  * the result to [buildResult].
  *
