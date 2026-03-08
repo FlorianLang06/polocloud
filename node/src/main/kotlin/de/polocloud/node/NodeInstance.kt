@@ -60,11 +60,12 @@ class NodeInstance(
 
     init {
         TranslationService.init()
-        TranslationService.defaultLanguage(Locale.US) //TODO read config value
-        TranslationService.preloadAsync("database")
 
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
+
+        TranslationService.defaultLanguage(config.language)
+        TranslationService.preloadAsync("database")
 
         database = resolveDatabaseCredentials().factory()
 

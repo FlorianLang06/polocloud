@@ -78,7 +78,7 @@ class GrpcEndpoint(
             return
         }
 
-        logger.info("Shutting down gRPC server on port {}", address.port)
+        logger.info("Shutting down gRPC server...")
 
         healthManager.setStatus(
             "",

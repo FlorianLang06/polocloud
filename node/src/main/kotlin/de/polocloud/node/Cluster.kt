@@ -53,12 +53,6 @@ class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, val 
 
     fun detect() {
         this.endpoint.connect()
-
-        if(launchConfig.clusterRegistrationToken != null) {
-
-        }
-
-
         this.bootstrapService.detectAndRegister()
         this.heartBeatService.startScheduler()
     }

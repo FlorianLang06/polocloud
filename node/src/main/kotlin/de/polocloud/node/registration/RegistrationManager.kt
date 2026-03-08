@@ -1,9 +1,14 @@
 package de.polocloud.node.registration
 
-class RegistrationManager {
+import de.polocloud.node.security.ClusterSecurity
 
-    fun registerNode() {
+object RegistrationManager {
+
+    fun registerNode(info: RegistrationInfo, security: ClusterSecurity) {
+        val client = RegistrationClient(security)
+        val response = client.register(info)
+
+        println("Registration successful: ${response.accepted}, Message: ${response.message}")
 
     }
-
 }
