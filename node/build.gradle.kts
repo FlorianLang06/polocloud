@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+
     id("dev.httpmarco.polocloud")
 }
 
@@ -37,16 +38,16 @@ dependencies {
     runtimeOnly(libs.bundles.grpc.runtime)
 
     // logging
-    compileOnly(libs.bundles.logging)
-    runtimeOnly(libs.bundles.logging)
+    compileOnly(libs.bundles.logging.full)
+    runtimeOnly(libs.bundles.logging.full)
 
     // database
     compileOnly(libs.bundles.database)
     runtimeOnly(libs.bundles.database)
 
     // kotlin
-    compileOnly(libs.bundles.kotlin)
-    runtimeOnly(libs.bundles.kotlin)
+    compileOnly(libs.bundles.kotlin.full)
+    runtimeOnly(libs.bundles.kotlin.full)
 
     // polocloud
     compileOnly(libs.polocloud.i18n)
@@ -65,9 +66,8 @@ dependencies {
     runtimeOnly(libs.argon2)
 
     testImplementation(libs.bundles.testcontainers)
-    testImplementation(libs.bundles.junit)
+    testImplementation(libs.bundles.testing)
     testImplementation(kotlin("test"))
-    testImplementation("org.awaitility:awaitility:4.3.0")
 }
 
 tasks.test {

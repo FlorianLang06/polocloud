@@ -1,29 +1,26 @@
 import com.google.protobuf.gradle.*
 
 plugins {
-    kotlin("jvm") version "2.3.10"
-    id("com.google.protobuf") version "0.9.6"
     id("java-library")
-}
 
-val grpcVersion = "1.79.0"
-val grpcKotlinVersion = "1.5.0"
-val protobufVersion = "4.34.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.protobuf.plugin)
+}
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    api("com.google.protobuf:protobuf-kotlin:$protobufVersion")
-    api("io.grpc:grpc-kotlin-stub:${grpcKotlinVersion}")
-    api("io.grpc:grpc-stub:${grpcVersion}")
-    api("io.grpc:grpc-protobuf:$grpcVersion")
-    api("io.grpc:grpc-netty-shaded:$grpcVersion")
+    api(libs.protobuf.kotlin)
+    api(libs.grpc.kotlin.stub)
+    api(libs.grpc.stub)
+    api(libs.grpc.protobuf)
+    api(libs.grpc.netty.shaded)
 
-    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    api(libs.kotlinx.coroutines.core)
 
-    compileOnly("javax.annotation:javax.annotation-api:1.3.2")
+    compileOnly(libs.javax.annotation.api)
 }
 
 java {
@@ -57,16 +54,15 @@ sourceSets {
 
 protobuf {
     protoc {
-        artifact = "com.google.protobuf:protoc:$protobufVersion"
+        artifact = libs.protobuf.kotlin.toString()
     }
 
     plugins {
         id("grpc") {
-            artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+            artifact = libs.protoc.gen.grpc.java.toString()
         }
         id("grpckt") {
-            artifact =
-                "io.grpc:protoc-gen-grpc-kotlin:$grpcKotlinVersion:jdk8@jar"
+            artifact = libs.grpc.kotlin.stub.toString() + ":jdk8@jar"
         }
     }
 

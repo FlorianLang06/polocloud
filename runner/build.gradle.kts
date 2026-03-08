@@ -1,5 +1,6 @@
 plugins {
-    id("java")
+    java
+
     id("dev.httpmarco.polocloud")
 }
 

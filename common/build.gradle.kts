@@ -1,15 +1,16 @@
 plugins {
-    kotlin("jvm") version "2.3.10"
-    id("dev.httpmarco.polocloud")
-    kotlin("plugin.serialization") version "2.3.10"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.gradle.git.properties)
+
+    id("dev.httpmarco.polocloud")
 }
 
 dependencies {
     compileOnly(libs.bundles.grpc)
     compileOnly(libs.bundles.logging)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    implementation(libs.kotlinx.serialization.json)
 }
 
 gitProperties {
@@ -19,7 +20,6 @@ gitProperties {
         "git.commit.id.abbrev"
     )
 }
-
 
 tasks.processResources {
     dependsOn(tasks.generateGitProperties)
