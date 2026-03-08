@@ -10,7 +10,7 @@ import java.util.Locale
 @Serializable
 open class NodeInstanceConfiguration(
     @Serializable(with = LocaleSerializer::class)
-    val language: Locale = Locale.ENGLISH,
+    val language: Locale = Locale.US,
     val bindAddress: Address = LOCAL_ADDRESS.withPort(4239),
     val database: DatabaseCredentials,
     val cache: NodeCacheCredentialsConfiguration = NodeCacheCredentialsConfiguration()

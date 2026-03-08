@@ -9,6 +9,5 @@ object RegistrationManager {
         val response = client.register(info)
 
         println("Registration successful: ${response.accepted}, Message: ${response.message}")
-
     }
 }

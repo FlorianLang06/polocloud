@@ -71,10 +71,6 @@ class ClusterNodeAuthTest {
             node.shutdownHandler.running = true
             node.start()
 
-            if(registrationToken != null && registrationHost != null) {
-                error("ficken#################")
-            }
-
             registrationToken = node.cluster.token()
             registrationHost = address
 

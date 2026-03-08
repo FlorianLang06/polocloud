@@ -10,6 +10,7 @@ import de.polocloud.node.grpc.NodeServiceImpl
 import de.polocloud.node.join.QuorumService
 import de.polocloud.node.node.NodeHeartBeatService
 import de.polocloud.node.node.NodeStateService
+import de.polocloud.node.registration.RegistrationService
 import de.polocloud.node.registration.RegistrationTokenStore
 import de.polocloud.node.repository.NodeRepository
 import de.polocloud.node.security.ClusterSecurity
@@ -36,8 +37,9 @@ class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, val 
     private val tokenStore = RegistrationTokenStore()
     private val nodeRepository = NodeRepository(database)
     private val security = ClusterSecurity(launchConfig.localSecurityPath)
-    private val endpoint = GrpcEndpoint(bindAddress, security.certFile(), security.keyFile(),
-        NodeServiceImpl(nodeRepository)
+    private val endpoint = GrpcEndpoint(
+        bindAddress, security.certFile(), security.keyFile(),
+        NodeServiceImpl(nodeRepository), RegistrationService(tokenStore, nodeRepository)
     )
     private val quorumService = QuorumService()
     private val bootstrapService = ClusterBootstrapService(
