@@ -80,8 +80,8 @@ sealed class DatabaseCredentials {
     ) : DatabaseCredentials() {
         override val address: Address get() = Address("localhost", 0)
 
-        override fun factory(): de.polocloud.database.DatabaseConnectionFactory<*> {
-            return _root_ide_package_.de.polocloud.database.sql.SqlConnectionFactory(this)
+        override fun factory(): DatabaseConnectionFactory<*> {
+            return SqlConnectionFactory(this)
         }
     }
 
@@ -92,8 +92,8 @@ sealed class DatabaseCredentials {
         override val password: String,
         override val database: String
     ) : DatabaseRelated() {
-        override fun factory(): de.polocloud.database.DatabaseConnectionFactory<*> {
-            return _root_ide_package_.de.polocloud.database.sql.SqlConnectionFactory(this)
+        override fun factory(): DatabaseConnectionFactory<*> {
+            return SqlConnectionFactory(this)
         }
     }
 }

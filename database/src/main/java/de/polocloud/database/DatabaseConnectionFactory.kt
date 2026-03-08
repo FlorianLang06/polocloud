@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
  * - providing an SQL executor
  * - basic validation of the connection state
  */
-abstract class DatabaseConnectionFactory<C : de.polocloud.database.DatabaseCredentials>(private val credentials : C)  : Closeable {
+abstract class DatabaseConnectionFactory<C : DatabaseCredentials>(private val credentials : C)  : Closeable {
 
     /**
      * Logger used for database connection lifecycle messages.
@@ -28,7 +28,7 @@ abstract class DatabaseConnectionFactory<C : de.polocloud.database.DatabaseCrede
      * Initially set to [de.polocloud.database.DatabaseState.UNKNOWN] and should be updated
      * by concrete implementations when connecting or closing the connection.
      */
-    var state = _root_ide_package_.de.polocloud.database.DatabaseState.UNKNOWN
+    var state = DatabaseState.UNKNOWN
 
     /**
      * Establishes a connection to the database using the given credentials.
@@ -42,7 +42,7 @@ abstract class DatabaseConnectionFactory<C : de.polocloud.database.DatabaseCrede
      *
      * @return a database-specific [de.polocloud.database.sql.SqlExecutor] implementation
      */
-    abstract fun executor(): de.polocloud.database.DatabaseExecutor
+    abstract fun executor(): DatabaseExecutor
 
     /**
      * Checks whether the database connection is currently valid.
@@ -53,7 +53,7 @@ abstract class DatabaseConnectionFactory<C : de.polocloud.database.DatabaseCrede
      * invalid database operations.
      */
     fun isValid(): Boolean {
-        if (state != _root_ide_package_.de.polocloud.database.DatabaseState.CONNECTED) {
+        if (state != DatabaseState.CONNECTED) {
             logger.info(TranslationService.tr("database", "database.connection.invalid_state", "state" to state.name))
             return false
         }

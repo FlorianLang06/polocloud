@@ -3,8 +3,8 @@ package de.polocloud.node.launch
 import de.polocloud.node.NodeInstance
 
 fun main(args: Array<String>) {
-    val launchConfig = _root_ide_package_.de.polocloud.node.launch.NodeLaunchConfigParser.parse(args)
-    val instance = _root_ide_package_.de.polocloud.node.NodeInstance(launchConfig)
+    val launchConfig = NodeLaunchConfigParser.parse(args)
+    val instance = NodeInstance(launchConfig)
 
     instance.start()
 }

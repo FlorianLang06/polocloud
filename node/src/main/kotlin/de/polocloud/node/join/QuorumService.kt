@@ -6,15 +6,15 @@ import de.polocloud.node.node.data.NodeData
 class QuorumService {
 
     fun requestJoin(
-        nodes: List<de.polocloud.node.node.data.NodeData>,
-        newNode: de.polocloud.node.node.data.NodeData,
-        approvalClient: de.polocloud.node.join.ClusterNodeApprovalClient
+        nodes: List<NodeData>,
+        newNode: NodeData,
+        approvalClient: ClusterNodeApprovalClient
     ): List<String> {
 
         val quorumSize = (nodes.size / 2) + 1
         val approvals = mutableListOf<String>()
 
-        for (node in nodes.filter { it.state == _root_ide_package_.de.polocloud.node.node.NodeState.ONLINE }) {
+        for (node in nodes.filter { it.state == NodeState.ONLINE }) {
             val approval = approvalClient.requestApproval(node, newNode)
 
            // if (approval.approved) {

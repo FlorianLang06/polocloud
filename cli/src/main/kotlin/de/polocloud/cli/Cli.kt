@@ -13,7 +13,7 @@ import java.io.File
 /**
  * Application-wide logger instance, initialized once at startup.
  */
-var logger = _root_ide_package_.de.polocloud.cli.logging.CliLogger.initLogging()
+var logger = CliLogger.initLogging()
 
 /**
  * Entry point and lifecycle manager for the PoloCloud CLI application.
@@ -22,16 +22,15 @@ var logger = _root_ide_package_.de.polocloud.cli.logging.CliLogger.initLogging()
  * starting the command reading loop, and handling graceful shutdown.
  */
 object PolocloudCli {
-    val config: de.polocloud.cli.configuration.CliConfiguration = loadConfiguration()
-    val terminal: de.polocloud.cli.terminal.CliTerminal = _root_ide_package_.de.polocloud.cli.terminal.CliTerminal()
+    val config: CliConfiguration = loadConfiguration()
+    val terminal: CliTerminal = CliTerminal()
 
     init {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            _root_ide_package_.de.polocloud.cli.logger.fatal("Uncaught exception in thread '${thread.name}'", throwable)
+            logger.fatal("Uncaught exception in thread '${thread.name}'", throwable)
         }
     }
 
-    //TODO making all dot folders invisible
     //TODO global Updater for all modules (cli, node)
 
     /**
@@ -45,10 +44,10 @@ object PolocloudCli {
         TranslationService.init()
         TranslationService.defaultLanguage(config.locale)
         TranslationService.preloadAsync("cli")
-        _root_ide_package_.de.polocloud.cli.logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
+        logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
 
         this.terminal.readingThread.start()
-        _root_ide_package_.de.polocloud.cli.logger.info(TranslationService.tr("cli", "cli.start.success"))
+        logger.info(TranslationService.tr("cli", "cli.start.success"))
     }
 
     /**
@@ -74,12 +73,12 @@ object PolocloudCli {
      *
      * @return the resolved {@link CliConfiguration}, never {@code null}
      */
-    private fun loadConfiguration(): de.polocloud.cli.configuration.CliConfiguration {
+    private fun loadConfiguration(): CliConfiguration {
         val path = File("polocloud-cli.json").toPath()
         val section = ConfigSection(path)
 
         return section.readOrCreate(
-            _root_ide_package_.de.polocloud.cli.configuration.CliConfiguration.serializer(),
+            CliConfiguration.serializer(),
             resolveInitialConfiguration()
         )
     }
@@ -94,15 +93,15 @@ object PolocloudCli {
      *
      * This method is only relevant when no persistent CLI configuration exists yet.
      */
-    private fun resolveInitialConfiguration(): de.polocloud.cli.configuration.CliConfiguration {
+    private fun resolveInitialConfiguration(): CliConfiguration {
         val installerPath = File(".installer/config.json").toPath()
 
         val installer = ConfigSection(installerPath)
-            .read(_root_ide_package_.de.polocloud.cli.configuration.InstallerConfig.serializer())
+            .read(InstallerConfig.serializer())
 
         return installer?.let {
-            _root_ide_package_.de.polocloud.cli.configuration.CliConfiguration(locale = Language.of(it.language))
-        } ?: _root_ide_package_.de.polocloud.cli.configuration.CliConfiguration()
+            CliConfiguration(locale = Language.of(it.language))
+        } ?: CliConfiguration()
     }
 
 
