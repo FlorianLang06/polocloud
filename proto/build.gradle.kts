@@ -54,15 +54,15 @@ sourceSets {
 
 protobuf {
     protoc {
-        artifact = libs.protobuf.kotlin.toString()
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.get()}"
     }
 
     plugins {
         id("grpc") {
-            artifact = libs.protoc.gen.grpc.java.toString()
+            artifact = "io.grpc:protoc-gen-grpc-java:${libs.versions.grpc.get()}"
         }
         id("grpckt") {
-            artifact = libs.grpc.kotlin.stub.toString() + ":jdk8@jar"
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:${libs.versions.grpcKotlinVersion.get()}:jdk8@jar"
         }
     }
 
