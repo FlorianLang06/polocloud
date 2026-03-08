@@ -24,8 +24,8 @@ jobs:
 
       - name: Build (DEV)
         run: ./gradlew build
-          -Pcloud.version.channel=DEV
-          -Pcloud.version.build=${{ github.run_number }}
+          -Ppolocloud.version.channel=DEV
+          -Ppolocloud.version.build=${{ github.run_number }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

@@ -25,15 +25,15 @@ jobs:
       - name: Read version from gradle.properties
         id: version
         run: |
-          MAJOR=$(grep "cloud.version.major" gradle.properties | cut -d'=' -f2)
-          MINOR=$(grep "cloud.version.minor" gradle.properties | cut -d'=' -f2)
-          PATCH=$(grep "cloud.version.patch" gradle.properties | cut -d'=' -f2)
+          MAJOR=$(grep "polocloud.version.major" gradle.properties | cut -d'=' -f2)
+          MINOR=$(grep "polocloud.version.minor" gradle.properties | cut -d'=' -f2)
+          PATCH=$(grep "polocloud.version.patch" gradle.properties | cut -d'=' -f2)
           echo "version=$MAJOR.$MINOR.$PATCH-dev.${{ github.run_number }}" >> $GITHUB_OUTPUT
 
       - name: Build (DEV)
         run: ./gradlew build -x test
-          -Pcloud.version.channel=DEV
-          -Pcloud.version.build=${{ github.run_number }}
+          -Ppolocloud.version.channel=DEV
+          -Ppolocloud.version.build=${{ github.run_number }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4

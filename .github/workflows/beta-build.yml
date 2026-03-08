@@ -31,9 +31,9 @@ jobs:
       - name: Read version from gradle.properties
         id: version
         run: |
-          MAJOR=$(grep "cloud.version.major" gradle.properties | cut -d'=' -f2)
-          MINOR=$(grep "cloud.version.minor" gradle.properties | cut -d'=' -f2)
-          PATCH=$(grep "cloud.version.patch" gradle.properties | cut -d'=' -f2)
+          MAJOR=$(grep "polocloud.version.major" gradle.properties | cut -d'=' -f2)
+          MINOR=$(grep "polocloud.version.minor" gradle.properties | cut -d'=' -f2)
+          PATCH=$(grep "polocloud.version.patch" gradle.properties | cut -d'=' -f2)
           CHANNEL=$(echo "${{ github.event.inputs.channel }}" | tr '[:upper:]' '[:lower:]')
           echo "version=$MAJOR.$MINOR.$PATCH-$CHANNEL.${{ github.run_number }}" >> $GITHUB_OUTPUT
           echo "tag=v$MAJOR.$MINOR.$PATCH-$CHANNEL.${{ github.run_number }}" >> $GITHUB_OUTPUT
@@ -51,8 +51,8 @@ jobs:
           signingPassword: ${{ secrets.SIGNING_PASSWORD }}
         # TODO check if the right release gets published @HttpMarco
         run: ./gradlew :common:publish 
-          -Pcloud.version.channel=${{ github.event.inputs.channel }}
-          -Pcloud.version.build=${{ github.run_number }}
+          -Ppolocloud.version.channel=${{ github.event.inputs.channel }}
+          -Ppolocloud.version.build=${{ github.run_number }}
 
       - name: Create GitHub Pre-Release
         uses: softprops/action-gh-release@v2

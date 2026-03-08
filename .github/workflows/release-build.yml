@@ -23,9 +23,9 @@ jobs:
       - name: Read version from gradle.properties
         id: version
         run: |
-          MAJOR=$(grep "cloud.version.major" gradle.properties | cut -d'=' -f2)
-          MINOR=$(grep "cloud.version.minor" gradle.properties | cut -d'=' -f2)
-          PATCH=$(grep "cloud.version.patch" gradle.properties | cut -d'=' -f2)
+          MAJOR=$(grep "polocloud.version.major" gradle.properties | cut -d'=' -f2)
+          MINOR=$(grep "polocloud.version.minor" gradle.properties | cut -d'=' -f2)
+          PATCH=$(grep "polocloud.version.patch" gradle.properties | cut -d'=' -f2)
           echo "version=$MAJOR.$MINOR.$PATCH" >> $GITHUB_OUTPUT
 
       - name: Build (RELEASE)
@@ -41,8 +41,8 @@ jobs:
           signingPassword: ${{ secrets.SIGNING_PASSWORD }}
         # TODO check if the right release gets published @HttpMarco
         run: ./gradlew :common:publish
-          -Pcloud.version.channel=RELEASE
-          -Pcloud.version.build=${{ github.run_number }}
+          -Ppolocloud.version.channel=RELEASE
+          -Ppolocloud.version.build=${{ github.run_number }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

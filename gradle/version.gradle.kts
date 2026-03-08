@@ -1,8 +1,8 @@
-val major    = findProperty("cloud.version.major")   as String? ?: "0"
-val minor    = findProperty("cloud.version.minor")   as String? ?: "0"
-val patch    = findProperty("cloud.version.patch")   as String? ?: "0"
-val channel  = (findProperty("cloud.version.channel") as String? ?: "SNAPSHOT").uppercase()
-val build    = findProperty("cloud.version.build")   as String? ?: "local"
+val major    = findProperty("polocloud.version.major")   as String? ?: "0"
+val minor    = findProperty("polocloud.version.minor")   as String? ?: "0"
+val patch    = findProperty("polocloud.version.patch")   as String? ?: "0"
+val channel  = (findProperty("polocloud.version.channel") as String? ?: "SNAPSHOT").uppercase()
+val build    = findProperty("polocloud.version.build")   as String? ?: "local"
 
 val versionString = when (channel) {
     "RELEASE" -> "$major.$minor.$patch"
