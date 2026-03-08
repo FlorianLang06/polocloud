@@ -66,7 +66,18 @@ class MongoExecutor(
         key: DatabaseKey<T>,
         vararg filters: Filter
     ): List<T> {
-        TODO("Not yet implemented")
+
+        val collection = database.getCollection(key.id())
+
+        val query = if (filters.isEmpty()) {
+            Document()
+        } else {
+            filterTranslator.translate(filters.first())
+        }
+
+        return collection.find(query)
+            .map { DatabaseSerializer.deserialize(it.toJson(), key.clazz) }
+            .toList()
     }
 
     override fun filterTranslator() = filterTranslator

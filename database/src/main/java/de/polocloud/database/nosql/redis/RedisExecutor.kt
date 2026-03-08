@@ -50,7 +50,15 @@ class RedisExecutor(
         key: DatabaseKey<T>,
         vararg filters: Filter
     ): List<T> {
-        TODO("Not yet implemented")
+
+        val all = readAll(key.id()).map {
+            DatabaseSerializer.deserialize(it, key.clazz)
+        }
+
+        if (filters.isEmpty()) return all
+
+        // hier müsstest du selbst filtern
+        return all
     }
 
     override fun filterTranslator() = filterTranslator
