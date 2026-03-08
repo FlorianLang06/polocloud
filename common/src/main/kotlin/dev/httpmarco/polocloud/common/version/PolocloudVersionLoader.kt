@@ -23,18 +23,16 @@ internal object PolocloudVersionLoader {
 
     fun load(): PolocloudVersion {
         // fallback version
-        val systemVersion = System.getProperty("version")
-        if (systemVersion != null) {
-            return PolocloudVersionParser.parseOrNull(systemVersion)
-                ?: error("Invalid version in system property: $systemVersion")
-        }
+//        val systemVersion = System.getProperty("version")
+//        if (systemVersion != null) {
+//            return PolocloudVersionParser.parseOrNull(systemVersion)
+//                ?: error("Invalid version in system property: $systemVersion")
+//        }
 
         val props = Properties()
-        val stream = Thread.currentThread().contextClassLoader
-            ?.getResourceAsStream(RESOURCE_PATH)
-            ?: PolocloudVersionLoader::class.java.classLoader
-                .getResourceAsStream(RESOURCE_PATH)
-            ?: error("$RESOURCE_PATH not found in classpath. Did Gradle inject it correctly?")
+        val stream = PolocloudVersionLoader::class.java
+            .getResourceAsStream("/$RESOURCE_PATH")
+            ?: error("$RESOURCE_PATH not found in classpath")
 
         stream.use { props.load(it) }
 
@@ -44,7 +42,9 @@ internal object PolocloudVersionLoader {
             patch = props.require("patch").toInt(),
             channel = PolocloudReleaseChannel.fromString(props.require("channel")),
             build = props.require("build"),
-            buildTime = props.getProperty("buildTime")?.toLongOrNull() ?: -1L
+            buildTime = props.getProperty("buildTime")?.toLongOrNull() ?: -1L,
+            commitId = props.require("commitId"),
+            commitIdAbbrev = props.require("commitIdAbbrev"),
         )
     }
 

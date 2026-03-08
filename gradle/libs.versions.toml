@@ -1,4 +1,5 @@
 [versions]
+gradle-git-properties = "2.5.7"
 
 # kotlin
 kotlin = "2.3.10"
@@ -108,6 +109,7 @@ argon2 = { group = "de.mkammerer", name = "argon2-jvm", version.ref = "argon2" }
 
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerializationPlugin" }
+gradle-git-properties = { id = "com.gorylenko.gradle-git-properties", version.ref = "gradle-git-properties" }
 
 [bundles]
 

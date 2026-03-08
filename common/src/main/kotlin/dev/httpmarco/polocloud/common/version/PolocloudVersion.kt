@@ -22,7 +22,9 @@ data class PolocloudVersion(
     val patch: Int,
     val channel: PolocloudReleaseChannel = PolocloudReleaseChannel.RELEASE,
     val build: String = "local",
-    val buildTime: Long = -1L
+    val buildTime: Long = -1L,
+    val commitId: String = "unknown",
+    val commitIdAbbrev: String = "unknown",
 ) : Comparable<PolocloudVersion> {
 
     /**
@@ -51,11 +53,11 @@ data class PolocloudVersion(
 
     /**
      * Returns a human-readable display string.
-     * Example: `v3.1.0` or `v3.1.0 Beta (Build 12)`
+     * Example: `v3.1.0` or `v3.1.0 Beta (Build 12, a3d6e84)`
      */
     fun toDisplayString(): String = when (channel) {
-        PolocloudReleaseChannel.RELEASE -> "v$major.$minor.$patch"
-        else -> "v$major.$minor.$patch ${channel.displayName} (Build $build)"
+        PolocloudReleaseChannel.RELEASE -> "v$major.$minor.$patch ($commitIdAbbrev)"
+        else -> "v$major.$minor.$patch ${channel.displayName} (Build $build, $commitIdAbbrev)"
     }
 
     /**

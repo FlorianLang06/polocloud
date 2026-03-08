@@ -44,8 +44,7 @@ class RegistrationClient(val security: dev.httpmarco.polocloud.node.security.Clu
                 .setHostname(info.address.hostname)
                 .setPort(info.address.port)
                 .setPublicKey(security.publicKey.toBase64())
-                // TODO: Set the actual version and git hash
-                .setDetails(NodeVersion.newBuilder().setVersion(PolocloudVersion.CURRENT.toString()).setGitHash("RECHERGG").build())
+                .setDetails(NodeVersion.newBuilder().setVersion(PolocloudVersion.CURRENT.toString()).setGitHash(PolocloudVersion.CURRENT.commitId).build())
                 .setToken(info.token)
                 .build()
 
