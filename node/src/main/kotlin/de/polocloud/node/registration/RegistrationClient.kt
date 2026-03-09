@@ -3,7 +3,7 @@ package de.polocloud.node.registration
 import de.polocloud.common.Address
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.security.ClusterSecurity
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.security.toBase64
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeVersion

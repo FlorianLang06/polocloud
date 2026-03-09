@@ -1,7 +1,7 @@
 package de.polocloud.node.registration
 
 import de.polocloud.common.version.PolocloudVersionParser
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.node.NodeIndexGenerator
 import de.polocloud.node.node.NodeState
 import de.polocloud.node.node.data.NodeData

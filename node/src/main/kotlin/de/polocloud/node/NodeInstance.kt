@@ -6,12 +6,11 @@ import de.polocloud.common.ShutdownMode
 import de.polocloud.common.configuration.ConfigSection
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.launch.NodeLaunchConfig
 import de.polocloud.node.configuration.NodeInstanceConfiguration
 import de.polocloud.node.node.NodeState
 import org.slf4j.LoggerFactory
-import java.util.Locale
 import kotlin.system.exitProcess
 
 /**

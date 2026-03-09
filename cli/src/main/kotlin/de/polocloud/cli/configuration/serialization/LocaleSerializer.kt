@@ -1,6 +1,6 @@
 package de.polocloud.cli.configuration.serialization
 
-import dev.httpmarco.polocloud.i18n.model.Language
+import de.polocloud.i18n.model.Language
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.*

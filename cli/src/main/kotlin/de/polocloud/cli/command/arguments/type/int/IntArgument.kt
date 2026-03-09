@@ -2,7 +2,7 @@ package de.polocloud.cli.command.arguments.type.int
 
 import de.polocloud.cli.command.arguments.InputContext
 import de.polocloud.cli.command.arguments.TerminalArgument
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 
 /**
  * A terminal argument that parses and validates integer input.

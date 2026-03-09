@@ -2,7 +2,7 @@ package de.polocloud.cli.command.arguments.type.string
 
 import de.polocloud.cli.command.arguments.InputContext
 import de.polocloud.cli.command.arguments.TerminalArgument
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 
 /**
  * A terminal argument that accepts any non-blank string as input.

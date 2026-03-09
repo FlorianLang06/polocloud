@@ -1,7 +1,7 @@
 package de.polocloud.database
 
 import de.polocloud.common.Closeable
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

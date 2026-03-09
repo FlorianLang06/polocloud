@@ -1,7 +1,7 @@
 package de.polocloud.cli.configuration
 
 import de.polocloud.cli.configuration.serialization.LocaleSerializer
-import dev.httpmarco.polocloud.i18n.model.Language
+import de.polocloud.i18n.model.Language
 import kotlinx.serialization.Serializable
 import java.util.Locale
 

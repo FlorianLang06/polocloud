@@ -1,6 +1,6 @@
 package de.polocloud.common.i18n
 
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import org.slf4j.Logger
 import java.util.Locale
 

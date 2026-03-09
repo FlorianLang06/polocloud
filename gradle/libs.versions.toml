@@ -111,7 +111,7 @@ testcontainers-mysql        = { group = "org.testcontainers", name = "testcontai
 testcontainers-cassandra    = { group = "org.testcontainers", name = "testcontainers-cassandra",     version.ref = "testcontainers" }
 
 # ── PoloCloud ─────────────────────────────────────────────────────────────────
-polocloud-i18n              = { group = "dev.httpmarco.polocloud", name = "polocloud-i18n", version.ref = "polocloud-i18n" }
+polocloud-i18n              = { group = "de.polocloud", name = "polocloud-i18n", version.ref = "polocloud-i18n" }
 
 [plugins]
 

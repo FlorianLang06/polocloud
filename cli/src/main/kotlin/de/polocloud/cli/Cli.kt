@@ -6,8 +6,8 @@ import de.polocloud.cli.logging.CliLogger
 import de.polocloud.cli.terminal.CliTerminal
 import de.polocloud.common.configuration.ConfigSection
 import de.polocloud.common.version.PolocloudVersion
-import dev.httpmarco.polocloud.i18n.api.TranslationService
-import dev.httpmarco.polocloud.i18n.model.Language
+import de.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.model.Language
 import java.io.File
 
 /**

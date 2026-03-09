@@ -1,6 +1,6 @@
 package de.polocloud.cli
 
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import org.jline.jansi.AnsiConsole
 import kotlin.system.exitProcess
 

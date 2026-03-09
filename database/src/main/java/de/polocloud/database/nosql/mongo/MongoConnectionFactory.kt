@@ -8,7 +8,7 @@ import de.polocloud.common.ShutdownMode
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
