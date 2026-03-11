@@ -63,12 +63,6 @@ class NodeInstance(
     init {
         TranslationService.init()
 
-        if (PolocloudVersion.CURRENT.isDebugEnabled) {
-            val ctx = LoggerContext.getContext(false) as LoggerContext
-            ctx.configuration.rootLogger.level = Level.DEBUG
-            ctx.updateLoggers()
-        }
-
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
 
