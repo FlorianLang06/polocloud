@@ -4,12 +4,15 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.configuration.ConfigSection
+import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.launch.NodeLaunchConfig
 import de.polocloud.node.configuration.NodeInstanceConfiguration
 import de.polocloud.node.node.NodeState
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.core.LoggerContext
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
@@ -59,6 +62,12 @@ class NodeInstance(
 
     init {
         TranslationService.init()
+
+        if (PolocloudVersion.CURRENT.isDebugEnabled) {
+            val ctx = LoggerContext.getContext(false) as LoggerContext
+            ctx.configuration.rootLogger.level = Level.DEBUG
+            ctx.updateLoggers()
+        }
 
         // Load persisted configuration (or create default if missing)
         config = loadConfiguration()
