@@ -9,7 +9,7 @@ fun main(args: Array<String>) {
     val launchConfig = NodeLaunchConfigParser.parse(args)
 
     if (PolocloudVersion.CURRENT.isDebugEnabled) {
-        val ctx = LoggerContext.getContext(false) as LoggerContext
+        val ctx = LoggerContext.getContext() as LoggerContext
         ctx.configuration.rootLogger.level = Level.DEBUG
         ctx.updateLoggers()
     }
