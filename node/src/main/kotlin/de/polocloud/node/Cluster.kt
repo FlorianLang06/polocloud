@@ -50,10 +50,10 @@ class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, val 
         launchConfig
     )
     private val stateService = NodeStateService(nodeRepository, security)
-    private val heartBeatService =
-        NodeHeartBeatService(security.localId, database)
+    private val heartBeatService = NodeHeartBeatService(security.localId, database)
 
     fun detect() {
+        this.stateService.markStarting()
         this.endpoint.connect()
         this.bootstrapService.detectAndRegister()
         this.heartBeatService.startScheduler()
@@ -61,13 +61,15 @@ class Cluster(database: DatabaseConnectionFactory<*>, bindAddress: Address, val 
 
     fun markOnline() = stateService.markOnline()
     fun markStopping() = stateService.markStopping()
-    fun markStopped() = stateService.markStopped()
     fun state() = stateService.localState()
     fun token() = tokenStore.currentToken()
 
     override fun close(mode: ShutdownMode) {
         endpoint.close(mode);
         heartBeatService.stopScheduler()
+
+        // change state bevor closing database connection to ensure state is persisted
+        stateService.markStopped()
         bootstrapService.close(mode)
     }
 }

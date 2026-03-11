@@ -37,15 +37,15 @@ object NodeLaunchConfigParser {
                 parts[0] to parts[1]
             }
 
-        val hostname = map["hostname"] ?: ""
-        val port = map["port"]?.toIntOrNull() ?: -1
+        val hostname = map["hostname"] ?: "127.0.0.1"
+        val port = map["port"]?.toIntOrNull() ?: 1
         val address = Address(hostname, port)
 
         val rootDir = map["directory"]?.let { Path.of(it) } ?: Path.of("")
 
         return NodeLaunchConfig(
             rootDir = rootDir,
-            address = address
+            address = if(map["hostname"] != null && map["port"] != null ) address else null
         )
     }
 }

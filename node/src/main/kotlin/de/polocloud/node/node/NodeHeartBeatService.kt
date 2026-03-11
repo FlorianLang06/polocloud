@@ -53,6 +53,8 @@ class NodeHeartBeatService(
     fun startScheduler(interval: Duration = 1.seconds) {
         cleanUp() // Clean old heartbeats before starting
 
+        
+
         schedulerJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
                 try {

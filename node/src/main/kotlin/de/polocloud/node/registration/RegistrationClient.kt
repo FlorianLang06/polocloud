@@ -49,6 +49,8 @@ class RegistrationClient(val security: ClusterSecurity) {
                 .setToken(info.token)
                 .build()
 
+            println("Sending registration request to cluster at ${info.address.hostname}:${info.address.port} with token ${info.token}")
+
             logger.info(
                 TranslationService.tr(
                     "cluster",

@@ -17,31 +17,41 @@ class NodeStateService(
 
     fun markOnline() =
         changeState(NodeState.ONLINE) {
-            it.state == NodeState.STARTING || it.state == NodeState.SYNCING
+            it == NodeState.STARTING || it == NodeState.SYNCING
+        }
+
+    fun markStarting() =
+        changeState(NodeState.STARTING, onlyLocal = true) {
+            it == NodeState.OFFLINE
         }
 
     fun markStopping() =
         changeState(NodeState.STOPPING) {
-            it.state == NodeState.ONLINE || it.state == NodeState.CRASHED
+            it == NodeState.ONLINE || it == NodeState.CRASHED
         }
 
     fun markStopped() =
         changeState(NodeState.STOPPED) {
-            it.state == NodeState.STOPPING || it.state == NodeState.CRASHED
+            it == NodeState.STOPPING || it == NodeState.CRASHED
         }
 
     @OptIn(ExperimentalAtomicApi::class)
     private fun changeState(
         newState: NodeState,
-        predicate: (NodeData) -> Boolean
+        onlyLocal: Boolean = false,
+        predicate: (NodeState) -> Boolean
     ) {
-        val node = findSelf()
-
-        if (!predicate(node)) return
+        if (!predicate(localState())) {
+            return
+        }
 
         stateRef.store(newState)
-        node.state = newState
-        repository.save(node)
+
+        if (!onlyLocal) {
+            val node = findSelf()
+            node.state = newState
+            repository.save(node)
+        }
     }
 
     private fun findSelf(): NodeData {

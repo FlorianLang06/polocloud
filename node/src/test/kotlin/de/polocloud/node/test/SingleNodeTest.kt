@@ -99,8 +99,15 @@ class SingleNodeTest {
      *
      * @param timeoutSeconds Maximum time to wait for node to become ONLINE
      */
+    /**
+     * Helper function to start the node and wait until it reaches ONLINE state.
+     *
+     * @param timeoutSeconds Maximum time to wait for node to become ONLINE
+     */
     private fun startNodeAndWaitOnline(timeoutSeconds: Long = 5) {
         instance.start()
+
+        // Wait until node becomes ONLINE
         await().atMost(timeoutSeconds, TimeUnit.SECONDS)
             .pollInterval(50, TimeUnit.MILLISECONDS)
             .untilAsserted {
@@ -108,6 +115,19 @@ class SingleNodeTest {
                     NodeState.ONLINE,
                     instance.cluster.state(),
                     "Node did not reach ONLINE state within $timeoutSeconds seconds"
+                )
+            }
+
+        // Ensure node STAYS online for a short time
+        await()
+            .during(2, TimeUnit.SECONDS) // must remain ONLINE for 2 seconds
+            .pollInterval(50, TimeUnit.MILLISECONDS)
+            .atMost(3, TimeUnit.SECONDS)
+            .untilAsserted {
+                Assertions.assertEquals(
+                    NodeState.ONLINE,
+                    instance.cluster.state(),
+                    "Node did not remain ONLINE after startup"
                 )
             }
     }

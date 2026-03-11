@@ -12,8 +12,6 @@ import de.polocloud.node.registration.RegistrationInfo
 import org.awaitility.Awaitility.await
 import java.util.UUID
 import kotlin.io.path.Path
-import kotlin.random.Random
-import kotlin.test.BeforeTest
 import org.junit.jupiter.api.*
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -24,10 +22,11 @@ import java.util.concurrent.TimeUnit
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ClusterNodeAuthTest {
 
-    private val nodeCount = 2// Random.nextInt(1, 10)
+    private val nodeCount = 2
     private val clusterInstances = arrayListOf<NodeInstance>()
 
     companion object {
+
         @Container
         @JvmStatic
         val postgres = PostgreSQLContainer("postgres:16-alpine").apply {
@@ -38,8 +37,9 @@ class ClusterNodeAuthTest {
         }
     }
 
-    @BeforeTest
+    @BeforeAll
     fun setupCluster() {
+
         postgres.start()
 
         println("Starting cluster with $nodeCount nodes")
@@ -62,14 +62,43 @@ class ClusterNodeAuthTest {
                 ),
                 clusterRegistrationToken =
                     if (registrationToken != null)
-                        RegistrationInfo(registrationToken, registrationHost!!)
+                        RegistrationInfo(
+                            registrationToken,
+                            Address("127.0.0.1", registrationHost!!.port)
+                        )
                     else null
             )
 
             val node = NodeInstance(config)
 
             node.shutdownHandler.running = true
-            node.start()
+            Thread {
+                node.start()
+            }.start()
+
+            // Wait until node reaches ONLINE
+            await().atMost(10, TimeUnit.SECONDS)
+                .pollInterval(50, TimeUnit.MILLISECONDS)
+                .untilAsserted {
+                    Assertions.assertEquals(
+                        NodeState.ONLINE,
+                        node.cluster.state(),
+                        "Node $i did not reach ONLINE state"
+                    )
+                }
+
+            // Ensure node remains stable ONLINE for a short time
+            await()
+                .during(2, TimeUnit.SECONDS)
+                .pollInterval(50, TimeUnit.MILLISECONDS)
+                .atMost(5, TimeUnit.SECONDS)
+                .untilAsserted {
+                    Assertions.assertEquals(
+                        NodeState.ONLINE,
+                        node.cluster.state(),
+                        "Node $i did not remain ONLINE after startup"
+                    )
+                }
 
             registrationToken = node.cluster.token()
             registrationHost = address
@@ -80,14 +109,19 @@ class ClusterNodeAuthTest {
 
     @Test
     fun check() {
-        clusterInstances.forEach {
-            assert(it.cluster.state() == NodeState.ONLINE)
+        clusterInstances.forEachIndexed { index, node ->
+            Assertions.assertEquals(
+                NodeState.ONLINE,
+                node.cluster.state(),
+                "Node $index is not ONLINE"
+            )
         }
     }
 
-    @AfterEach
+    @AfterAll
     fun teardown() {
         clusterInstances.forEach {
+
             try {
                 it.close(ShutdownMode.GRACEFUL)
 
@@ -100,12 +134,14 @@ class ClusterNodeAuthTest {
                             "Node state must be STOPPED or OFFLINE but was $state"
                         )
                     }
+
             } catch (ex: Exception) {
                 ex.printStackTrace()
             } finally {
                 it.launchConfig.rootDir.deleteComplete()
             }
         }
+
         clusterInstances.clear()
     }
 }
