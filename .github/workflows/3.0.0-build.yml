@@ -2,9 +2,9 @@ name: Dev Build
 
 on:
   push:
-    branches: [ pre-10 ]
+    branches: [ 3.0.0 ]
   pull_request:
-    branches: [ pre-10 ]
+    branches: [ 3.0.0 ]
 
 jobs:
   build:
