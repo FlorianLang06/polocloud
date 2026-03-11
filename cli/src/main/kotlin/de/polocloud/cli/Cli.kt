@@ -13,7 +13,7 @@ import java.io.File
 /**
  * Application-wide logger instance, initialized once at startup.
  */
-var logger = CliLogger.initLogging()
+var logger = CliLogger.initLogging(PolocloudVersion.CURRENT.isDebugEnabled)
 
 /**
  * Entry point and lifecycle manager for the PoloCloud CLI application.
@@ -45,6 +45,15 @@ object PolocloudCli {
         TranslationService.defaultLanguage(config.locale)
         TranslationService.preloadAsync("cli")
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
+
+        logger.debug("test1")
+        logger.debug("test1")
+        logger.debug("test1")
+        logger.debug("test1")
+        logger.debug("test1")
+        logger.debug("test1")
+        logger.debug("test2")
+
 
         this.terminal.readingThread.start()
         logger.info(TranslationService.tr("cli", "cli.start.success"))
