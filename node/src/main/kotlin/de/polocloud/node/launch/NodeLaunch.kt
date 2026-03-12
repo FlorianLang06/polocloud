@@ -3,15 +3,13 @@ package de.polocloud.node.launch
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.NodeInstance
 import org.apache.logging.log4j.Level
-import org.apache.logging.log4j.core.LoggerContext
+import org.apache.logging.log4j.core.config.Configurator
 
 fun main(args: Array<String>) {
     val launchConfig = NodeLaunchConfigParser.parse(args)
 
     if (PolocloudVersion.CURRENT.isDebugEnabled) {
-        val ctx = LoggerContext.getContext() as LoggerContext
-        ctx.configuration.rootLogger.level = Level.DEBUG
-        ctx.updateLoggers()
+        Configurator.setRootLevel(Level.DEBUG);
     }
 
     val instance = NodeInstance(launchConfig)

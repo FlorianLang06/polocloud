@@ -12,6 +12,8 @@ import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.launch.NodeLaunchConfig
 import de.polocloud.node.configuration.NodeInstanceConfiguration
 import de.polocloud.node.node.NodeState
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.core.config.Configurator
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
