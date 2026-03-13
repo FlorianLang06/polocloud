@@ -1,8 +1,9 @@
-package de.polocloud.node.node.data
+package de.polocloud.node.nodes.heartbeat
 
 import de.polocloud.database.EntryIdentifier
 import de.polocloud.database.EntryRef
 import de.polocloud.database.RepositoryName
+import de.polocloud.node.nodes.NodeData
 import java.util.UUID
 import kotlin.time.Instant
 

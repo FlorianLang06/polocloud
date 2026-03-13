@@ -1,0 +1,18 @@
+package de.polocloud.node.repositories
+
+import de.polocloud.database.DatabaseConnectionFactory
+import de.polocloud.database.DatabaseKey
+import de.polocloud.node.nodes.NodeData
+import java.util.UUID
+
+class NodeRepository(private val database: DatabaseConnectionFactory<*>) {
+
+    private val nodeDatabaseKey = DatabaseKey(NodeData::class)
+
+    fun find(id: UUID) = this.database.executor().findById(nodeDatabaseKey, id)
+
+    fun save(node: NodeData) = this.database.executor().save(nodeDatabaseKey, node)
+
+    fun findAll() = this.database.executor().findAll(nodeDatabaseKey)
+
+}

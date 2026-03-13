@@ -3,161 +3,128 @@ package de.polocloud.node
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.configuration.ConfigSection
 import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.launch.NodeLaunchConfig
-import de.polocloud.node.configuration.NodeInstanceConfiguration
-import de.polocloud.node.node.NodeState
-import org.apache.logging.log4j.Level
-import org.apache.logging.log4j.core.config.Configurator
+import de.polocloud.node.configuration.NodeConfiguration
+import de.polocloud.node.generator.LocalIdGenerator
+import de.polocloud.node.launch.NodeLaunchProperties
+import de.polocloud.node.nodes.LocalNodeContainer
+import de.polocloud.node.nodes.NodeContainer
+import de.polocloud.node.nodes.NodeData
+import de.polocloud.node.nodes.NodeFactory
+import de.polocloud.node.repositories.NodeRepository
+import de.polocloud.node.shutdown.ShutdownHook
 import org.slf4j.LoggerFactory
-import kotlin.system.exitProcess
 
-/**
- * Represents a running PoloCloud node instance.
- *
- * Responsibilities:
- * - Load and manage node configuration
- * - Initialize and manage the gRPC endpoint
- * - Join and interact with the cluster
- *
- * Lifecycle:
- * 1. Constructed with bootstrap information
- * 2. Configuration is loaded
- * 3. start() initializes networking and cluster integration
- * 4. close() gracefully shuts down the node
- */
 class NodeInstance(
     /**
      * Bootstrap information created during application startup.
      * Contains resolved filesystem paths and runtime launch parameters.
      */
-    val launchConfig: NodeLaunchConfig
+    val launchProperties: NodeLaunchProperties,
+    val nodeConfig: NodeConfiguration
 ) : Closeable {
 
-    private val logger = LoggerFactory.getLogger(NodeInstance::class.java)
-
-    /**
-     * Node configuration loaded from the local node configuration file.
-     */
-    val config: NodeInstanceConfiguration
-
-    /**
-     * Cluster abstraction handling node discovery and cluster state.
-     */
-    val cluster: Cluster
-
-    /**
-     * Shutdown handler responsible for graceful shutdown logic and JVM shutdown hook registration.
-     */
-    val shutdownHandler = NodeShutdownHandler(this)
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     /**
      * Database connection factory resolved from launch parameters or persisted configuration.
      */
     val database: DatabaseConnectionFactory<*>
 
+    lateinit var localNodeContainer: LocalNodeContainer
+    val nodeRepository: NodeRepository
+
     init {
         TranslationService.init()
+        TranslationService.defaultLanguage(nodeConfig.general.locale)
 
-        // Load persisted configuration (or create default if missing)
-        config = loadConfiguration()
+        this.database = this.initializeDatabase()
+        this.nodeRepository = NodeRepository(this.database)
 
-        TranslationService.defaultLanguage(config.language)
-        TranslationService.preloadAsync("database")
-
-        database = resolveDatabaseCredentials().factory()
-
-        // Initialize cluster component
-        cluster = Cluster(database, resolveBindAddress(), launchConfig)
+        this.initialize()
+        this.localNodeContainer.markInitialize()
     }
 
-    /**
-     * Starts the node instance.
-     *
-     * This will:
-     * - Connect the gRPC endpoint
-     * - Perform cluster detection
-     * - Mark this node as online in the cluster
-     */
+    fun initialize() {
+        ShutdownHook.attach(this)
+
+        val localId = LocalIdGenerator.generate()
+
+        // Todo: count only
+        if (nodeRepository.findAll().isEmpty()) {
+            // we are the only and new head
+            this.localNodeContainer = LocalNodeContainer(NodeFactory.createInitial(resolveBindAddress()))
+            return
+        }
+
+        val possibleNode = nodeRepository.find(localId)
+        if (possibleNode != null) {
+            this.localNodeContainer = LocalNodeContainer(possibleNode)
+            return
+        }
+
+        // only cluster join chance
+        if (launchProperties.clusterRegistrationToken == null) {
+            this.logger.trInfo("cluster", "cluster.validation.failed")
+            this.close(ShutdownMode.GRACEFUL)
+            throw IllegalStateException("Node is not registered in the cluster and no registration token was provided. Cannot start.")
+        }
+
+        TODO()
+    }
+
     @Synchronized
     fun start() {
-        if (cluster.state() != NodeState.OFFLINE) {
+        if (!localNodeContainer.isInitialize()) {
             // Node is already started or in the process of starting, ignore subsequent start calls
-            throw IllegalStateException("Node is already starting or started. Current state: ${cluster.state()}")
+            throw IllegalStateException("Node is already starting or started. Current state: ${localNodeContainer.state()}")
         }
 
-        try {
-            this.initializeDatabase()
-            this.initializeCluster()
-        } catch (ex: Exception) {
-            // If any initialization step fails, ensure we attempt to clean up resources before rethrowing the exception
-            close(ShutdownMode.GRACEFUL)
-            throw ex
-        }
+        this.localNodeContainer.markOnline()
     }
 
-    /**
-     * Gracefully shuts down the node instance.
-     *
-     * Intended for:
-     * - JVM shutdown hooks
-     * - Kubernetes SIGTERM handling
-     * - Manual restarts
-     *
-     * Currently not implemented.
-     */
     @Synchronized
     override fun close(mode: ShutdownMode) {
-        if (cluster.state() == NodeState.OFFLINE) {
+        if (localNodeContainer.isOffline() || localNodeContainer.inShutdownProcess()) {
             // Node was never started, nothing to do
+            // or already stopped
             return
         }
 
-        if (cluster.state() == NodeState.STOPPING || cluster.state() == NodeState.STOPPED) {
-            return
-        }
+        this.localNodeContainer.markStopping()
 
-        cluster.markStopping()
 
-        // finally close database and other resources
-        cluster.close(mode)
-
-        if (!shutdownHandler.running) {
-            exitProcess(0)
-        }
+        this.localNodeContainer.markStopped()
+        this.database.close(mode)
     }
 
-    /**
-     * Performs cluster discovery and marks the node as online.
-     */
-    private fun initializeCluster() {
-        cluster.detect()
-        cluster.markOnline()
 
-        logger.trInfo("cluster", "cluster.node.started", "version" to PolocloudVersion.CURRENT.toDisplayString())
+    fun resolveDatabaseCredentials(): DatabaseCredentials {
+        if (launchProperties.database != null) {
+            return launchProperties.database
+        }
+        return nodeConfig.database
     }
 
-    /**
-     * Loads the node configuration from disk.
-     *
-     * If no configuration file exists, a default configuration
-     * will be created and persisted automatically.
-     */
-    private fun loadConfiguration(): NodeInstanceConfiguration {
-        return ConfigSection(launchConfig.localNodePath).readOrCreate(
-            NodeInstanceConfiguration.serializer(),
-            NodeInstanceConfiguration(
-                database = DatabaseCredentials.H2(
-                    launchConfig.localDataPath.toString() + "/polocloud.h2.db"
+    private fun initializeDatabase(): DatabaseConnectionFactory<*> {
+        val database = resolveDatabaseCredentials().factory()
+        database.connect()
+
+        if (!database.isValid()) {
+            logger.error(
+                TranslationService.tr(
+                    "cluster",
+                    "cluster.node.database.failed"
                 )
             )
-        )
+            throw IllegalStateException("Cluster database connection is not valid.")
+        }
+        return database
     }
+
 
     /**
      * Resolves the effective bind address of this node.
@@ -171,8 +138,8 @@ class NodeInstance(
      * @return the resolved {@link Address} used for the gRPC endpoint
      */
     private fun resolveBindAddress(): Address {
-        val launchAddress = launchConfig.address
-        val defaultAddress = config.bindAddress
+        val launchAddress = launchProperties.address
+        val defaultAddress = nodeConfig.general.bindAddress
 
         if (launchAddress != null) {
 
@@ -183,27 +150,6 @@ class NodeInstance(
 
             return Address(hostname, port)
         }
-        return config.bindAddress
-    }
-
-    private fun initializeDatabase() {
-        database.connect()
-
-        if (!database.isValid()) {
-            logger.error(
-                TranslationService.tr(
-                    "cluster",
-                    "cluster.node.database.failed"
-                )
-            )
-            throw IllegalStateException("Cluster database connection is not valid.")
-        }
-    }
-
-    fun resolveDatabaseCredentials(): DatabaseCredentials {
-        if (launchConfig.database != null) {
-            return launchConfig.database
-        }
-        return config.database
+        return defaultAddress
     }
 }

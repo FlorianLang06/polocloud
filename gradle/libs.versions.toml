@@ -124,8 +124,7 @@ protobuf-plugin         = { id = "com.google.protobuf",                       ve
 [bundles]
 
 # ── gRPC ──────────────────────────────────────────────────────────────────────
-grpc                = ["grpc-api", "grpc-stub", "grpc-services", "protobuf-java"]
-grpc-runtime        = ["grpc-netty-shaded"]
+grpc                = ["grpc-api", "grpc-stub", "grpc-services", "protobuf-java", "grpc-netty-shaded"]
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging             = ["log4j-api", "log4j-core", "log4j-slf4j"]

@@ -5,7 +5,7 @@ import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.registration.RegistrationInfo
 import java.nio.file.Path
 
-data class NodeLaunchConfig(
+data class NodeLaunchProperties (
     val rootDir: Path,
     val address: Address? = null,
     val database: DatabaseCredentials? = null,
