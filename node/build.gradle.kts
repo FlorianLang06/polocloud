@@ -35,7 +35,6 @@ dependencies {
     // grpc
     compileOnly(libs.bundles.grpc)
     runtimeOnly(libs.bundles.grpc)
-    runtimeOnly(libs.bundles.grpc.runtime)
 
     // logging
     compileOnly(libs.bundles.logging.full)

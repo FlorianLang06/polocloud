@@ -3,8 +3,9 @@ package de.polocloud.node.test
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.files.deleteComplete
 import de.polocloud.node.NodeInstance
-import de.polocloud.node.launch.NodeLaunchConfig
-import de.polocloud.node.node.NodeState
+import de.polocloud.node.launch.NodeLaunch
+import de.polocloud.node.launch.NodeLaunchProperties
+import de.polocloud.node.nodes.NodeState
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -17,17 +18,17 @@ import kotlin.io.path.Path
  * Tests the basic lifecycle and safety behavior of a single NodeInstance.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SingleNodeTest {
+class SingleNodeContainerTest {
 
     private lateinit var instance: NodeInstance
-    private lateinit var launchConfig: NodeLaunchConfig
+    private lateinit var launchProperties: NodeLaunchProperties
 
     @BeforeEach
     fun setup() {
         // Create unique test directory for isolation
-        launchConfig = NodeLaunchConfig(Path("testing-${UUID.randomUUID()}"))
-        instance = NodeInstance(launchConfig)
-        instance.shutdownHandler.running = true
+        launchProperties = NodeLaunchProperties(Path("testing-${UUID.randomUUID()}"))
+        instance = NodeLaunch(launchProperties = launchProperties).run()
+        //instance.shutdownHandler.running = true
     }
 
     @Test
@@ -67,7 +68,7 @@ class SingleNodeTest {
             .untilAsserted {
                 Assertions.assertEquals(
                     NodeState.STOPPED,
-                    instance.cluster.state(),
+                    instance.localNodeContainer.state(),
                     "Node did not reach STOPPED state after graceful shutdown"
                 )
             }
@@ -81,7 +82,7 @@ class SingleNodeTest {
             await().atMost(5, TimeUnit.SECONDS)
                 .pollInterval(50, TimeUnit.MILLISECONDS)
                 .untilAsserted {
-                    val state = instance.cluster.state()
+                    val state = instance.localNodeContainer.state()
                     Assertions.assertTrue(
                         state == NodeState.STOPPED || state == NodeState.OFFLINE,
                         "Node state must be STOPPED or OFFLINE but was $state"
@@ -90,7 +91,7 @@ class SingleNodeTest {
         } catch (ex: Exception) {
             ex.printStackTrace()
         } finally {
-            launchConfig.rootDir.deleteComplete()
+            launchProperties.rootDir.deleteComplete()
         }
     }
 
@@ -113,7 +114,7 @@ class SingleNodeTest {
             .untilAsserted {
                 Assertions.assertEquals(
                     NodeState.ONLINE,
-                    instance.cluster.state(),
+                    instance.localNodeContainer.state(),
                     "Node did not reach ONLINE state within $timeoutSeconds seconds"
                 )
             }
@@ -126,7 +127,7 @@ class SingleNodeTest {
             .untilAsserted {
                 Assertions.assertEquals(
                     NodeState.ONLINE,
-                    instance.cluster.state(),
+                    instance.localNodeContainer.state(),
                     "Node did not remain ONLINE after startup"
                 )
             }

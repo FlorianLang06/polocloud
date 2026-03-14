@@ -1,8 +1,9 @@
-package de.polocloud.node.node
+package de.polocloud.node.nodes
 
 enum class NodeState {
 
     OFFLINE,
+    INITIALIZE,
     STARTING,
     SYNCING,
     ONLINE,

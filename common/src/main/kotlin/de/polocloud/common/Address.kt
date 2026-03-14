@@ -2,6 +2,7 @@ package de.polocloud.common
 
 import de.polocloud.common.utils.localIpAddress
 import kotlinx.serialization.Serializable
+import java.net.InetSocketAddress
 
 val GLOBAL_ADDRESS = Address("0.0.0.0", 1)
 val LOCAL_ADDRESS = Address(localIpAddress(), 1)
@@ -39,4 +40,6 @@ data class Address(
      * Returns a copy of this address with a different hostname.
      */
     fun withHostname(newHostname: String): Address = copy(hostname = newHostname)
+
+    fun toInetSocketAddress(): InetSocketAddress = InetSocketAddress(hostname, port)
 }

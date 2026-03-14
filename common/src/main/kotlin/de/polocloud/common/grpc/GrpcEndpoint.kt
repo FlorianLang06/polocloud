@@ -5,81 +5,94 @@ import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import io.grpc.BindableService
 import io.grpc.Server
-import io.grpc.ServerBuilder
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
+import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import io.grpc.protobuf.services.HealthStatusManager
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Represents a gRPC server endpoint that can host multiple services.
  *
  * This class manages the lifecycle of a gRPC server, including starting,
- * stopping, and health management. It is intended for cloud-native usage
- * and supports graceful shutdown with health status updates.
+ * stopping, health status reporting, TLS/mTLS support, and graceful shutdown.
  *
- * @param address the port number on which the gRPC server will listen.
- * @param services one or more gRPC services to register with this endpoint.
+ * It is intended for cloud-native usage and supports both optional TLS
+ * and optional client certificate authentication.
  */
-class GrpcEndpoint(
+class GrpcEndpoint private constructor(
     private val address: Address,
-    private val certFile: File,
-    private val keyFile: File,
-    vararg services: BindableService
+    private val services: List<BindableService>,
+    private val certFile: File?,
+    private val keyFile: File?,
+    private val clientAuth: ClientAuth,
+    private val shutdownTimeoutSeconds: Long
 ) : Closeable {
 
     private val logger = LoggerFactory.getLogger(GrpcEndpoint::class.java)
 
-    private var server: Server? = null
-    private val services = services.toList()
+    private val serverRef = AtomicReference<Server?>(null)
     private val healthManager = HealthStatusManager()
 
     /**
-     * Starts the gRPC server and registers all provided services.
+     * Starts the gRPC server if not already running.
      *
-     * If the server is already running, this method does nothing.
-     * The health service is also registered automatically, reporting SERVING status.
+     * Registers all provided services and starts reporting SERVING health status.
+     * Supports optional TLS and client certificate authentication.
      */
-    fun connect() {
-        if (server != null) {
-            logger.warn("gRPC server is already running on port {}", address.port)
+    @Synchronized
+    fun start() {
+        if (serverRef.get() != null) {
+            logger.warn("gRPC server is already running on {}", address)
             return
         }
 
-        logger.info("Starting gRPC server on port {}", address.port)
-        val builder = ServerBuilder.forPort(address.port)
-            .useTransportSecurity(certFile, keyFile)
+        logger.info("Starting gRPC server on {}", address)
+
+        val builder = NettyServerBuilder.forAddress(address.toInetSocketAddress())
             .addService(healthManager.healthService)
 
-        services.forEach { service ->
-            logger.debug("Registering gRPC service: {}", service.javaClass.simpleName)
-            builder.addService(service)
+        if (certFile != null && keyFile != null) {
+            val sslContext = GrpcSslContexts
+                .forServer(certFile, keyFile)
+                .clientAuth(clientAuth)
+                .build()
+
+            builder.sslContext(sslContext)
+            logger.info("TLS enabled (clientAuth={})", clientAuth)
         }
 
-        server = builder.build().also {
-            it.start()
+        services.forEach(builder::addService)
+        val server = builder.build().apply {
+            start()
             healthManager.setStatus(
                 "",
                 io.grpc.health.v1.HealthCheckResponse.ServingStatus.SERVING
             )
             logger.info("gRPC server started and reporting SERVING")
         }
+
+        serverRef.set(server)
     }
 
     /**
      * Stops the gRPC server gracefully.
      *
      * Updates the health status to NOT_SERVING, then shuts down the server.
-     * If the server does not terminate within 5 seconds, it is forcibly shut down.
+     * If the server does not terminate within [shutdownTimeoutSeconds], it is forcibly shut down.
+     *
+     * @param mode Shutdown mode, either [ShutdownMode.GRACEFUL] or [ShutdownMode.FORCE]
      */
     override fun close(mode: ShutdownMode) {
-        val s = server ?: run {
+        val server = serverRef.getAndSet(null) ?: run {
             logger.warn("gRPC server is not running, nothing to close")
             return
         }
 
         logger.info("Shutting down gRPC server...")
-
         healthManager.setStatus(
             "",
             io.grpc.health.v1.HealthCheckResponse.ServingStatus.NOT_SERVING
@@ -87,23 +100,82 @@ class GrpcEndpoint(
 
         if (mode == ShutdownMode.FORCE) {
             logger.warn("Forcing immediate shutdown of gRPC server")
-            s.shutdownNow()
+            server.shutdownNow()
             return
         }
 
-        s.shutdown()
-
+        server.shutdown()
         try {
-            if (!s.awaitTermination(5, TimeUnit.SECONDS)) {
-                logger.warn("gRPC server did not terminate in 5 seconds, forcing shutdown")
-                s.shutdownNow()
+            if (!server.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
+                logger.warn(
+                    "Server did not terminate in {} seconds, forcing shutdown",
+                    shutdownTimeoutSeconds
+                )
+                server.shutdownNow()
             } else {
                 logger.info("gRPC server terminated gracefully")
             }
         } catch (_: InterruptedException) {
             logger.warn("Shutdown interrupted, forcing immediate shutdown")
-            s.shutdownNow()
+            server.shutdownNow()
             Thread.currentThread().interrupt()
+        }
+    }
+
+    /**
+     * Builder for [GrpcEndpoint].
+     *
+     * Usage example:
+     * ```
+     * val endpoint = GrpcEndpoint.Builder(address)
+     *     .service(RegistrationService())
+     *     .tls(certFile, keyFile) // optional TLS
+     *     .clientAuth(ClientAuth.REQUIRE) // optional mTLS
+     *     .shutdownTimeout(10)
+     *     .build()
+     * endpoint.start()
+     * ```
+     */
+    class Builder(private val address: Address) {
+
+        private val services = mutableListOf<BindableService>()
+        private var certFile: File? = null
+        private var keyFile: File? = null
+        private var clientAuth: ClientAuth = ClientAuth.NONE
+        private var shutdownTimeoutSeconds: Long = 5
+
+        /** Registers a gRPC service with this endpoint. */
+        fun service(service: BindableService) = apply { services += service }
+
+        /** Registers multiple gRPC services with this endpoint. */
+        fun services(vararg s: BindableService) = apply { services += s }
+
+        /**
+         * Enables TLS for this gRPC endpoint.
+         *
+         * @param certFile Server certificate
+         * @param keyFile Server private key
+         * @param clientAuth Optional client certificate authentication
+         */
+        fun tls(certFile: File, keyFile: File, clientAuth: ClientAuth = ClientAuth.NONE) = apply {
+            this.certFile = certFile
+            this.keyFile = keyFile
+            this.clientAuth = clientAuth
+        }
+
+        /** Sets shutdown timeout in seconds for graceful termination. */
+        fun shutdownTimeout(seconds: Long) = apply { this.shutdownTimeoutSeconds = seconds }
+
+        /** Builds the [GrpcEndpoint] instance. */
+        fun build(): GrpcEndpoint {
+            return GrpcEndpoint(
+                address,
+                services,
+                certFile,
+                keyFile,
+                clientAuth,
+                shutdownTimeoutSeconds
+            )
         }
     }
 }

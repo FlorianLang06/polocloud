@@ -16,16 +16,16 @@ import java.nio.file.Path
  * val config = NodeLaunchConfigParser.parse(arrayOf("--hostname=localhost", "--port=25565"))
  * ```
  */
-object NodeLaunchConfigParser {
+object NodeLaunchPropertiesParser {
 
     /**
-     * Parses the given command-line arguments into a [NodeLaunchConfig].
+     * Parses the given command-line arguments into a [NodeLaunchProperties].
      *
      * @param args array of CLI arguments, e.g., ["--hostname=localhost", "--port=25565"]
-     * @return a [NodeLaunchConfig] with values from the arguments or sensible defaults
+     * @return a [NodeLaunchProperties] with values from the arguments or sensible defaults
      * @throws IllegalArgumentException if an argument is malformed (missing `=` separator)
      */
-    fun parse(args: Array<String>): NodeLaunchConfig {
+    fun parse(args: Array<String>): NodeLaunchProperties {
         val map = args
             .filter { it.startsWith("--") }
             .associate { arg ->
@@ -43,7 +43,7 @@ object NodeLaunchConfigParser {
 
         val rootDir = map["directory"]?.let { Path.of(it) } ?: Path.of("")
 
-        return NodeLaunchConfig(
+        return NodeLaunchProperties(
             rootDir = rootDir,
             address = if(map["hostname"] != null && map["port"] != null ) address else null
         )
