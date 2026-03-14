@@ -38,7 +38,7 @@ object ShutdownHook {
      * @param mode the [ShutdownMode] to pass to each task (default: GRACEFUL)
      */
     fun shutdown(mode: ShutdownMode = ShutdownMode.GRACEFUL) {
-        log.trInfo("node", "shutdown.stopping")
+        log.trInfo("node", "node.shutdown.stopping")
         // Copy tasks to avoid concurrent modification if attach() is called during shutdown
         val tasksCopy: List<Closeable>
         synchronized(this) {
@@ -51,7 +51,7 @@ object ShutdownHook {
                 log.error("Error while shutting down task: ${closeable.javaClass.name}", ex)
             }
         }
-        log.trInfo("node", "shutdown.stopped")
+        log.trInfo("node", "node.shutdown.stopped")
     }
 
     /**

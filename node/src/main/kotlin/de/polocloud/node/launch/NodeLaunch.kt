@@ -12,6 +12,8 @@ import org.apache.logging.log4j.core.config.Configurator
 class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeLaunchProperties = NodeLaunchPropertiesParser.parse(args)) {
 
     init {
+        System.setProperty("PID", ProcessHandle.current().pid().toString())
+
         // register shutdown hook
         ShutdownHook.registerShutdownHook()
 

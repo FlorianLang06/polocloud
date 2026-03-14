@@ -39,6 +39,7 @@ dependencies {
     // logging
     compileOnly(libs.bundles.logging.full)
     runtimeOnly(libs.bundles.logging.full)
+    annotationProcessor(libs.log4j.core)
 
     // database
     compileOnly(libs.bundles.database)

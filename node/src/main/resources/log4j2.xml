@@ -2,21 +2,40 @@
 <Configuration status="WARN">
 
     <Properties>
-        <Property name="LOG_PATTERN">
-            %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %c{1} - %msg%n
+        <Property name="CONSOLE_PATTERN">
+            %style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{yellow} %highlight{%5level} %style{${sys:PID}}{magenta}--- [%15.15t] %style{%logger}{cyan} : %msg%n%throwable
+        </Property>
+        <Property name="FILE_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %5level ${sys:PID}--- [%15.15t] %logger : %msg%n
         </Property>
     </Properties>
 
     <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="${LOG_PATTERN}"/>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${CONSOLE_PATTERN}" charset="UTF-8"/>
         </Console>
+        <RollingFile name="file"
+                     fileName="logs/application.log"
+                     filePattern="logs/application-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${FILE_PATTERN}" charset="UTF-8"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
+            </Policies>
+            <DefaultRolloverStrategy>
+                <Delete basePath="logs" maxDepth="1">
+                    <IfFileName glob="application-*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
     </Appenders>
 
     <Loggers>
 
         <Logger name="de.polocloud" level="info" additivity="false">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="file"/>
         </Logger>
 
         <Logger name="io.grpc" level="warn"/>
@@ -24,7 +43,8 @@
         <Logger name="com.zaxxer.hikari" level="warn"/>
 
         <Root level="info">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="file"/>
         </Root>
     </Loggers>
 </Configuration>
