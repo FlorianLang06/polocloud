@@ -1,6 +1,7 @@
 package de.polocloud.cli.command
 
 import de.polocloud.cli.command.arguments.TerminalArgument
+import de.polocloud.i18n.api.TranslationService
 
 /**
  * Base class for all CLI commands.
@@ -20,14 +21,17 @@ import de.polocloud.cli.command.arguments.TerminalArgument
  * ```
  *
  * @param name The primary command name used for lookup (case-insensitive).
- * @param description A short description shown in help output.
+ * @param descriptionKey Translation key for the command description.
  * @param aliases Optional alternative names for this command.
  */
 abstract class Command(
     val name: String,
-    val description: String,
+    val descriptionKey: String,
     vararg val aliases: String
 ) {
+
+    val description: String
+        get() = TranslationService.tr("cli", descriptionKey)
 
     /**
      * The execution block invoked when the command is called without arguments.

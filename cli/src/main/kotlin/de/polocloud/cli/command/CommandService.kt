@@ -1,6 +1,7 @@
 package de.polocloud.cli.command
 
 import de.polocloud.cli.command.impl.ClearCommand
+import de.polocloud.cli.command.impl.HelpCommand
 import de.polocloud.cli.command.impl.ShutdownCommand
 
 /**
@@ -17,6 +18,7 @@ class CommandService {
     private val parser = CommandParser(this)
 
     init {
+        registerCommand(HelpCommand())
         registerCommand(ShutdownCommand())
         registerCommand(ClearCommand())
     }
@@ -71,4 +73,9 @@ class CommandService {
     fun call(commandId: String, args: Array<String>) {
         parser.parse(commandId, args)
     }
+
+    /**
+     * @return list of registered Commands.
+     */
+    fun registeredCommands() = this.registeredCommands
 }
