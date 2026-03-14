@@ -54,8 +54,8 @@ class CliTerminal {
      * Clears the entire terminal screen.
      */
     fun clearScreen() {
-        this.terminal.puts(InfoCmp.Capability.clear_screen);
-        this.terminal.flush();
+        this.terminal.puts(InfoCmp.Capability.clear_screen)
+        this.terminal.flush()
     }
 
     /**

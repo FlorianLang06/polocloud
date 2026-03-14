@@ -21,7 +21,7 @@ var logger = CliLogger.initLogging(PolocloudVersion.CURRENT.isDebugEnabled)
  * Responsible for initializing the terminal, loading translations,
  * starting the command reading loop, and handling graceful shutdown.
  */
-object PolocloudCli {
+object Cli {
     val config: CliConfiguration = loadConfiguration()
     val terminal: CliTerminal = CliTerminal()
 
@@ -47,12 +47,6 @@ object PolocloudCli {
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
 
         logger.debug("test1")
-        logger.debug("test1")
-        logger.debug("test1")
-        logger.debug("test1")
-        logger.debug("test1")
-        logger.debug("test1")
-        logger.debug("test2")
 
 
         this.terminal.readingThread.start()

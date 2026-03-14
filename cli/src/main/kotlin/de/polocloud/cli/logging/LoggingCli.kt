@@ -1,6 +1,6 @@
 package de.polocloud.cli.logging
 
-import de.polocloud.cli.PolocloudCli
+import de.polocloud.cli.Cli
 import de.polocloud.cli.shutdownProcess
 import org.apache.logging.log4j.core.Appender
 import org.apache.logging.log4j.core.Filter
@@ -21,7 +21,7 @@ class LoggingCli(
         val formatted = layout.toSerializable(event).toString()
 
         if (!shutdownProcess()) {
-            PolocloudCli.terminal.displayApproved(formatted)
+            Cli.terminal.displayApproved(formatted)
         } else {
             print(formatted)
         }

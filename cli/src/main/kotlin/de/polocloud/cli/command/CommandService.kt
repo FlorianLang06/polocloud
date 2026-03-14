@@ -1,5 +1,6 @@
 package de.polocloud.cli.command
 
+import de.polocloud.cli.command.impl.ClearCommand
 import de.polocloud.cli.command.impl.ShutdownCommand
 
 /**
@@ -17,6 +18,7 @@ class CommandService {
 
     init {
         registerCommand(ShutdownCommand())
+        registerCommand(ClearCommand())
     }
 
     /**

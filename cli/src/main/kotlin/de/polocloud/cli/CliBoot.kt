@@ -31,6 +31,6 @@ fun main() {
         throwable.printStackTrace()
     }
 
-    PolocloudCli.start()
+    Cli.start()
     Thread.currentThread().join()
 }
