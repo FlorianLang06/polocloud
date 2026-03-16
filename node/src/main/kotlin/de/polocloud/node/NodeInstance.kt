@@ -4,15 +4,13 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.i18n.trInfo
+import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
-import de.polocloud.database.DatabaseCredentials
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.NodeConfiguration
 import de.polocloud.node.generator.LocalIdGenerator
 import de.polocloud.node.launch.NodeLaunchProperties
 import de.polocloud.node.nodes.LocalNodeContainer
-import de.polocloud.node.nodes.NodeContainer
-import de.polocloud.node.nodes.NodeData
 import de.polocloud.node.nodes.NodeFactory
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.shutdown.ShutdownHook
@@ -45,24 +43,21 @@ class NodeInstance(
         this.nodeRepository = NodeRepository(this.database)
 
         this.initialize()
-        this.localNodeContainer.markInitialize()
     }
 
     fun initialize() {
-        ShutdownHook.attach(this)
-
         val localId = LocalIdGenerator.generate()
 
         // Todo: count only
         if (nodeRepository.findAll().isEmpty()) {
             // we are the only and new head
-            this.localNodeContainer = LocalNodeContainer(NodeFactory.createInitial(resolveBindAddress()))
+            this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(resolveBindAddress()))
             return
         }
 
         val possibleNode = nodeRepository.find(localId)
         if (possibleNode != null) {
-            this.localNodeContainer = LocalNodeContainer(possibleNode)
+            this.localNodeContainer = LocalNodeContainer(nodeRepository, possibleNode)
             return
         }
 
@@ -72,18 +67,22 @@ class NodeInstance(
             this.close(ShutdownMode.GRACEFUL)
             throw IllegalStateException("Node is not registered in the cluster and no registration token was provided. Cannot start.")
         }
-
-        TODO()
     }
 
     @Synchronized
     fun start() {
-        if (!localNodeContainer.isInitialize()) {
+        if (!localNodeContainer.isStarting()) {
             // Node is already started or in the process of starting, ignore subsequent start calls
             throw IllegalStateException("Node is already starting or started. Current state: ${localNodeContainer.state()}")
         }
+        this.localNodeContainer.markStarting()
+
+        // todo starting
+
 
         this.localNodeContainer.markOnline()
+
+        logger.trInfo("cluster", "cluster.node.started", "version" to PolocloudVersion.CURRENT.toDisplayString())
     }
 
     @Synchronized
@@ -95,22 +94,13 @@ class NodeInstance(
         }
 
         this.localNodeContainer.markStopping()
-
-
+        ShutdownHook.shutdown(mode)
         this.localNodeContainer.markStopped()
         this.database.close(mode)
     }
 
-
-    fun resolveDatabaseCredentials(): DatabaseCredentials {
-        if (launchProperties.database != null) {
-            return launchProperties.database
-        }
-        return nodeConfig.database
-    }
-
     private fun initializeDatabase(): DatabaseConnectionFactory<*> {
-        val database = resolveDatabaseCredentials().factory()
+        val database = nodeConfig.database.factory()
         database.connect()
 
         if (!database.isValid()) {

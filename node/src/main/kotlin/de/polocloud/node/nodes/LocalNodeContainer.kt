@@ -1,22 +1,23 @@
 package de.polocloud.node.nodes
 
+import de.polocloud.node.repositories.NodeRepository
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-class LocalNodeContainer(val data: NodeData) : NodeContainer(data) {
+class LocalNodeContainer(val stateRepository : NodeRepository, val data: NodeData) : NodeContainer(data) {
 
     fun markOnline() =
         changeState(NodeState.ONLINE) {
             it == NodeState.STARTING || it == NodeState.SYNCING
         }
 
-    fun markInitialize() =
-        changeState(NodeState.INITIALIZE) {
-            it == NodeState.STARTING
+    fun markStarting() =
+        changeState(NodeState.STARTING) {
+            it == NodeState.OFFLINE
         }
 
     fun markStopping() =
         changeState(NodeState.STOPPING) {
-            it == NodeState.ONLINE || it == NodeState.CRASHED
+            it == NodeState.ONLINE || it == NodeState.CRASHED || it == NodeState.STARTING
         }
 
     fun markStopped() =
@@ -28,7 +29,6 @@ class LocalNodeContainer(val data: NodeData) : NodeContainer(data) {
     @OptIn(ExperimentalAtomicApi::class)
     private fun changeState(
         newState: NodeState,
-        onlyLocal: Boolean = false,
         predicate: (NodeState) -> Boolean
     ) {
         if (!predicate(this.state())) {
@@ -36,7 +36,6 @@ class LocalNodeContainer(val data: NodeData) : NodeContainer(data) {
         }
 
         data.state = newState
-
-        //   repository.save(node)
+        stateRepository.save(this.data)
     }
 }

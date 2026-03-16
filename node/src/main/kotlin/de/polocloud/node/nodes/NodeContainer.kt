@@ -10,7 +10,7 @@ open class NodeContainer(private val data: NodeData) {
 
     fun isOffline() = (this.data.state == NodeState.OFFLINE)
 
-    fun isInitialize() = (this.data.state == NodeState.INITIALIZE)
+    fun isStarting() = (this.data.state == NodeState.STARTING)
 
     fun inShutdownProcess() = (this.data.state == NodeState.STOPPING || this.data.state == NodeState.STOPPED)
 
