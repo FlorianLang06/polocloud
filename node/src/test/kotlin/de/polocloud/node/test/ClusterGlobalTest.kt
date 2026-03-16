@@ -2,11 +2,12 @@ package de.polocloud.node.test
 
 import de.polocloud.common.Address
 import de.polocloud.common.LOCAL_ADDRESS
+import de.polocloud.common.ShutdownMode
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.NodeInstance
 import de.polocloud.node.configuration.NodeConfiguration
 import de.polocloud.node.launch.NodeLaunchProperties
-import de.polocloud.node.registration.RegistrationInfo
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -57,6 +58,15 @@ class ClusterGlobalTest {
 
     @Test
     fun test() {
+        this.nodeList.forEach {
+            it.start()
+        }
+    }
 
+    @AfterAll
+    fun tearDown() {
+        nodeList.forEach {
+            it.close(ShutdownMode.GRACEFUL)
+        }
     }
 }
