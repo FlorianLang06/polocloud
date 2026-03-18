@@ -1,12 +1,13 @@
 package de.polocloud.node.test
 
 import de.polocloud.common.Address
-import de.polocloud.common.LOCAL_ADDRESS
+import de.polocloud.common.LOCALHOST_ADDRESS
 import de.polocloud.common.ShutdownMode
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.NodeInstance
 import de.polocloud.node.configuration.NodeConfiguration
 import de.polocloud.node.launch.NodeLaunchProperties
+import de.polocloud.node.registration.RegistrationInfo
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -35,30 +36,37 @@ class ClusterGlobalTest {
     @BeforeAll
     fun setup() {
         postgres.start()
-
-        val amount = 2
-
-        for (i in 0 until amount) {
-            val address = LOCAL_ADDRESS.withPort(5600 + i)
-            val launchProperties = NodeLaunchProperties(
-                rootDir = Path("testing-${UUID.randomUUID()}"),
-                address = address,
-                clusterRegistrationToken = null
-            )
-
-            nodeList.add(NodeInstance(launchProperties, NodeConfiguration( DatabaseCredentials.PostgreSQL(
-                Address(postgres.host, postgres.firstMappedPort),
-                "test",
-                "test",
-                "testdb"
-            ))))
-        }
     }
 
     @Test
     fun test() {
-        this.nodeList.forEach {
-            it.start()
+
+        val amount = 2
+        var behaviorNode : NodeInstance? = null
+
+        for (i in 0 until amount) {
+            val address = LOCALHOST_ADDRESS.withPort(5600 + i)
+            val launchProperties = NodeLaunchProperties(
+                rootDir = Path("testing-${UUID.randomUUID()}"),
+                address = address,
+                clusterRegistration = if(behaviorNode == null) null else RegistrationInfo(behaviorNode.registrationManager.publicRegistrationToken, behaviorNode.nodeConfig.cluster.registration)
+            )
+
+            val nodeInstance = NodeInstance(
+                launchProperties, NodeConfiguration(
+                    DatabaseCredentials.PostgreSQL(
+                        Address(postgres.host, postgres.firstMappedPort),
+                        "test",
+                        "test",
+                        "testdb"
+                    )
+                )
+            )
+
+            behaviorNode = nodeInstance
+            nodeList.add(nodeInstance)
+
+            nodeInstance.start()
         }
     }
 

@@ -62,7 +62,7 @@ class GrpcEndpoint private constructor(
                 .build()
 
             builder.sslContext(sslContext)
-            logger.info("TLS enabled (clientAuth={})", clientAuth)
+            logger.debug("TLS enabled (clientAuth={})", clientAuth)
         }
 
         services.forEach(builder::addService)
@@ -72,7 +72,7 @@ class GrpcEndpoint private constructor(
                 "",
                 io.grpc.health.v1.HealthCheckResponse.ServingStatus.SERVING
             )
-            logger.info("gRPC server started and reporting SERVING")
+            logger.debug("gRPC server started and reporting SERVING")
         }
 
         serverRef.set(server)
@@ -113,7 +113,7 @@ class GrpcEndpoint private constructor(
                 )
                 server.shutdownNow()
             } else {
-                logger.info("gRPC server terminated gracefully")
+                logger.debug("gRPC server terminated gracefully")
             }
         } catch (_: InterruptedException) {
             logger.warn("Shutdown interrupted, forcing immediate shutdown")

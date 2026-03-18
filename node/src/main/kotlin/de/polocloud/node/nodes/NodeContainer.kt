@@ -4,10 +4,6 @@ open class NodeContainer(private val data: NodeData) {
 
     fun state() : NodeState = this.data.state
 
-    fun update() {
-        // todo
-    }
-
     fun isOffline() = (this.data.state == NodeState.OFFLINE)
 
     fun isStarting() = (this.data.state == NodeState.STARTING)

@@ -12,6 +12,7 @@ import de.polocloud.node.generator.LocalIdGenerator
 import de.polocloud.node.launch.NodeLaunchProperties
 import de.polocloud.node.nodes.LocalNodeContainer
 import de.polocloud.node.nodes.NodeFactory
+import de.polocloud.node.registration.RegistrationManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.shutdown.ShutdownHook
 import org.slf4j.LoggerFactory
@@ -33,7 +34,9 @@ class NodeInstance(
     val database: DatabaseConnectionFactory<*>
 
     lateinit var localNodeContainer: LocalNodeContainer
+
     val nodeRepository: NodeRepository
+    val registrationManager = RegistrationManager(nodeConfig.cluster)
 
     init {
         TranslationService.init()
@@ -52,6 +55,7 @@ class NodeInstance(
         if (nodeRepository.findAll().isEmpty()) {
             // we are the only and new head
             this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(resolveBindAddress()))
+            this.nodeRepository.save(this.localNodeContainer.data)
             return
         }
 
@@ -62,11 +66,13 @@ class NodeInstance(
         }
 
         // only cluster join chance
-        if (launchProperties.clusterRegistrationToken == null) {
+        if (launchProperties.clusterRegistration == null) {
             this.logger.trInfo("cluster", "cluster.validation.failed")
             this.close(ShutdownMode.GRACEFUL)
             throw IllegalStateException("Node is not registered in the cluster and no registration token was provided. Cannot start.")
         }
+
+        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId)
     }
 
     @Synchronized
@@ -77,8 +83,8 @@ class NodeInstance(
         }
         this.localNodeContainer.markStarting()
 
-        // todo starting
-
+        // allow other nodes to connect
+        registrationManager.allowRequests()
 
         this.localNodeContainer.markOnline()
 

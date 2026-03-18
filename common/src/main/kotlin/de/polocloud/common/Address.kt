@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import java.net.InetSocketAddress
 
 val GLOBAL_ADDRESS = Address("0.0.0.0", 1)
-val LOCAL_ADDRESS = Address(localIpAddress(), 1)
+val LOCALHOST_ADDRESS = Address("127.0.0.1", 1)
 
 /**
  * Represents a network address (hostname + port).

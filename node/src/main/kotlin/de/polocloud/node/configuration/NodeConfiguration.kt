@@ -1,7 +1,7 @@
 package de.polocloud.node.configuration
 
 import de.polocloud.common.Address
-import de.polocloud.common.LOCAL_ADDRESS
+import de.polocloud.common.LOCALHOST_ADDRESS
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.configuration.serializer.LocaleSerializer
 import kotlinx.serialization.Serializable
@@ -21,9 +21,9 @@ class LocalNodeConfiguration(val database: DatabaseCredentials)
 @Serializable
 class GeneralConfiguration(
     @Serializable(with = LocaleSerializer::class) val locale: Locale = Locale.US,
-    val bindAddress: Address = LOCAL_ADDRESS.withPort(4239),
+    val bindAddress: Address = LOCALHOST_ADDRESS.withPort(4239),
 )
 
 @Serializable
-class ClusterConfiguration()
+class ClusterConfiguration(val registration : Address = LOCALHOST_ADDRESS.withPort(4240))
 

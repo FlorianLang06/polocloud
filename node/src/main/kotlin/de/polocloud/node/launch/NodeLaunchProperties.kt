@@ -8,7 +8,7 @@ data class NodeLaunchProperties (
     val rootDir: Path,
     val address: Address? = null,
     // if the node should register itself to a cluster, this token is required to authenticate the node
-    val clusterRegistrationToken : RegistrationInfo? = null
+    val clusterRegistration : RegistrationInfo? = null
 ) {
 
     val localPath: Path
