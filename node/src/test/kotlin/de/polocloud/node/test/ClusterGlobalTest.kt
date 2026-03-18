@@ -22,7 +22,6 @@ class ClusterGlobalTest {
     private val nodeList = arrayListOf<NodeInstance>()
 
     companion object {
-
         @Container
         @JvmStatic
         val postgres = PostgreSQLContainer("postgres:16-alpine").apply {

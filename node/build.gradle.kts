@@ -71,5 +71,6 @@ dependencies {
 }
 
 tasks.test {
+    systemProperty("PID", ProcessHandle.current().pid().toString())
     useJUnitPlatform()
 }
