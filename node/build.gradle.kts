@@ -53,6 +53,8 @@ dependencies {
     compileOnly(libs.polocloud.i18n)
     runtimeOnly(libs.polocloud.i18n)
 
+    testImplementation(libs.polocloud.i18n)
+
     // cli / system
     compileOnly(libs.oshi)
     runtimeOnly(libs.oshi)
