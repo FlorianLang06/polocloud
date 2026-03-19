@@ -62,6 +62,19 @@ class MongoExecutor(
         )
     }
 
+    /**
+     * Finds documents in the collection associated with the given [DatabaseKey]
+     * using the provided filters.
+     *
+     * If no filters are provided, all documents in the collection are returned.
+     * If one or more [Filter]s are provided, they are combined using a logical AND
+     * operation and translated into a MongoDB query document using the
+     * configured [MongoFilterTranslator].
+     *
+     * @param key the database key representing the collection and target type
+     * @param filters optional filters to apply to the query
+     * @return a list of matching entities
+     */
     override fun <T : Any> find(
         key: DatabaseKey<T>,
         vararg filters: Filter
@@ -69,10 +82,12 @@ class MongoExecutor(
 
         val collection = database.getCollection(key.id())
 
-        val query = if (filters.isEmpty()) {
-            Document()
-        } else {
-            filterTranslator.translate(filters.first())
+        val query = when {
+            filters.isEmpty() -> Document()
+            filters.size == 1 -> filterTranslator.translate(filters[0])
+            else -> filterTranslator.translate(
+                de.polocloud.database.filtering.And(filters.toList())
+            )
         }
 
         return collection.find(query)
@@ -81,5 +96,40 @@ class MongoExecutor(
     }
 
     override fun filterTranslator() = filterTranslator
+
+    /**
+     * Counts the number of documents in the collection associated with the given [DatabaseKey].
+     *
+     * If no filters are provided, this method returns the total number of documents
+     * in the collection. If one or more [Filter]s are provided, only documents matching
+     * the given conditions will be counted.
+     *
+     * The filters are translated into MongoDB query documents using the configured
+     * [MongoFilterTranslator].
+     *
+     * @param key the database key representing the collection and entity type
+     * @param filters optional filters to restrict which documents are counted
+     * @return the number of matching documents
+     */
+    override fun <T : Any> count(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): Long {
+
+        val collection = database.getCollection(key.id())
+
+        // No filters → count all documents
+        if (filters.isEmpty()) {
+            return collection.countDocuments()
+        }
+
+        val query = if (filters.size == 1) {
+            filterTranslator.translate(filters[0])
+        } else {
+            filterTranslator.translate(de.polocloud.database.filtering.And(filters.toList()))
+        }
+
+        return collection.countDocuments(query)
+    }
 
 }
