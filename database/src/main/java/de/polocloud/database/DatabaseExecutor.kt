@@ -93,4 +93,14 @@ interface DatabaseExecutor {
                     field.annotations.any { it.annotationClass.java == EntryIdentifier::class.java }
         }
     }
+
+    /**
+     * Counts the number of rows in the table associated with the given [DatabaseKey],
+     * optionally filtered by the provided [Filter]s.
+     *
+     * @param key The [DatabaseKey] representing the table and target type.
+     * @param filters Optional filters to restrict which rows are counted.
+     * @return The number of matching rows.
+     */
+    fun <T : Any> count(key: DatabaseKey<T>, vararg filters: Filter): Long
 }

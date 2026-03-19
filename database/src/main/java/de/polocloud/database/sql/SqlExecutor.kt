@@ -3,6 +3,7 @@ package de.polocloud.database.sql
 import de.polocloud.database.*
 import de.polocloud.database.exeption.FactoryNotPresentException
 import de.polocloud.database.filtering.And
+import de.polocloud.database.filtering.Eq
 import de.polocloud.database.filtering.Filter
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -80,6 +81,61 @@ class SqlExecutor(
     }
 
     /**
+     * Counts the number of rows in the table associated with the given [DatabaseKey].
+     *
+     * If no filters are provided, this method returns the total number of rows
+     * in the table. If one or more [Filter]s are provided, only rows matching
+     * the given conditions will be counted.
+     *
+     * The filters are translated into the underlying SQL WHERE clause using
+     * the configured [SqlFilterTranslator].
+     *
+     * @param key the database key representing the table and entity type
+     * @param filters optional filters to restrict which rows are counted
+     * @return the number of matching rows
+     *
+     * @throws FactoryNotPresentException if the connection factory is not valid
+     */
+    override fun <T : Any> count(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): Long {
+
+        if (!factory.isValid()) {
+            throw FactoryNotPresentException()
+        }
+
+        ensureTableExists(key)
+
+        // No filters → count all rows
+        if (filters.isEmpty()) {
+            return queryOne(
+                "SELECT COUNT(*) FROM ${key.id()}",
+                mapper = SqlMapper { rs -> rs.getLong(1) }
+            ) ?: 0L
+        }
+
+        val combined: Filter =
+            if (filters.size == 1) filters[0]
+            else And(filters.toList())
+
+        val translated = filterTranslator.translate(combined)
+
+        val sql = """
+        SELECT COUNT(*) FROM ${key.id()}
+        WHERE ${translated.clause}
+    """.trimIndent()
+
+        return queryOne(
+            sql,
+            *translated.parameters
+                .map { mapValueForDb(it) }
+                .toTypedArray(),
+            mapper = SqlMapper { rs -> rs.getLong(1) }
+        ) ?: 0L
+    }
+
+    /**
      * Retrieves all entities from the table.
      *
      * @param key the database key
@@ -122,7 +178,12 @@ class SqlExecutor(
      */
     override fun <T : Any> exists(key: DatabaseKey<T>, value: T): Boolean {
         val meta = resolveMeta(key)
-        return findById(key, meta.identifier.get(value)) != null
+        val idValue = meta.identifier.get(value)
+
+        return count(
+            key,
+            Eq(meta.identifier.name, idValue)
+        ) > 0
     }
 
     override fun <T : Any> find(
