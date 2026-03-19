@@ -3,6 +3,7 @@ package de.polocloud.database.nosql.redis
 import de.polocloud.database.DatabaseKey
 import de.polocloud.database.DatabaseSerializer
 import de.polocloud.database.filtering.Filter
+import de.polocloud.database.filtering.FilterEvaluator
 import de.polocloud.database.nosql.AbstractNoSqlExecutor
 import redis.clients.jedis.UnifiedJedis
 
@@ -57,10 +58,43 @@ class RedisExecutor(
 
         if (filters.isEmpty()) return all
 
-        // hier müsstest du selbst filtern
-        return all
+        return all.filter { entity ->
+            filters.all { filter ->
+                FilterEvaluator.matches(entity, filter)
+            }
+        }
     }
 
     override fun filterTranslator() = filterTranslator
 
+    /**
+     * Counts the number of entities in the Redis collection.
+     *
+     * Since Redis does not support native filtering, all entries are loaded
+     * and counted in memory. If filters are provided, only matching entities
+     * are included in the count.
+     *
+     * @param key the database key representing the collection and entity type
+     * @param filters optional filters to restrict the count
+     * @return the number of matching entities
+     */
+    override fun <T : Any> count(
+        key: DatabaseKey<T>,
+        vararg filters: Filter
+    ): Long {
+
+        val all = readAll(key.id()).map {
+            DatabaseSerializer.deserialize(it, key.clazz)
+        }
+
+        if (filters.isEmpty()) {
+            return all.size.toLong()
+        }
+
+        return all.count { entity ->
+            filters.all { filter ->
+                FilterEvaluator.matches(entity, filter)
+            }
+        }.toLong()
+    }
 }
