@@ -14,6 +14,7 @@ import de.polocloud.node.nodes.LocalNodeContainer
 import de.polocloud.node.nodes.NodeFactory
 import de.polocloud.node.registration.RegistrationManager
 import de.polocloud.node.repositories.NodeRepository
+import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.node.shutdown.ShutdownHook
 import org.slf4j.LoggerFactory
 
@@ -35,8 +36,9 @@ class NodeInstance(
 
     lateinit var localNodeContainer: LocalNodeContainer
 
+    val certificateDataStorage = CertificateDataStorage()
     val nodeRepository: NodeRepository
-    val registrationManager = RegistrationManager(nodeConfig.cluster)
+    val registrationManager : RegistrationManager
 
     init {
         TranslationService.init()
@@ -44,6 +46,7 @@ class NodeInstance(
 
         this.database = this.initializeDatabase()
         this.nodeRepository = NodeRepository(this.database)
+        this.registrationManager = RegistrationManager(nodeConfig.cluster, nodeRepository)
 
         this.initialize()
     }
@@ -51,8 +54,7 @@ class NodeInstance(
     fun initialize() {
         val localId = LocalIdGenerator.generate()
 
-        // Todo: count only
-        if (nodeRepository.findAll().isEmpty()) {
+        if (nodeRepository.count() == 0L) {
             // we are the only and new head
             this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(resolveBindAddress()))
             this.nodeRepository.save(this.localNodeContainer.data)

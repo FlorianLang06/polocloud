@@ -3,6 +3,7 @@ package de.polocloud.node.generator
 import de.polocloud.common.utils.toBytes
 import de.polocloud.common.utils.toUUID
 import java.nio.file.Files
+import java.nio.file.Path
 import java.util.UUID
 import kotlin.io.path.Path
 import kotlin.io.path.exists
@@ -10,7 +11,7 @@ import kotlin.io.path.createDirectories
 
 object LocalIdGenerator : Generator<UUID> {
 
-    private val cachePath = Path(".cache").resolve(".localId.dat")
+    private val cachePath = Path(System.getProperty("rootDir")).resolve(".cache").resolve(".localId.dat")
 
     override fun generate(): UUID {
         if (cachePath.exists()) {

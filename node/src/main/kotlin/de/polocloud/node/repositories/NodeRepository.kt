@@ -15,4 +15,6 @@ class NodeRepository(private val database: DatabaseConnectionFactory<*>) {
 
     fun findAll() = this.database.executor().findAll(nodeDatabaseKey)
 
+    fun count() = this.database.executor().count(nodeDatabaseKey)
+
 }

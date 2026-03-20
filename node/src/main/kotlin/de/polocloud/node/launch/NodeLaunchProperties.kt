@@ -11,6 +11,10 @@ data class NodeLaunchProperties (
     val clusterRegistration : RegistrationInfo? = null
 ) {
 
+    init {
+        System.setProperty("rootDir", rootDir.toString())
+    }
+
     val localPath: Path
         get() = rootDir.resolve("local")
 
