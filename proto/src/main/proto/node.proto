@@ -23,7 +23,8 @@ message RegisterNodeRequest {
 message RegisterNodeResponse {
   bool accepted = 1;
   string message = 2;
-  optional string node_id = 3;
+  optional string certificate = 4;       // Node-Zertifikat (PEM)
+  optional string ca_certificate = 5;    // CA-Zertifikat (PEM)
 }
 
 message NodeVersion {

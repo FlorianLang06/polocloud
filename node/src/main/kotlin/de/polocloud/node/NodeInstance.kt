@@ -46,7 +46,7 @@ class NodeInstance(
 
         this.database = this.initializeDatabase()
         this.nodeRepository = NodeRepository(this.database)
-        this.registrationManager = RegistrationManager(nodeConfig.cluster, nodeRepository)
+        this.registrationManager = RegistrationManager(nodeConfig.cluster, nodeRepository, certificateDataStorage.keyPair)
 
         this.initialize()
     }
@@ -74,7 +74,7 @@ class NodeInstance(
             throw IllegalStateException("Node is not registered in the cluster and no registration token was provided. Cannot start.")
         }
 
-        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId)
+        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, certificateDataStorage)
     }
 
     @Synchronized

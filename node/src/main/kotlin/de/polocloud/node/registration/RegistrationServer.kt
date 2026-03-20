@@ -9,11 +9,12 @@ import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.shutdown.ShutdownHook
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import java.nio.file.Path
+import java.security.KeyPair
 
-class RegistrationServer(registrationManager: RegistrationManager, address: Address, nodeRepository: NodeRepository) : Closeable {
+class RegistrationServer(registrationManager: RegistrationManager, address: Address, nodeRepository: NodeRepository, keyPair : KeyPair) : Closeable {
 
     private val grpcServer = GrpcEndpoint.Builder(address)
-        .service(RegistrationService(registrationManager, nodeRepository))
+        .service(RegistrationService(registrationManager, nodeRepository, keyPair))
         .build()
 
     fun allowRequests() {

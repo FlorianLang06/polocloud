@@ -1,16 +1,23 @@
 package de.polocloud.node.registration
 
+import de.polocloud.common.certificate.certToPem
+import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
+import de.polocloud.node.generator.SelfSignedCertificateGenerator
 import de.polocloud.node.repositories.NodeRepository
+import de.polocloud.node.security.CertificateAuthority
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.RegisterNodeRequest
 import de.polocloud.proto.RegisterNodeResponse
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
+import java.io.StringReader
+import java.security.KeyPair
 import java.util.UUID
 
-class RegistrationService(val registrationManager: RegistrationManager, val repository: NodeRepository) :
-    NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
+class RegistrationService(val registrationManager: RegistrationManager, val repository: NodeRepository, val keyPair: KeyPair) : NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(RegistrationService::class.java)
 
@@ -30,12 +37,20 @@ class RegistrationService(val registrationManager: RegistrationManager, val repo
             return this.sendDenyResponse("cluster.registration.node.version.mismatch")
         }
 
+        val caCert = SelfSignedCertificateGenerator(keyPair).generate()
+        val ca = CertificateAuthority(keyPair, caCert)
 
-        request.publicKey
-        // hier neuen generieren
+        val csr = parseCsr(request.publicKey)
+        val cert = ca.signCsr(csr, subjectAltNames = listOf("node1.polocloud.local", "127.0.0.1"))
+        val certPem = certToPem(cert)
+
 
         logger.trInfo("cluster", "cluster.registration.node.registered")
-        return RegisterNodeResponse.newBuilder().setAccepted(true).build()
+        return RegisterNodeResponse.newBuilder()
+            .setCertificate(certPem)
+            .setCaCertificate(ca.getCaCertificatePem())
+            .setAccepted(true)
+            .build()
     }
 
     fun sendDenyResponse(messageId: String): RegisterNodeResponse {

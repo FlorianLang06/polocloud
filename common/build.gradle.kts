@@ -12,6 +12,9 @@ dependencies {
     compileOnly(libs.polocloud.i18n)
 
     implementation(libs.kotlinx.serialization.json)
+
+    compileOnly(libs.bundles.tls)
+    runtimeOnly(libs.bundles.tls)
 }
 
 gitProperties {
