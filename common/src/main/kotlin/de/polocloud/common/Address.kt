@@ -1,6 +1,5 @@
 package de.polocloud.common
 
-import de.polocloud.common.utils.localIpAddress
 import kotlinx.serialization.Serializable
 import java.net.InetSocketAddress
 
