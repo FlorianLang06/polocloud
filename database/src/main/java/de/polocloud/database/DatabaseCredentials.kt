@@ -14,7 +14,7 @@ sealed class DatabaseCredentials {
     abstract fun factory(): DatabaseConnectionFactory<*>
 
     @Serializable
-    abstract class DatabaseRelated : DatabaseCredentials() {
+    sealed class DatabaseRelated : DatabaseCredentials() {
         abstract val username: String
         abstract val password: String
         abstract val database: String

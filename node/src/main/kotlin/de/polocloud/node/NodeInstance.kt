@@ -3,11 +3,12 @@ package de.polocloud.node
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.configuration.ConfigHolder
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.configuration.NodeConfiguration
+import de.polocloud.node.configuration.NodeConfigurations
 import de.polocloud.node.generator.LocalIdGenerator
 import de.polocloud.node.launch.NodeLaunchProperties
 import de.polocloud.node.nodes.LocalNodeContainer
@@ -24,7 +25,7 @@ class NodeInstance(
      * Contains resolved filesystem paths and runtime launch parameters.
      */
     val launchProperties: NodeLaunchProperties,
-    val nodeConfig: NodeConfiguration
+    val configurations: NodeConfigurations,
 ) : Closeable {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -42,11 +43,11 @@ class NodeInstance(
 
     init {
         TranslationService.init()
-        TranslationService.defaultLanguage(nodeConfig.general.locale)
+        TranslationService.defaultLanguage(configurations.generalConfig.locale)
 
         this.database = this.initializeDatabase()
         this.nodeRepository = NodeRepository(this.database)
-        this.registrationManager = RegistrationManager(nodeConfig.cluster, nodeRepository, certificateDataStorage.keyPair)
+        this.registrationManager = RegistrationManager(configurations.clusterConfig, nodeRepository, certificateDataStorage.keyPair)
 
         this.initialize()
     }
@@ -108,7 +109,7 @@ class NodeInstance(
     }
 
     private fun initializeDatabase(): DatabaseConnectionFactory<*> {
-        val database = nodeConfig.database.factory()
+        val database = configurations.nodeConfig.database.factory()
         database.connect()
 
         if (!database.isValid()) {
@@ -137,7 +138,7 @@ class NodeInstance(
      */
     private fun resolveBindAddress(): Address {
         val launchAddress = launchProperties.address
-        val defaultAddress = nodeConfig.general.bindAddress
+        val defaultAddress = configurations.generalConfig.bindAddress
 
         if (launchAddress != null) {
 
