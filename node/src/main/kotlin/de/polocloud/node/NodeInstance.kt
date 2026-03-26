@@ -3,7 +3,6 @@ package de.polocloud.node
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.configuration.ConfigHolder
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory

@@ -1,5 +1,9 @@
 package de.polocloud.common.configuration
 
+import de.polocloud.common.configuration.error.ConfigurationError
+import de.polocloud.common.configuration.watcher.FileWatcher
+import de.polocloud.common.error.exception.PoloException
+import de.polocloud.common.error.extensions.report
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializerOrNull
@@ -23,7 +27,7 @@ import kotlin.reflect.KClass
  * 2. Persist it to disk
  * 3. Notify all listeners
  */
-class ConfigHolder<T : Any>(
+class ConfigurationHolder<T : Any>(
     private val clazz: KClass<T>,
     private val filePath: String,
     private val json: Json,
@@ -80,8 +84,8 @@ class ConfigHolder<T : Any>(
      * Returns a new holder using a different file path.
      * Useful for tests or multiple instances.
      */
-    fun atPath(path: String): ConfigHolder<T> {
-        return ConfigHolder(clazz, path, json).also { it.init() }
+    fun atPath(path: String): ConfigurationHolder<T> {
+        return ConfigurationHolder(clazz, path, json).also { it.init() }
     }
 
     internal fun init() {
@@ -104,7 +108,12 @@ class ConfigHolder<T : Any>(
                 _value = new
                 listeners.forEach { it(new) }
             }
-            .onFailure { it.printStackTrace() }
+            .onFailure { ex ->
+                ConfigurationError.ParseFailed(
+                    file = file.toString(),
+                    reason = ex.message ?: "unknown"
+                ).report()
+            }
     }
 
     /**
@@ -122,7 +131,7 @@ class ConfigHolder<T : Any>(
     /**
      * Register a callback that fires whenever the config changes.
      */
-    fun onChange(block: (T) -> Unit): ConfigHolder<T> {
+    fun onChange(block: (T) -> Unit): ConfigurationHolder<T> {
         listeners += block
         return this
     }
@@ -147,18 +156,27 @@ class ConfigHolder<T : Any>(
             return default
         }
 
-        return json.decodeFromString(serializer, file.toFile().readText())
+        return runCatching {
+            json.decodeFromString(serializer, file.toFile().readText())
+        }.getOrElse { ex ->
+            throw PoloException(
+                ConfigurationError.ParseFailed(
+                    file = file.toString(),
+                    reason = ex.message ?: "unknown"
+                )
+            )
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun createDefaultInstance(): T {
-        if (DefaultableConfig::class.java.isAssignableFrom(clazz.java)) {
+        if (DefaultableConfiguration::class.java.isAssignableFrom(clazz.java)) {
             val instance = clazz.constructors
                 .firstOrNull { it.parameters.isEmpty() }
                 ?.call()
 
-            if (instance is DefaultableConfig<*>) {
-                return (instance as DefaultableConfig<T>).createDefault()
+            if (instance is DefaultableConfiguration<*>) {
+                return (instance as DefaultableConfiguration<T>).createDefault()
             }
         }
 
@@ -179,8 +197,8 @@ class ConfigHolder<T : Any>(
         if (companionField != null) {
             val companion = companionField.get(null)
 
-            if (companion is DefaultableConfig<*>) {
-                return (companion as DefaultableConfig<T>).createDefault()
+            if (companion is DefaultableConfiguration<*>) {
+                return (companion as DefaultableConfiguration<T>).createDefault()
             }
         }
 
@@ -192,20 +210,20 @@ class ConfigHolder<T : Any>(
             return ctor.callBy(emptyMap())
         }
 
-        error(
-            "${clazz.simpleName} must either:\n" +
-                    "- implement DefaultableConfig\n" +
-                    "- provide companion object default()\n" +
-                    "- OR have all constructor parameters optional"
+        throw PoloException(
+            ConfigurationError.ValidationFailed(
+                file = file.toString(),
+                field = clazz.simpleName ?: "unknown",
+                reason = "No default instance strategy found"
+            )
         )
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun resolveSerializer(): KSerializer<T> {
         return serializerOrNull(clazz.java) as? KSerializer<T>
-            ?: error(
-                "${clazz.simpleName} is not serializable. " +
-                        "Did you add @Serializable to the class?"
+            ?: throw PoloException(
+                ConfigurationError.NotSerializable(clazz.simpleName ?: "unknown")
             )
     }
 }

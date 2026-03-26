@@ -1,7 +1,10 @@
-package de.polocloud.common.configuration
+package de.polocloud.common.configuration.watcher
 
-import java.nio.file.*
-import java.nio.file.StandardWatchEventKinds.*
+import java.nio.file.FileSystems
+import java.nio.file.Path
+import java.nio.file.StandardWatchEventKinds
+import java.nio.file.WatchEvent
+import java.nio.file.WatchService
 import kotlin.concurrent.thread
 
 /**
@@ -19,7 +22,7 @@ class FileWatcher(
     private var running = true
 
     init {
-        watchDir.register(watchService, ENTRY_MODIFY)
+        watchDir.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY)
         startWatchThread()
     }
 
@@ -29,7 +32,7 @@ class FileWatcher(
                 val key = runCatching { watchService.take() }.getOrNull() ?: break
 
                 key.pollEvents()
-                    .filter { it.kind() != OVERFLOW }
+                    .filter { it.kind() != StandardWatchEventKinds.OVERFLOW }
                     .map { it as WatchEvent<Path> }
                     .filter { it.context().fileName == file.fileName }
                     .forEach { _ ->
