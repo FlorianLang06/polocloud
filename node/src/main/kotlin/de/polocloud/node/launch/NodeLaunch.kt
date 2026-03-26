@@ -1,10 +1,13 @@
 package de.polocloud.node.launch
 
-import de.polocloud.common.configuration.ConfigSection
+import de.polocloud.common.configuration.ConfigManager
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.NodeInstance
-import de.polocloud.node.configuration.NodeConfiguration
+import de.polocloud.node.configuration.ClusterConfiguration
+import de.polocloud.node.configuration.GeneralConfiguration
+import de.polocloud.node.configuration.LocalNodeConfiguration
+import de.polocloud.node.configuration.NodeConfigurations
 import de.polocloud.node.shutdown.ShutdownHook
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
@@ -22,7 +25,7 @@ class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeL
         }
     }
 
-    fun run() = NodeInstance(launchProperties, loadConfiguration(launchProperties))
+    fun run() = NodeInstance(launchProperties, loadConfigurations(launchProperties))
 
 
     /**
@@ -31,14 +34,21 @@ class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeL
      * If no configuration file exists, a default configuration
      * will be created and persisted automatically.
      */
-    private fun loadConfiguration(launchProperties: NodeLaunchProperties): NodeConfiguration {
-        return ConfigSection(launchProperties.localNodePath).readOrCreate(
-            NodeConfiguration.serializer(),
-            NodeConfiguration(
-                database = DatabaseCredentials.H2(
-                    launchProperties.localDataPath.toString() + "/polocloud.h2.db"
-                )
-            )
+    private fun loadConfigurations(launchProperties: NodeLaunchProperties): NodeConfigurations {
+        val root = launchProperties.rootDir
+
+        return NodeConfigurations(
+            cluster = ConfigManager
+                .load<ClusterConfiguration>()
+                .atPath(root.resolve("cluster.json").toString()),
+
+            general = ConfigManager
+                .load<GeneralConfiguration>()
+                .atPath(root.resolve("general.json").toString()),
+
+            localNode = ConfigManager
+                .load<LocalNodeConfiguration>()
+                .atPath(root.resolve("local-node.json").toString()),
         )
     }
 }

@@ -4,6 +4,7 @@ import de.polocloud.cli.configuration.CliConfiguration
 import de.polocloud.cli.configuration.InstallerConfig
 import de.polocloud.cli.logging.CliLogger
 import de.polocloud.cli.terminal.CliTerminal
+import de.polocloud.common.configuration.ConfigManager
 import de.polocloud.common.configuration.ConfigSection
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.TranslationService
@@ -78,12 +79,18 @@ object Cli {
      */
     private fun loadConfiguration(): CliConfiguration {
         val path = File("polocloud-cli.json").toPath()
-        val section = ConfigSection(path)
 
-        return section.readOrCreate(
-            CliConfiguration.serializer(),
-            resolveInitialConfiguration()
-        )
+        val holder = ConfigManager
+            .load<CliConfiguration>()
+            .atPath(path.toString())
+
+        return if (path.toFile().exists()) {
+            holder.value
+        } else {
+            val initial = resolveInitialConfiguration()
+            holder.value = initial
+            initial
+        }
     }
 
     /**

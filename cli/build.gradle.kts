@@ -20,6 +20,8 @@ dependencies {
 
     polocloudRuntime(libs.polocloud.i18n)
     polocloudRuntime(libs.kotlinx.serialization.json)
+    polocloudRuntime(libs.kotlinx.coroutines.core)
+    polocloudRuntime(libs.kotlin.reflect)
 
     compileOnly(projects.common)
 }
