@@ -1,10 +1,13 @@
 package de.polocloud.runner;
 
+import de.polocloud.runner.utils.Manifests;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.DosFileAttributeView;
+import java.util.jar.Manifest;
 
 /**
  * Holds constant parameters, paths, and environment variable names
@@ -38,38 +41,14 @@ public final class PolocloudParameters {
     public static final Path EXPENDER_RUNTIME_CACHE = Paths.get(".cache");
 
     /**
-     * Version of the Kotlin runtime used by Polocloud.
+     * Manifest attribute key for the Kotlin runtime version.
      */
-    public static final String KOTLIN_VERSION = "2.3.0";
+    private static final String MANIFEST_KOTLIN_VERSION = "kotlin-version";
 
     /**
-     * URL from which the Kotlin runtime JAR can be downloaded.
-     *
-     * <p>Example:
-     * {@code https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/2.3.0/kotlin-stdlib-2.3.0.jar}</p>
+     * Cached manifest instance of the currently running application.
      */
-    public static final String KOTLIN_DOWNLOAD_URL =
-            "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/"
-                    + KOTLIN_VERSION
-                    + "/kotlin-stdlib-"
-                    + KOTLIN_VERSION
-                    + ".jar";
-
-    /**
-     * Path to the Kotlin runtime JAR used by Polocloud.
-     *
-     * <p>The path is resolved relative to {@link #EXPENDER_RUNTIME_CACHE}.</p>
-     *
-     * <p>Example: {@code .cache/org/jetbrains/kotlin/kotlin-stdlib/2.3.0/kotlin-stdlib-2.3.0.jar}</p>
-     */
-    public static final Path BOOT_KOTLIN = EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
-            "org",
-            "jetbrains",
-            "kotlin",
-            "kotlin-stdlib",
-            KOTLIN_VERSION,
-            "kotlin-stdlib-" + KOTLIN_VERSION + ".jar"
-    ));
+    private static final Manifest MANIFEST = Manifests.readOwnManifest();
 
     /**
      * Private constructor to prevent instantiation of this utility class.
@@ -78,6 +57,56 @@ public final class PolocloudParameters {
      */
     private PolocloudParameters() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
+
+    /**
+     * Reads a required attribute from the application manifest.
+     *
+     * @param key the manifest attribute key
+     * @return the resolved value
+     * @throws IllegalStateException if the attribute is missing
+     */
+    private static String requireManifestValue(String key) {
+        String value = MANIFEST.getMainAttributes().getValue(key);
+
+        if (value == null) {
+            throw new IllegalStateException("Missing '" + key + "' in MANIFEST.MF");
+        }
+
+        return value;
+    }
+
+    /**
+     * Resolves the Kotlin runtime version from the manifest.
+     *
+     * @return the Kotlin version used at runtime
+     */
+    public static String kotlinVersion() {
+        return requireManifestValue(MANIFEST_KOTLIN_VERSION);
+    }
+
+    /**
+     * Builds the download URL for the Kotlin standard library.
+     *
+     * @return Maven Central URL for kotlin-stdlib
+     */
+    public static String kotlinDownloadUrl() {
+        String v = kotlinVersion();
+        return "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/"
+                + v + "/kotlin-stdlib-" + v + ".jar";
+    }
+
+    /**
+     * Resolves the local cache path of the Kotlin runtime JAR.
+     *
+     * @return path to kotlin-stdlib JAR inside the cache directory
+     */
+    public static Path bootKotlin() {
+        String v = kotlinVersion();
+        return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
+                "org", "jetbrains", "kotlin", "kotlin-stdlib",
+                v, "kotlin-stdlib-" + v + ".jar"
+        ));
     }
 
     /**
