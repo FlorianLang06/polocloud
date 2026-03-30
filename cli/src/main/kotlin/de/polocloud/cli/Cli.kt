@@ -5,7 +5,6 @@ import de.polocloud.cli.configuration.InstallerConfig
 import de.polocloud.cli.logging.CliLogger
 import de.polocloud.cli.terminal.CliTerminal
 import de.polocloud.common.configuration.ConfigurationManager
-import de.polocloud.common.configuration.section.ConfigurationSection
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.model.Language
@@ -105,9 +104,7 @@ object Cli {
      */
     private fun resolveInitialConfiguration(): CliConfiguration {
         val installerPath = File(".installer/config.json").toPath()
-
-        val installer = ConfigurationSection(installerPath)
-            .read(InstallerConfig.serializer())
+        val installer = ConfigurationManager.read(installerPath,InstallerConfig.serializer())
 
         return installer?.let {
             CliConfiguration(locale = Language.of(it.language))

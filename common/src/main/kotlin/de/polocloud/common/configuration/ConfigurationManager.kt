@@ -3,7 +3,11 @@ package de.polocloud.common.configuration
 import de.polocloud.common.configuration.error.ConfigurationError
 import de.polocloud.common.error.exception.PoloResult
 import de.polocloud.common.error.extensions.*
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlin.io.path.exists
 import kotlin.reflect.KClass
 
 /**
@@ -71,6 +75,21 @@ object ConfigurationManager {
      */
     fun <T : Any> load(clazz: KClass<T>): ConfigurationHolder<T> {
         return loadResult(clazz).getOrReportAndThrow()
+    }
+
+    /**
+     * Reads the config of a given path and serializer.
+     * @param path
+     * @param serializer
+     */
+    @Deprecated("This method is no longer supported!")
+    fun <T> read(path: Path, serializer: KSerializer<T>): T? {
+        return if (path.exists()) {
+            val content = Files.readString(path)
+            json.decodeFromString(serializer, content)
+        } else {
+            null
+        }
     }
 
     /**
