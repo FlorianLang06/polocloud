@@ -1,8 +1,10 @@
 package de.polocloud.node.registration
 
 import de.polocloud.common.Address
+import de.polocloud.common.error.exception.PoloResult
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.node.error.NodeError
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeVersion
 import de.polocloud.proto.RegisterNodeRequest
@@ -40,10 +42,11 @@ class RegistrationClient {
      * @param publicKey The node's public key for secure communication.
      * @return The response from the cluster node registration service.
      */
-    fun tryRegister(info: RegistrationInfo, localId: UUID, publicKey: String): RegisterNodeResponse {
+    fun tryRegister(info: RegistrationInfo, localId: UUID, publicKey: String): PoloResult<RegisterNodeResponse> {
+        val address = "${info.address.hostname}:${info.address.port}"
         val channel = createChannel(info.address)
 
-        return try {
+        return runCatching {
             val stub = NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineStub(channel)
 
             val request = RegisterNodeRequest.newBuilder()
@@ -70,8 +73,15 @@ class RegistrationClient {
 
             runBlocking { stub.registerNode(request) }
 
-        } finally {
+        }.also {
             shutdown(channel)
+        }.getOrElse { ex ->
+            return NodeError.RegistrationFailed(
+                address = address,
+                reason  = ex.message ?: "unknown"
+            ).asFailure()
+        }.let {
+            Result.success(it)
         }
     }
 

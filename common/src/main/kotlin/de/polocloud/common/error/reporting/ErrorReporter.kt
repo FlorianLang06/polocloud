@@ -89,7 +89,7 @@ object ErrorReporter {
         }
     }
 
-    private fun log(error: PoloError) {
+    private fun log(error: PoloError) { // TODO use better logging
         when (error.severity) {
             ErrorSeverity.FATAL, ErrorSeverity.CRITICAL -> System.err.println(error.format())
             ErrorSeverity.WARNING, ErrorSeverity.INFO   -> println(error.format())

@@ -3,11 +3,13 @@ package de.polocloud.node
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.error.exception.PoloException
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.NodeConfigurations
+import de.polocloud.node.error.NodeError
 import de.polocloud.node.generator.LocalIdGenerator
 import de.polocloud.node.launch.NodeLaunchProperties
 import de.polocloud.node.nodes.LocalNodeContainer
@@ -71,7 +73,7 @@ class NodeInstance(
         if (launchProperties.clusterRegistration == null) {
             this.logger.trInfo("cluster", "cluster.validation.failed")
             this.close(ShutdownMode.GRACEFUL)
-            throw IllegalStateException("Node is not registered in the cluster and no registration token was provided. Cannot start.")
+            throw PoloException(NodeError.NotRegisteredInCluster(localId.toString()))
         }
 
         registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, certificateDataStorage)
@@ -112,13 +114,10 @@ class NodeInstance(
         database.connect()
 
         if (!database.isValid()) {
-            logger.error(
-                TranslationService.tr(
-                    "cluster",
-                    "cluster.node.database.failed"
-                )
-            )
-            throw IllegalStateException("Cluster database connection is not valid.")
+            val url = configurations.nodeConfig.database.toString()
+            logger.error(TranslationService.tr("cluster", "cluster.node.database.failed"))
+
+            throw PoloException(NodeError.DatabaseConnectionFailed(url))
         }
         return database
     }
@@ -140,7 +139,6 @@ class NodeInstance(
         val defaultAddress = configurations.generalConfig.bindAddress
 
         if (launchAddress != null) {
-
             val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname
             val port = launchAddress.port.takeIf { it > 0 } ?: defaultAddress.port
 

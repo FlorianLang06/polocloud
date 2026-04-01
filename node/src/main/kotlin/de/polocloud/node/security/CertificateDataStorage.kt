@@ -5,7 +5,6 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.File
 import java.io.FileWriter
 import java.nio.file.Files
-import java.nio.file.Path
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -37,22 +36,38 @@ class CertificateDataStorage {
         keyPair = loadOrCreateKeyPair()
     }
 
-    /** Prüft, ob Node bereits registriert ist */
+    /**
+     * Checks if the node is already registered.
+     */
     fun isRegistered(): Boolean = certificateFile.exists() && caCertificateFile.exists()
 
-    /** Speichert das Zertifikat vom Cluster */
+    /**
+     * Save's the Certificate of the cluster.
+     */
     fun saveCertificate(certPem: String) {
         certificateFile.writeText(certPem)
     }
 
-    /** Speichert das CA-Zertifikat */
+    /**
+     * Saves the CA-Certificate
+     */
     fun saveCaCertificate(caPem: String) {
         caCertificateFile.writeText(caPem)
     }
 
-    /** Gibt die Files für gRPC zurück */
+    /**
+     * @return certificateFile File for gRPC
+     */
     fun certificateFile(): File = certificateFile
+
+    /**
+     * @return privateKeyFile File for gRPC
+     */
     fun privateKeyFile(): File = privateKeyFile
+
+    /**
+     * @return caCertificateFile File for gRPC
+     */
     fun caCertificateFile(): File = caCertificateFile
 
     private fun loadOrCreateKeyPair(): KeyPair {
