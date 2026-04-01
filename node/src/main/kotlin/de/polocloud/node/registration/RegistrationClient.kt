@@ -67,7 +67,7 @@ class RegistrationClient {
                 TranslationService.tr(
                     "cluster",
                     "cluster.registration.sendingRequest",
-                    "address" to "${info.address.hostname}:${info.address.port}"
+                    "address" to address
                 )
             )
 
