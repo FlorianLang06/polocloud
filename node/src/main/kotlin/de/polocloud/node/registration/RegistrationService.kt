@@ -5,6 +5,8 @@ import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.generator.SelfSignedCertificateGenerator
+import de.polocloud.node.nodes.NodeData
+import de.polocloud.node.nodes.NodeState
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateAuthority
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
@@ -44,6 +46,8 @@ class RegistrationService(val registrationManager: RegistrationManager, val repo
         val cert = ca.signCsr(csr, subjectAltNames = listOf("node1.polocloud.local", "127.0.0.1"))
         val certPem = certToPem(cert)
 
+        // TODO BETTER VALUES
+        repository.save(NodeData(UUID.fromString(request.localId), 1, "hostname", 3333, NodeState.STARTING, false, request.details.version, request.details.gitHash))
 
         logger.trInfo("cluster", "cluster.registration.node.registered")
         return RegisterNodeResponse.newBuilder()

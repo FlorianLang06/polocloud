@@ -14,7 +14,6 @@ data class NodeData(
     val port: Int,
     var state: NodeState,
     val head: Boolean = false,
-    val publicKey: String,
     val version: String,
     val gitCommitHash: String,
     val firstConnection: Instant = Clock.System.now(),

@@ -17,7 +17,6 @@ object NodeFactory {
             hostname = address.hostname,
             port = address.port,
             state = NodeState.STARTING,
-            publicKey = "",
             head = head,
             version = "1.0.0",
             gitCommitHash = "unknown"
