@@ -115,8 +115,6 @@ class NodeInstance(
 
         if (!database.isValid()) {
             val url = configurations.nodeConfig.database.toString()
-            logger.error(TranslationService.tr("cluster", "cluster.node.database.failed"))
-
             throw PoloException(NodeError.DatabaseConnectionFailed(url))
         }
         return database

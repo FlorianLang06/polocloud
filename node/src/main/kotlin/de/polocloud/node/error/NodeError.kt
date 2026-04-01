@@ -10,7 +10,7 @@ sealed class NodeError {
     @Serializable
     data class DatabaseConnectionFailed(val url: String) : BasePoloError(
         code = NodeErrorCodes.DATABASE_CONNECTION_FAILED,
-        key = "node.database.connection_failed", //"Cluster database connection is not valid."
+        key = "node.database.connection_failed",
         placeholders = mapOf("url" to url),
         severity = ErrorSeverity.FATAL,
         context = ErrorContext.from("NodeInstance.initializeDatabase", "url" to url),
