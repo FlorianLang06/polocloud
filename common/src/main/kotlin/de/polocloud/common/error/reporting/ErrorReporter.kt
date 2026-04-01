@@ -4,6 +4,7 @@ import de.polocloud.common.error.ErrorSeverity
 import de.polocloud.common.error.PoloError
 import de.polocloud.common.error.exception.PoloException
 import de.polocloud.common.error.exception.PoloResult
+import org.slf4j.LoggerFactory
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -19,6 +20,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 object ErrorReporter {
 
     private const val MAX_ENTRIES = 500
+
+    private val logger = LoggerFactory.getLogger(ErrorReporter::class.java)
 
     private val _errors = CopyOnWriteArrayList<PoloError>()
     private val listeners = CopyOnWriteArrayList<(PoloError) -> Unit>()
@@ -89,10 +92,13 @@ object ErrorReporter {
         }
     }
 
-    private fun log(error: PoloError) { // TODO use better logging
+    private fun log(error: PoloError) {
+        val message = error.format()
         when (error.severity) {
-            ErrorSeverity.FATAL, ErrorSeverity.CRITICAL -> System.err.println(error.format())
-            ErrorSeverity.WARNING, ErrorSeverity.INFO   -> println(error.format())
+            ErrorSeverity.FATAL -> logger.error(message)
+            ErrorSeverity.CRITICAL -> logger.error(message)
+            ErrorSeverity.WARNING -> logger.warn(message)
+            ErrorSeverity.INFO -> logger.info(message)
         }
     }
 }
