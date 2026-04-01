@@ -3,8 +3,13 @@ package de.polocloud.common.grpc
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.error.context.ErrorContext
+import de.polocloud.common.error.extensions.report
+import de.polocloud.common.grpc.error.GrpcError
 import io.grpc.BindableService
+import io.grpc.Grpc
 import io.grpc.Server
+import io.grpc.health.v1.HealthCheckResponse
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
@@ -56,23 +61,38 @@ class GrpcEndpoint private constructor(
             .addService(healthManager.healthService)
 
         if (certFile != null && keyFile != null) {
-            val sslContext = GrpcSslContexts
-                .forServer(certFile, keyFile)
-                .clientAuth(clientAuth)
-                .build()
+            val sslContext = runCatching {
+                GrpcSslContexts
+                    .forServer(certFile, keyFile)
+                    .clientAuth(clientAuth)
+                    .build()
+            }.getOrElse { e ->
+                GrpcError.TlsSetupFailed(e.message ?: "unknown")
+                    .report()
+                    .throwIfFatal()
+                return
+            }
 
             builder.sslContext(sslContext)
             logger.debug("TLS enabled (clientAuth={})", clientAuth)
         }
 
         services.forEach(builder::addService)
-        val server = builder.build().apply {
-            start()
-            healthManager.setStatus(
-                "",
-                io.grpc.health.v1.HealthCheckResponse.ServingStatus.SERVING
-            )
-            logger.debug("gRPC server started and reporting SERVING")
+        val server = runCatching {
+            builder.build().apply {
+                start()
+                healthManager.setStatus(
+                    "",
+                    HealthCheckResponse.ServingStatus.SERVING
+                )
+                logger.debug("gRPC server started and reporting SERVING")
+            }
+        }.getOrElse { e ->
+            GrpcError.BindFailed(address.toString())
+                .also { ErrorContext.from("GrpcEndpoint.start") }
+                .report()
+                .throwIfFatal()
+            return
         }
 
         serverRef.set(server)
@@ -95,7 +115,7 @@ class GrpcEndpoint private constructor(
         logger.info("Shutting down gRPC server...")
         healthManager.setStatus(
             "",
-            io.grpc.health.v1.HealthCheckResponse.ServingStatus.NOT_SERVING
+            HealthCheckResponse.ServingStatus.NOT_SERVING
         )
 
         if (mode == ShutdownMode.FORCE) {
@@ -107,6 +127,7 @@ class GrpcEndpoint private constructor(
         server.shutdown()
         try {
             if (!server.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
+                GrpcError.ShutdownTimeout(shutdownTimeoutSeconds).report()
                 logger.warn(
                     "Server did not terminate in {} seconds, forcing shutdown",
                     shutdownTimeoutSeconds

@@ -24,6 +24,6 @@ fun Path.deleteComplete() {
             }
         })
     } catch (e: IOException) {
-        e.printStackTrace()
+        e.printStackTrace() //TODO remove this or better error printing
     }
 }

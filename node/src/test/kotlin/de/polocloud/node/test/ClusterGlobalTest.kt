@@ -3,7 +3,7 @@ package de.polocloud.node.test
 import de.polocloud.common.Address
 import de.polocloud.common.LOCALHOST_ADDRESS
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.configuration.ConfigManager
+import de.polocloud.common.configuration.ConfigurationManager
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.NodeInstance
 import de.polocloud.node.configuration.ClusterConfiguration
@@ -62,15 +62,15 @@ class ClusterGlobalTest {
                 )
             )
 
-            val localNodeHolder = ConfigManager
+            val localNodeHolder = ConfigurationManager
                 .load<LocalNodeConfiguration>()
                 .atPath(testingDir.resolve("local-node.json").toString())
 
-            val clusterHolder = ConfigManager
+            val clusterHolder = ConfigurationManager
                 .load<ClusterConfiguration>()
                 .atPath(testingDir.resolve("cluster.json").toString())
 
-            val generalHolder = ConfigManager
+            val generalHolder = ConfigurationManager
                 .load<GeneralConfiguration>()
                 .atPath(testingDir.resolve("general.json").toString())
 

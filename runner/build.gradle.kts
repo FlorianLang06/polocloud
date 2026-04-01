@@ -11,7 +11,9 @@ polocloud {
 tasks.named<Jar>("jar") {
     manifest {
         attributes(
-            "Enable-Native-Access" to "ALL-UNNAMED"
+            "Enable-Native-Access" to "ALL-UNNAMED",
+
+            "kotlin-version" to libs.versions.kotlin.jvm.get(),
         )
     }
 

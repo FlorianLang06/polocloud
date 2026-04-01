@@ -1,11 +1,11 @@
 package de.polocloud.node.configuration
 
-import de.polocloud.common.configuration.ConfigHolder
+import de.polocloud.common.configuration.ConfigurationHolder
 
 data class NodeConfigurations(
-    val cluster: ConfigHolder<ClusterConfiguration>,
-    val general: ConfigHolder<GeneralConfiguration>,
-    val localNode: ConfigHolder<LocalNodeConfiguration>
+    val cluster: ConfigurationHolder<ClusterConfiguration>,
+    val general: ConfigurationHolder<GeneralConfiguration>,
+    val localNode: ConfigurationHolder<LocalNodeConfiguration>
 ) {
     val clusterConfig by cluster
     val generalConfig by general

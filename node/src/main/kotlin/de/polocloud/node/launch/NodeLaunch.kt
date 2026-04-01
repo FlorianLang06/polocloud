@@ -1,8 +1,7 @@
 package de.polocloud.node.launch
 
-import de.polocloud.common.configuration.ConfigManager
+import de.polocloud.common.configuration.ConfigurationManager
 import de.polocloud.common.version.PolocloudVersion
-import de.polocloud.database.DatabaseCredentials
 import de.polocloud.node.NodeInstance
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.configuration.GeneralConfiguration
@@ -38,15 +37,15 @@ class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeL
         val root = launchProperties.rootDir
 
         return NodeConfigurations(
-            cluster = ConfigManager
+            cluster = ConfigurationManager
                 .load<ClusterConfiguration>()
                 .atPath(root.resolve("cluster.json").toString()),
 
-            general = ConfigManager
+            general = ConfigurationManager
                 .load<GeneralConfiguration>()
                 .atPath(root.resolve("general.json").toString()),
 
-            localNode = ConfigManager
+            localNode = ConfigurationManager
                 .load<LocalNodeConfiguration>()
                 .atPath(root.resolve("local-node.json").toString()),
         )

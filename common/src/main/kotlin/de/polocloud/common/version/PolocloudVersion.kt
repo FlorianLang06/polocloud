@@ -1,5 +1,7 @@
 package de.polocloud.common.version
 
+import de.polocloud.common.error.extensions.getOrReportAndThrow
+
 /**
  * Represents a PoloCloud version with full channel and build metadata.
  *
@@ -85,6 +87,8 @@ data class PolocloudVersion(
         /**
          * The version of the currently running PoloCloud instance. Loaded once from classpath.
          */
-        val CURRENT: PolocloudVersion by lazy { PolocloudVersionLoader.load() }
+        val CURRENT: PolocloudVersion by lazy {
+            PolocloudVersionLoader.load().getOrReportAndThrow()
+        }
     }
 }

@@ -1,5 +1,5 @@
 package de.polocloud.common.configuration
 
-interface DefaultableConfig<T> {
+interface DefaultableConfiguration<T> {
     fun createDefault(): T
 }

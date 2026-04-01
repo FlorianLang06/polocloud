@@ -32,6 +32,7 @@ object NodeLaunchPropertiesParser {
                 val stripped = arg.removePrefix("--")
                 val parts = stripped.split("=", limit = 2)
                 if (parts.size != 2) {
+                    // We throw here, because the error system is not loaded yet
                     throw IllegalArgumentException("Malformed argument: '$arg'. Expected format --key=value")
                 }
                 parts[0] to parts[1]

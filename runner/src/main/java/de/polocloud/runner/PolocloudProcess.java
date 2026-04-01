@@ -51,7 +51,7 @@ public final class PolocloudProcess {
      */
     private void prepareRuntimeEnvironment() throws IOException {
         ExpenderRuntimeCache.migrateCacheFiles();
-        ensureKotlinRuntimePresent();
+        ensureBootstrapLibrariesPresent();
     }
 
     /**
@@ -72,15 +72,24 @@ public final class PolocloudProcess {
     }
 
     /**
-     * Resolves the classpath entries required by the CLI.
+     * Resolves all classpath entries required to launch the CLI.
      *
-     * @return the needed classpath entries as a list of paths
+     * <p>This includes:</p>
+     * <ul>
+     *     <li>Bootstrap dependencies (Kotlin)</li>
+     *     <li>Application modules (common, cli)</li>
+     * </ul>
+     *
+     * @return ordered list of classpath entries
      */
     private List<Path> getApplicationClasspath() {
         List<Path> elements = new ArrayList<>();
-        elements.add(PolocloudParameters.BOOT_KOTLIN);
+
+        elements.add(PolocloudParameters.bootKotlin());
+
         elements.add(PolocloudParameters.expenderRuntimeCache("common"));
         elements.add(PolocloudParameters.expenderRuntimeCache("cli"));
+
         return elements;
     }
 
@@ -124,29 +133,30 @@ public final class PolocloudProcess {
     }
 
     /**
-     * Ensures that the Kotlin runtime JAR is available locally.
+     * Ensures that all bootstrap dependencies are present locally.
      *
-     * @throws IOException if the runtime cannot be downloaded
+     * @throws IOException if downloading fails
      */
-    private void ensureKotlinRuntimePresent() throws IOException {
-        Path kotlinJar = PolocloudParameters.BOOT_KOTLIN;
-
-        if (Files.exists(kotlinJar)) {
-            return;
-        }
-
-        Files.createDirectories(kotlinJar.getParent());
-        downloadKotlinRuntime(kotlinJar);
+    private void ensureBootstrapLibrariesPresent() throws IOException {
+        ensureLibrary(
+                PolocloudParameters.bootKotlin(),
+                PolocloudParameters.kotlinDownloadUrl()
+        );
     }
 
     /**
-     * Downloads the Kotlin runtime JAR.
+     * Ensures that a library exists locally, downloading it if necessary.
      *
-     * @param target the destination path
-     * @throws IOException if downloading fails
+     * @param target the target file path
+     * @param url    the download URL
+     * @throws IOException if download fails
      */
-    private void downloadKotlinRuntime(Path target) throws IOException {
-        try (InputStream in = new URL(PolocloudParameters.KOTLIN_DOWNLOAD_URL).openStream()) {
+    private void ensureLibrary(Path target, String url) throws IOException {
+        if (Files.exists(target)) return;
+
+        Files.createDirectories(target.getParent());
+
+        try (InputStream in = new URL(url).openStream()) {
             Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
         }
     }

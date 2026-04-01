@@ -1,5 +1,8 @@
 package de.polocloud.common.version
 
+import de.polocloud.common.error.exception.PoloResult
+import de.polocloud.common.version.error.PolocloudVersionError
+
 /**
  * Parses PoloCloud version strings into [PolocloudVersion] instances.
  *
@@ -18,31 +21,29 @@ object PolocloudVersionParser {
      * Parses the given [versionString] into a [PolocloudVersion].
      * @throws IllegalArgumentException if the format is invalid.
      */
-    fun parse(versionString: String): PolocloudVersion {
+    fun parse(versionString: String): PoloResult<PolocloudVersion> {
         val trimmed = versionString.trim()
 
         RELEASE_PATTERN.matchEntire(trimmed)?.let { match ->
             val (major, minor, patch) = match.destructured
-            return PolocloudVersion(major.toInt(), minor.toInt(), patch.toInt(), PolocloudReleaseChannel.RELEASE)
+            return Result.success(
+                PolocloudVersion(major.toInt(), minor.toInt(), patch.toInt(), PolocloudReleaseChannel.RELEASE)
+            )
         }
 
         CHANNEL_PATTERN.matchEntire(trimmed)?.let { match ->
             val (major, minor, patch, channel, build) = match.destructured
-            return PolocloudVersion(
-                major.toInt(),
-                minor.toInt(),
-                patch.toInt(),
-                PolocloudReleaseChannel.fromString(channel),
-                build
+            return Result.success(
+                PolocloudVersion(
+                    major.toInt(),
+                    minor.toInt(),
+                    patch.toInt(),
+                    PolocloudReleaseChannel.fromString(channel),
+                    build,
+                )
             )
         }
 
-        throw IllegalArgumentException("Invalid PoloCloud version format: '$versionString'")
+        return PolocloudVersionError.InvalidFormat(trimmed).asFailure()
     }
-
-    /**
-     * Like [parse], but returns `null` instead of throwing on invalid input.
-     */
-    fun parseOrNull(versionString: String): PolocloudVersion? =
-        runCatching { parse(versionString) }.getOrNull()
 }

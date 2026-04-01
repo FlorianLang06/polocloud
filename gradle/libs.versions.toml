@@ -1,7 +1,7 @@
 [versions]
 
 # ── Kotlin ────────────────────────────────────────────────────────────────────
-kotlin                  = "2.3.10"
+kotlin-jvm                 = "2.3.10"
 kotlinSerializationPlugin = "2.3.10"
 kotlinxSerialization    = "1.10.0"
 kotlinxCoroutines       = "1.10.2"
@@ -115,7 +115,7 @@ polocloud-i18n              = { group = "de.polocloud", name = "polocloud-i18n",
 
 [plugins]
 
-kotlin-jvm              = { id = "org.jetbrains.kotlin.jvm",                  version.ref = "kotlin" }
+kotlin-jvm              = { id = "org.jetbrains.kotlin.jvm",                  version.ref = "kotlin-jvm" }
 kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerializationPlugin" }
 gradle-git-properties   = { id = "com.gorylenko.gradle-git-properties",       version.ref = "gradle-git-properties" }
 protobuf-plugin         = { id = "com.google.protobuf",                       version.ref = "protobuf-plugin" }

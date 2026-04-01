@@ -8,4 +8,4 @@ package de.polocloud.common.configuration
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class ConfigFile(val path: String)
+annotation class ConfigurationFile(val path: String)
