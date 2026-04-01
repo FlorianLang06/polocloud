@@ -16,6 +16,7 @@ import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import io.grpc.protobuf.services.HealthStatusManager
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
 class GrpcEndpoint private constructor(
     private val address: Address,
     private val services: List<BindableService>,
+    private val caCertFile: File?,
     private val certFile: File?,
     private val keyFile: File?,
     private val clientAuth: ClientAuth,
@@ -62,8 +64,14 @@ class GrpcEndpoint private constructor(
 
         if (certFile != null && keyFile != null) {
             val sslContext = runCatching {
-                GrpcSslContexts
+                val sslBuilder = GrpcSslContexts
                     .forServer(certFile, keyFile)
+
+                if (caCertFile != null) {
+                    sslBuilder.trustManager(caCertFile)
+                }
+
+                sslBuilder
                     .clientAuth(clientAuth)
                     .build()
             }.getOrElse { e ->
@@ -160,6 +168,7 @@ class GrpcEndpoint private constructor(
     class Builder(private val address: Address) {
 
         private val services = mutableListOf<BindableService>()
+        private var caCertFile: File? = null
         private var certFile: File? = null
         private var keyFile: File? = null
         private var clientAuth: ClientAuth = ClientAuth.NONE
@@ -178,10 +187,11 @@ class GrpcEndpoint private constructor(
          * @param keyFile Server private key
          * @param clientAuth Optional client certificate authentication
          */
-        fun tls(certFile: File, keyFile: File, clientAuth: ClientAuth = ClientAuth.NONE) = apply {
+        fun tls(caCertFile: File, certFile: File, keyFile: File, clientAuth: ClientAuth = ClientAuth.NONE) = apply {
             this.certFile = certFile
             this.keyFile = keyFile
             this.clientAuth = clientAuth
+            this.caCertFile = caCertFile
         }
 
         /** Sets shutdown timeout in seconds for graceful termination. */
@@ -192,6 +202,7 @@ class GrpcEndpoint private constructor(
             return GrpcEndpoint(
                 address,
                 services,
+                caCertFile,
                 certFile,
                 keyFile,
                 clientAuth,

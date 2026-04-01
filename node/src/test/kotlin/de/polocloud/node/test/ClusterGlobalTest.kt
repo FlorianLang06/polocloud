@@ -49,7 +49,7 @@ class ClusterGlobalTest {
         var behaviorNode : NodeInstance? = null
 
         for (i in 0 until amount) {
-            val address = LOCALHOST_ADDRESS.withPort(5600 + i)
+            val address = LOCALHOST_ADDRESS.withPort(5600 + i*3)
             val testingDir = Path("testing-${UUID.randomUUID()}")
 
             val launchProperties = NodeLaunchProperties(
@@ -82,6 +82,10 @@ class ClusterGlobalTest {
                     "testdb"
                 )
             )
+
+            clusterHolder.mutate {
+                registration = Address(registration.hostname, 5601 + i)
+            }
 
             val configurations = NodeConfigurations(
                 cluster = clusterHolder,

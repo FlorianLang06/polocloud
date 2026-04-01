@@ -4,6 +4,7 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.error.exception.PoloException
+import de.polocloud.common.grpc.GrpcEndpoint
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
@@ -11,6 +12,8 @@ import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.NodeConfigurations
 import de.polocloud.node.error.NodeError
 import de.polocloud.node.generator.LocalIdGenerator
+import de.polocloud.node.internal.NodeGrpcClient
+import de.polocloud.node.internal.NodeGrpcEndpoint
 import de.polocloud.node.launch.NodeLaunchProperties
 import de.polocloud.node.nodes.LocalNodeContainer
 import de.polocloud.node.nodes.NodeFactory
@@ -18,6 +21,7 @@ import de.polocloud.node.registration.RegistrationManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.node.shutdown.ShutdownHook
+import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import org.slf4j.LoggerFactory
 
 class NodeInstance(
@@ -42,6 +46,8 @@ class NodeInstance(
     val nodeRepository: NodeRepository
     val registrationManager : RegistrationManager
 
+     val nodeGrpcEndpoint : NodeGrpcEndpoint
+
     init {
         TranslationService.init()
         TranslationService.defaultLanguage(configurations.generalConfig.locale)
@@ -49,6 +55,7 @@ class NodeInstance(
         this.database = this.initializeDatabase()
         this.nodeRepository = NodeRepository(this.database)
         this.registrationManager = RegistrationManager(configurations.clusterConfig, nodeRepository, certificateDataStorage.keyPair)
+        this.nodeGrpcEndpoint = NodeGrpcEndpoint(resolveBindAddress(), certificateDataStorage);
 
         this.initialize()
     }
@@ -60,11 +67,13 @@ class NodeInstance(
             // we are the only and new head
             this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(resolveBindAddress()))
             this.nodeRepository.save(this.localNodeContainer.data)
+            this.nodeGrpcEndpoint.start()
             return
         }
 
         val possibleNode = nodeRepository.find(localId)
         if (possibleNode != null) {
+            this.nodeGrpcEndpoint.start()
             this.localNodeContainer = LocalNodeContainer(nodeRepository, possibleNode)
             return
         }
@@ -77,6 +86,14 @@ class NodeInstance(
         }
 
         registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, certificateDataStorage)
+
+        this.nodeGrpcEndpoint.start()
+
+        // TODO connect
+        NodeGrpcClient(certificateDataStorage).connect(launchProperties.clusterRegistration.address)
+
+        val nodeData = nodeRepository.find(localId)
+        this.localNodeContainer = LocalNodeContainer(nodeRepository, nodeData!!)
     }
 
     @Synchronized
