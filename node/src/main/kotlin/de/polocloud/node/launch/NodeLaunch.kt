@@ -7,7 +7,6 @@ import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.configuration.GeneralConfiguration
 import de.polocloud.node.configuration.LocalNodeConfiguration
 import de.polocloud.node.configuration.NodeConfigurations
-import de.polocloud.node.shutdown.ShutdownHook
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 
@@ -15,9 +14,6 @@ class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeL
 
     init {
         System.setProperty("PID", ProcessHandle.current().pid().toString())
-
-        // register shutdown hook
-        ShutdownHook.registerShutdownHook()
 
         if (PolocloudVersion.CURRENT.isDebugEnabled) {
             Configurator.setRootLevel(Level.DEBUG);
