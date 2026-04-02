@@ -8,10 +8,10 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 
 class NodeGrpcClient(val certificateDataStorage: CertificateDataStorage) {
 
-    fun connect(address: Address) {
-        val channel = createChannel(address)
+    private var channel : ManagedChannel? = null
 
-        // TODO
+    fun connect(address: Address) {
+        channel = createChannel(address)
     }
 
     private fun createChannel(address: Address): ManagedChannel {

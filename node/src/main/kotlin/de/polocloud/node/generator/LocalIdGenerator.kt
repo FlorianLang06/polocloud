@@ -11,9 +11,10 @@ import kotlin.io.path.createDirectories
 
 object LocalIdGenerator : Generator<UUID> {
 
-    private val cachePath = Path(System.getProperty("rootDir")).resolve(".cache").resolve(".localId.dat")
-
     override fun generate(): UUID {
+        // at generate we need to check dir
+        val cachePath = Path(System.getProperty("rootDir")).resolve(".cache").resolve(".localId.dat")
+
         if (cachePath.exists()) {
             val bytes = Files.readAllBytes(cachePath)
             return bytes.toUUID()

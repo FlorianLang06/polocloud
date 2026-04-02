@@ -4,11 +4,7 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.grpc.GrpcEndpoint
-import de.polocloud.common.utils.localIpAddress
 import de.polocloud.node.repositories.NodeRepository
-import de.polocloud.node.shutdown.ShutdownHook
-import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
-import java.nio.file.Path
 import java.security.KeyPair
 
 class RegistrationServer(registrationManager: RegistrationManager, address: Address, nodeRepository: NodeRepository, keyPair : KeyPair) : Closeable {
@@ -19,8 +15,6 @@ class RegistrationServer(registrationManager: RegistrationManager, address: Addr
 
     fun allowRequests() {
         this.grpcServer.start()
-
-        ShutdownHook.attach(this)
     }
 
     override fun close(mode: ShutdownMode) {

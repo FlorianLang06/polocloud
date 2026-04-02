@@ -1,5 +1,7 @@
 package de.polocloud.node.registration
 
+import de.polocloud.common.Closeable
+import de.polocloud.common.ShutdownMode
 import de.polocloud.common.error.extensions.getOrReport
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.ClusterConfiguration
@@ -14,7 +16,7 @@ import java.io.StringWriter
 import java.security.KeyPair
 import java.util.UUID
 
-class RegistrationManager(config: ClusterConfiguration, repository: NodeRepository, keyPair: KeyPair) {
+class RegistrationManager(config: ClusterConfiguration, repository: NodeRepository, keyPair: KeyPair) : Closeable {
 
     private val logger = LoggerFactory.getLogger(RegistrationManager::class.java)
 
@@ -47,5 +49,9 @@ class RegistrationManager(config: ClusterConfiguration, repository: NodeReposito
             it.writeObject(csr)
         }
         return writer.toString()
+    }
+
+    override fun close(mode: ShutdownMode) {
+        this.registrationServer.close(mode)
     }
 }
