@@ -2,6 +2,7 @@ package de.polocloud.node.shutdown
 
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.i18n.trError
 import de.polocloud.common.i18n.trInfo
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
  */
 object ShutdownHook {
 
-    private val log = LoggerFactory.getLogger(javaClass)
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     // Thread-safe queue for shutdown tasks
     private val tasks: ConcurrentLinkedQueue<Closeable> = ConcurrentLinkedQueue()
@@ -38,7 +39,7 @@ object ShutdownHook {
      * @param mode the [ShutdownMode] to pass to each task (default: GRACEFUL)
      */
     fun shutdown(mode: ShutdownMode = ShutdownMode.GRACEFUL) {
-        log.trInfo("node", "node.shutdown.stopping")
+        logger.trInfo("node", "node.shutdown.stopping")
         // Copy tasks to avoid concurrent modification if attach() is called during shutdown
         val tasksCopy: List<Closeable>
         synchronized(this) {
@@ -48,10 +49,10 @@ object ShutdownHook {
             try {
                 closeable.close(mode)
             } catch (ex: Exception) {
-                log.error("Error while shutting down task: ${closeable.javaClass.name}", ex)
+                logger.trError("node", "node.shutdown.task.error", ex, "task" to closeable.javaClass.name)
             }
         }
-        log.trInfo("node", "node.shutdown.stopped")
+        logger.trInfo("node", "node.shutdown.stopped")
     }
 
     /**
