@@ -2,11 +2,9 @@ package de.polocloud.node.cli
 
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.node.NodeInstance
 import de.polocloud.node.configuration.cluster.CliAccessConfiguration
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
-import de.polocloud.node.shutdown.ShutdownHook
 import io.grpc.Server
 import io.grpc.ServerInterceptors
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
@@ -56,7 +54,6 @@ class CliServer(
             .start()
 
         logger.info("CLI server started on port ${config.port}")
-        ShutdownHook.attach(this)
     }
 
     override fun close(mode: ShutdownMode) {

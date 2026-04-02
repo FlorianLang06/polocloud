@@ -125,6 +125,7 @@ class NodeInstance(
             return
         }
 
+        this.cliServer.close(mode)
         this.localNodeContainer.markStopping()
         this.registrationManager.close(mode)
         this.localNodeContainer.markStopped()
