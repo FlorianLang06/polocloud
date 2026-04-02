@@ -6,6 +6,9 @@ import de.polocloud.common.ShutdownMode
 import de.polocloud.common.error.context.ErrorContext
 import de.polocloud.common.error.extensions.report
 import de.polocloud.common.grpc.error.GrpcError
+import de.polocloud.common.i18n.trDebug
+import de.polocloud.common.i18n.trInfo
+import de.polocloud.common.i18n.trWarn
 import io.grpc.BindableService
 import io.grpc.Grpc
 import io.grpc.Server
@@ -53,11 +56,11 @@ class GrpcEndpoint private constructor(
     @Synchronized
     fun start() {
         if (serverRef.get() != null) {
-            logger.warn("gRPC server is already running on {}", address)
+            logger.trWarn("grpc", "grpc.start.alreadyRunning", "address" to address)
             return
         }
 
-        logger.info("Starting gRPC server on {}", address)
+        logger.trInfo("grpc", "grpc.start.starting", "address" to address)
 
         val builder = NettyServerBuilder.forAddress(address.toInetSocketAddress())
             .addService(healthManager.healthService)
@@ -82,20 +85,20 @@ class GrpcEndpoint private constructor(
             }
 
             builder.sslContext(sslContext)
-            logger.debug("TLS enabled (clientAuth={})", clientAuth)
+            logger.trDebug("grpc", "grpc.start.tls.enabled", "clientAuth" to clientAuth)
         }
 
         services.forEach(builder::addService)
         val server = runCatching {
             builder.build().apply {
+                val servingStatus = HealthCheckResponse.ServingStatus.SERVING
+
                 start()
-                healthManager.setStatus(
-                    "",
-                    HealthCheckResponse.ServingStatus.SERVING
-                )
-                logger.debug("gRPC server started and reporting SERVING")
+                healthManager.setStatus("", servingStatus)
+
+                logger.trInfo("grpc", "grpc.start.success", "servingStatus" to servingStatus)
             }
-        }.getOrElse { e ->
+        }.getOrElse { _ ->
             GrpcError.BindFailed(address.toString())
                 .also { ErrorContext.from("GrpcEndpoint.start") }
                 .report()
@@ -116,18 +119,18 @@ class GrpcEndpoint private constructor(
      */
     override fun close(mode: ShutdownMode) {
         val server = serverRef.getAndSet(null) ?: run {
-            logger.warn("gRPC server is not running, nothing to close")
+            logger.trWarn("grpc", "grpc.shutdown.notRunning")
             return
         }
 
-        logger.info("Shutting down gRPC server...")
+        logger.trInfo("grpc", "grpc.shutdown.starting")
         healthManager.setStatus(
             "",
             HealthCheckResponse.ServingStatus.NOT_SERVING
         )
 
         if (mode == ShutdownMode.FORCE) {
-            logger.warn("Forcing immediate shutdown of gRPC server")
+            logger.trWarn("grpc", "grpc.shutdown.force")
             server.shutdownNow()
             return
         }
@@ -136,16 +139,13 @@ class GrpcEndpoint private constructor(
         try {
             if (!server.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
                 GrpcError.ShutdownTimeout(shutdownTimeoutSeconds).report()
-                logger.warn(
-                    "Server did not terminate in {} seconds, forcing shutdown",
-                    shutdownTimeoutSeconds
-                )
+                logger.trWarn("grpc", "grpc.shutdown.timeout", "timeout" to shutdownTimeoutSeconds)
                 server.shutdownNow()
             } else {
-                logger.debug("gRPC server terminated gracefully")
+                logger.trDebug("grpc", "grpc.shutdown.success")
             }
         } catch (_: InterruptedException) {
-            logger.warn("Shutdown interrupted, forcing immediate shutdown")
+            logger.trWarn("grpc", "grpc.shutdown.interrupted")
             server.shutdownNow()
             Thread.currentThread().interrupt()
         }
