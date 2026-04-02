@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option java_package = "de.polocloud.proto";
+option java_outer_classname = "ClusterQuery";
+option java_multiple_files = true;
+
+service ClusterQueryService {
+  rpc ListNodes (Empty) returns (NodeListResponse);
+  rpc ShutdownNode (ShutdownNodeRequest) returns (ShutdownNodeResponse);
+}
+
+message Empty {}
+
+message NodeListResponse {
+  repeated NodeInfo nodes = 1;
+}
+
+message NodeInfo {
+  string id = 1;
+  string hostname = 2;
+  int32 port = 3;
+  string state = 4;
+  bool head = 5;
+  string version = 6;
+}
+
+message ShutdownNodeRequest {
+  string node_id = 1;
+}
+
+message ShutdownNodeResponse {
+  bool accepted = 1;
+  string message = 2;
+}

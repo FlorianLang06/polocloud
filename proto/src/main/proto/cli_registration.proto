@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_package = "de.polocloud.proto";
+option java_outer_classname = "CliRegistration";
+option java_multiple_files = true;
+
+service CliRegistrationService {
+  rpc RegisterCli (RegisterCliRequest) returns (RegisterCliResponse);
+}
+
+message RegisterCliRequest {
+  string token = 1;
+  string csr_pem = 2;
+}
+
+message RegisterCliResponse {
+  bool accepted = 3;
+  string message = 4;
+  string certificate_pem = 5;
+  string ca_certificate_pem = 6;
+}

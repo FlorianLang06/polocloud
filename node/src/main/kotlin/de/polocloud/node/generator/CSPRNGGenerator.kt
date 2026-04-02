@@ -1,5 +1,6 @@
 package de.polocloud.node.generator
 
+import de.polocloud.common.generator.Generator
 import java.security.SecureRandom
 import java.util.Base64
 

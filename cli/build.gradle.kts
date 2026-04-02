@@ -22,6 +22,20 @@ dependencies {
     polocloudRuntime(libs.kotlinx.serialization.json)
     polocloudRuntime(libs.kotlinx.coroutines.core)
     polocloudRuntime(libs.kotlin.reflect)
+    polocloudRuntime(libs.bcprov)
+    polocloudRuntime(libs.bcpkix)
+
+    polocloudRuntime(libs.grpc.api)
+    polocloudRuntime(libs.grpc.stub)
+    polocloudRuntime(libs.grpc.kotlin.stub)
+    polocloudRuntime(libs.grpc.services)
+    polocloudRuntime(libs.protobuf.kotlin)
+    polocloudRuntime(libs.grpc.netty.shaded)
 
     compileOnly(projects.common)
+    implementation(projects.proto)
+}
+
+tasks.jar {
+    from(project(":proto").sourceSets.main.get().output)
 }

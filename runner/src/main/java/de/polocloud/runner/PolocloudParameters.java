@@ -38,7 +38,7 @@ public final class PolocloudParameters {
      *
      * <p>This folder is created in the current working directory.</p>
      */
-    public static final Path EXPENDER_RUNTIME_CACHE = Paths.get(".cache");
+    public static final Path EXPENDER_RUNTIME_CACHE = Paths.get(".cache/dependencies");
 
     /**
      * Manifest attribute key for the Kotlin runtime version.
@@ -124,7 +124,7 @@ public final class PolocloudParameters {
      * <p>The path is resolved relative to {@link #EXPENDER_RUNTIME_CACHE} and depends
      * on the Polocloud version returned by {@link #version()}.</p>
      *
-     * <p>Example: {@code .cache/dev/httpmarco/polocloud/cli/1.0.0/cli-1.0.0.jar}</p>
+     * <p>Example: {@code .cache/dependencies/dev/httpmarco/polocloud/cli/1.0.0/cli-1.0.0.jar}</p>
      */
     public static Path expenderRuntimeCache(String project) {
         return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
@@ -145,23 +145,18 @@ public final class PolocloudParameters {
      * @throws RuntimeException if the cache directory cannot be created
      */
     public static void ensureCacheDirectory() {
-        if (Files.exists(EXPENDER_RUNTIME_CACHE)) {
-            return;
-        }
-
         try {
             Files.createDirectories(EXPENDER_RUNTIME_CACHE);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create cache directory: " + EXPENDER_RUNTIME_CACHE, e);
-        }
 
-        try {
-            DosFileAttributeView view = Files.getFileAttributeView(EXPENDER_RUNTIME_CACHE, DosFileAttributeView.class);
-            if (view != null) {
+            Path root = EXPENDER_RUNTIME_CACHE.getParent();
+            DosFileAttributeView view = Files.getFileAttributeView(root, DosFileAttributeView.class);
+
+            if (view != null && !view.readAttributes().isHidden()) {
                 view.setHidden(true);
             }
-        } catch (IOException ignored) {
-            // Not a Windows filesystem – hidden attribute is not supported
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize cache", e);
         }
     }
 }

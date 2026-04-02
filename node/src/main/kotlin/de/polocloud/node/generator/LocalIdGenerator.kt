@@ -1,9 +1,9 @@
 package de.polocloud.node.generator
 
+import de.polocloud.common.generator.Generator
 import de.polocloud.common.utils.toBytes
 import de.polocloud.common.utils.toUUID
 import java.nio.file.Files
-import java.nio.file.Path
 import java.util.UUID
 import kotlin.io.path.Path
 import kotlin.io.path.exists

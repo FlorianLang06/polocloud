@@ -29,13 +29,13 @@ data class Dependency(
     /**
      * Downloads the dependency JAR to the local cache if it does not exist or if the checksum is invalid.
      *
-     * The file is stored in `.cache/<groupId>/<artifactId>/<version>/<artifactId>-<version>.jar`.
+     * The file is stored in `.cache/dependencies/<groupId>/<artifactId>/<version>/<artifactId>-<version>.jar`.
      * If the download succeeds, the checksum is verified before moving it to the final location.
      *
      * @throws IllegalStateException if the checksum verification fails after download
      */
     fun download() {
-        val target = Path.of(".cache")
+        val target = Path.of(".cache/dependencies")
             .resolve(convertedPathGroupId())
             .resolve(artifactId)
             .resolve(version)

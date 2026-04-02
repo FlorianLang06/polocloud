@@ -9,6 +9,7 @@ import org.gradle.kotlin.dsl.attributes
 import java.nio.charset.StandardCharsets
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.provider.Provider
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
 import java.security.MessageDigest
@@ -79,27 +80,41 @@ class PolocloudDependencyPlugin : Plugin<Project> {
 
     private fun resolveDependencies(project: Project, notation: String, repositories: List<String>): List<Dependency> {
         val dependency = project.dependencies.create(notation)
-        val detached = project.configurations.detachedConfiguration(dependency)
-        val resolved = detached.resolvedConfiguration
+        val config = project.configurations.detachedConfiguration(dependency)
 
-        return resolved.resolvedArtifacts.map { artifact ->
+        config.isTransitive = true
+
+        val resolved = config.resolvedConfiguration.resolvedArtifacts
+
+        return resolved.mapNotNull { artifact ->
             val file = artifact.file
-            val group = artifact.moduleVersion.id.group
-            val name = artifact.name
-            val version = artifact.moduleVersion.id.version
+            val id = artifact.moduleVersion.id
+
+            val group = id.group
+            val name = id.name
+            val version = id.version
 
             val groupPath = group.replace('.', '/')
-            val mavenUrl = resolveMavenUrl(repositories, groupPath, name, version)
+            val mavenUrl = runCatching {
+                resolveMavenUrl(repositories, groupPath, name, version, file)
+            }.getOrElse {
+                println("[polocloud] Skipping unresolved dependency: $group:$name:$version")
+                return@mapNotNull null
+            }
 
             Dependency(
                 groupId = group,
                 artifactId = name,
                 version = version,
                 url = mavenUrl,
-                checksum = file.inputStream().use {
-                    MessageDigest.getInstance("SHA-256")
-                        .digest(it.readBytes())
-                        .joinToString("") { b -> "%02x".format(b) }
+                checksum = runCatching {
+                    fetchChecksum(mavenUrl)
+                }.getOrElse {
+                    file.inputStream().use {
+                        MessageDigest.getInstance("SHA-256")
+                            .digest(it.readBytes())
+                            .joinToString("") { b -> "%02x".format(b) }
+                    }
                 }
             )
         }
@@ -113,18 +128,15 @@ class PolocloudDependencyPlugin : Plugin<Project> {
         repositories: List<String>,
         groupPath: String,
         artifactId: String,
-        version: String
+        version: String,
+        file: File
     ): String {
-        val fileName = "$artifactId-$version.jar"
-
         for (repoUrl in repositories) {
+            val fileName = file.name
             val url = "$repoUrl/$groupPath/$artifactId/$version/$fileName"
 
-            // Für SNAPSHOT Versionen: echten Dateinamen aus maven-metadata.xml lesen
             if (version.endsWith("SNAPSHOT")) {
-                val resolved = resolveSnapshotUrl(repoUrl, groupPath, artifactId, version)
-                if (resolved != null) return resolved
-                continue
+                return resolveSnapshotUrl(repoUrl, groupPath, artifactId, version, file)
             }
 
             runCatching {
@@ -150,22 +162,11 @@ class PolocloudDependencyPlugin : Plugin<Project> {
         repoUrl: String,
         groupPath: String,
         artifactId: String,
-        version: String
-    ): String? {
-        val metadataUrl = "$repoUrl/$groupPath/$artifactId/$version/maven-metadata.xml"
-
-        return runCatching {
-            val xml = URI(metadataUrl).toURL().readText()
-
-            // Parse timestamp and buildNumber from metadata
-            val timestamp = Regex("<timestamp>(.*?)</timestamp>").find(xml)?.groupValues?.get(1) ?: return null
-            val buildNumber = Regex("<buildNumber>(.*?)</buildNumber>").find(xml)?.groupValues?.get(1) ?: return null
-
-            val baseVersion = version.removeSuffix("-SNAPSHOT")
-            val fileName = "$artifactId-$baseVersion-$timestamp-$buildNumber.jar"
-
-            "$repoUrl/$groupPath/$artifactId/$version/$fileName"
-        }.getOrNull()
+        version: String,
+        file: File
+    ): String {
+        val fileName = file.name
+        return "$repoUrl/$groupPath/$artifactId/$version/$fileName"
     }
 }
 
@@ -205,8 +206,11 @@ fun Project.polocloudRuntime(notation: Any) {
         is Provider<*> -> {
             notation.map { dep ->
                 if (dep is MinimalExternalModuleDependency) {
-                    val gav =
-                        "${dep.module.group}:${dep.module.name}:${dep.versionConstraint.requiredVersion}"
+                    val version = dep.versionConstraint.requiredVersion
+                        .takeIf { it.isNotBlank() }
+                        ?: dep.versionConstraint.displayName
+
+                    val gav = "${dep.module.group}:${dep.module.name}:$version"
 
                     extension.projects.add(gav)
                 }

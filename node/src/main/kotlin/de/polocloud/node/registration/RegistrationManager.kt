@@ -1,10 +1,10 @@
 package de.polocloud.node.registration
 
 import de.polocloud.common.error.extensions.getOrReport
+import de.polocloud.common.generator.CertificateSigningRequestGenerator
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.generator.CSPRNGGenerator
-import de.polocloud.node.generator.CertificateSigningRequestGenerator
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter

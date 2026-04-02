@@ -10,8 +10,8 @@ fun main() {
     val dependencyRegistry = DependencyRegistry(ClasspathInsert())
 
     // TODO
-    val version = PolocloudVersion.CURRENT.toVersionString()
-    val cliJar = Path.of(".cache/de/polocloud/cli/$version/cli-$version.jar").toFile()
+    //val version = PolocloudVersion.CURRENT.toVersionString() // TODO we cant do this here because error system ist not loaded because of dependencies
+    val cliJar = Path.of(".cache/dependencies/de/polocloud/cli/3.0.0-snapshot.local/cli-3.0.0-snapshot.local.jar").toFile()
 
     dependencyRegistry.scan(OwnBlobScanner(cliJar))
     dependencyRegistry.downloadAndRegister()

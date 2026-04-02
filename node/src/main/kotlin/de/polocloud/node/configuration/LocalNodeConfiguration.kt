@@ -13,9 +13,9 @@ data class LocalNodeConfiguration(var database: DatabaseCredentials) {
         override fun createDefault(): LocalNodeConfiguration {
             val db = DatabaseCredentials.PostgreSQL(
                 Address("localhost", 5432),//TODO mirco (set default values or something like that)
-                "user",
-                "password",
-                "database"
+                "polocloud",
+                "polocloud",
+                "polocloud-cluster"
             )
             return LocalNodeConfiguration(db)
         }

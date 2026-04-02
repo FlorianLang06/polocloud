@@ -1,4 +1,4 @@
-package de.polocloud.node.generator
+package de.polocloud.common.generator
 
 interface Generator<T> {
 

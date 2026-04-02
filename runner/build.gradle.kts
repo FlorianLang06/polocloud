@@ -28,7 +28,7 @@ tasks.named<Jar>("jar") {
         val jarTask = project(path).tasks.named<Jar>("jar")
 
         from(jarTask.flatMap { it.archiveFile }) {
-            into(".cache")
+            into(".cache/dependencies")
         }
     }
 }

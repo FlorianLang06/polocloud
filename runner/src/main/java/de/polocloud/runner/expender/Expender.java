@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.jar.*;
 
 /**
- * Utility class to scan the current JAR for files under the ".cache" directory
+ * Utility class to scan the current JAR for files under the ".cache/dependencies" directory
  * and to read the manifests of embedded JAR files.
  */
 public final class Expender {
@@ -20,10 +20,10 @@ public final class Expender {
     }
 
     /**
-     * Scans the current JAR for all files located under the ".cache" directory
+     * Scans the current JAR for all files located under the ".cache/dependencies" directory
      * and returns them as ExpenderElements with artifactId, groupId, version, and file.
      *
-     * @return a list of ExpenderElements representing each embedded JAR in ".cache"
+     * @return a list of ExpenderElements representing each embedded JAR in ".cache/dependencies"
      */
     public static List<ExpenderElements> scanJarCache() {
         List<ExpenderElements> elements = new ArrayList<>();
@@ -37,7 +37,7 @@ public final class Expender {
     }
 
     /**
-     * Reads the given JAR file and returns all embedded JAR files under ".cache" as ExpenderElements.
+     * Reads the given JAR file and returns all embedded JAR files under ".cache/dependencies" as ExpenderElements.
      *
      * @param jarPath the path to the main JAR
      * @return list of ExpenderElements
@@ -52,7 +52,7 @@ public final class Expender {
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
 
-                if (entry.getName().startsWith(PolocloudParameters.EXPENDER_RUNTIME_CACHE + "/") && entry.getName().endsWith(".jar")) {
+                if (entry.getName().startsWith(PolocloudParameters.EXPENDER_RUNTIME_CACHE.toString().replace("\\", "/") + "/") && entry.getName().endsWith(".jar")) {
                     File tempFile = Files.createTempFile("expender-", ".jar").toFile();
                     tempFile.deleteOnExit();
 

@@ -1,4 +1,4 @@
-package de.polocloud.node.generator
+package de.polocloud.common.generator
 
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.provider.BouncyCastleProvider
