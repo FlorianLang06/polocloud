@@ -3,6 +3,7 @@ package de.polocloud.database.sql
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.i18n.trWarn
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
@@ -134,7 +135,7 @@ class SqlConnectionFactory(credentials: DatabaseCredentials) :
      */
     override fun close(mode: ShutdownMode) {
         val ds = dataSource ?: run {
-            logger.warn("DataSource is not initialized, nothing to close")
+            logger.trWarn("database", "database.pool.not_initialized")
             return
         }
 
@@ -149,7 +150,7 @@ class SqlConnectionFactory(credentials: DatabaseCredentials) :
 
         try {
             if (mode == ShutdownMode.FORCE) {
-                logger.warn("Forcing immediate shutdown of database pool {}", ds.poolName)
+                logger.trWarn("database", "database.pool.shutdown.force", "pool" to ds.poolName)
 
                 // Optional: Falls HikariDataSource
                 if (ds is com.zaxxer.hikari.HikariDataSource) {

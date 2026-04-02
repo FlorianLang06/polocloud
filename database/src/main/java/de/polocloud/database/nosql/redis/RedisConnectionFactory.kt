@@ -1,6 +1,9 @@
 package de.polocloud.database.nosql.redis
 
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.i18n.trError
+import de.polocloud.common.i18n.trInfo
+import de.polocloud.common.i18n.trWarn
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
@@ -32,16 +35,16 @@ class RedisConnectionFactory(credentials: DatabaseCredentials.Redis) : DatabaseC
 
     override fun close(mode: ShutdownMode) {
         if (state == DatabaseState.CLOSED) {
-            logger.warn("Redis connection already closed")
+            logger.trWarn("database", "database.connection.already_closed")
             return
         }
 
         try {
             jedis.close()
             state = DatabaseState.CLOSED
-            logger.info("Redis connection closed (mode={})", mode)
+            logger.trInfo("database","database.connection.closed.with_mode","mode" to mode)
         } catch (e: Exception) {
-            logger.error("Failed to close Redis connection", e)
+            logger.trError("database","database.connection.close.failed", e)
         }
     }
 }

@@ -13,6 +13,9 @@ fun Logger.trWarn(pack: String, key: String, vararg placeholders: Pair<String, A
 fun Logger.trError(pack: String, key: String, vararg placeholders: Pair<String, Any?>) =
     error(TranslationService.tr(pack, key, *placeholders))
 
+fun Logger.trError(pack: String, key: String, exception: Exception, vararg placeholders: Pair<String, Any?>) =
+    error(TranslationService.tr(pack, key, *placeholders), exception)
+
 fun Logger.trDebug(pack: String, key: String, vararg placeholders: Pair<String, Any?>) =
     debug(TranslationService.tr(pack, key, *placeholders))
 
