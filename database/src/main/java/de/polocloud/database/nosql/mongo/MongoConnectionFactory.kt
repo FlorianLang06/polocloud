@@ -5,6 +5,9 @@ import com.mongodb.MongoClientSettings
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.i18n.trError
+import de.polocloud.common.i18n.trInfo
+import de.polocloud.common.i18n.trWarn
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
@@ -61,27 +64,27 @@ class MongoConnectionFactory(credentials: DatabaseCredentials.MongoDB) : Databas
 
     override fun close(mode: ShutdownMode) {
         if (state == DatabaseState.CLOSED) {
-            logger.warn("MongoDB client already closed")
+            logger.trWarn("database", "database.connection.already_closed")
             return
         }
 
         val c = client ?: return
 
         try {
-            logger.info("Shutting down MongoDB client (mode={})", mode)
+            logger.trInfo("database", "database.connection.shutdown", "mode" to mode)
 
             if (mode == ShutdownMode.FORCE) {
-                logger.warn("Forcing immediate shutdown of MongoDB client")
+                logger.trWarn("database", "database.connection.shutdown.force")
             }
 
             c.close()
             client = null
             state = DatabaseState.CLOSED
 
-            logger.info("MongoDB client closed successfully")
+            logger.trInfo("database", "database.connection.closed.success")
 
         } catch (e: Exception) {
-            logger.error("MongoDB close failed", e)
+            logger.trError("database", "database.connection.close.failed", e)
         }
     }
 }

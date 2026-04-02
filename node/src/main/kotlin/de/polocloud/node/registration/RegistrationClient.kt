@@ -2,20 +2,17 @@ package de.polocloud.node.registration
 
 import de.polocloud.common.Address
 import de.polocloud.common.error.exception.PoloResult
+import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
-import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.error.NodeError
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeVersion
 import de.polocloud.proto.RegisterNodeRequest
 import de.polocloud.proto.RegisterNodeResponse
 import io.grpc.ManagedChannel
-import io.grpc.ManagedChannelBuilder
-import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -63,13 +60,7 @@ class RegistrationClient {
                 .setToken(info.token)
                 .build()
 
-            logger.info(
-                TranslationService.tr(
-                    "cluster",
-                    "cluster.registration.sendingRequest",
-                    "address" to address
-                )
-            )
+            logger.trInfo("cluster","cluster.registration.sendingRequest", "address" to address)
 
             runBlocking { stub.registerNode(request) }
 

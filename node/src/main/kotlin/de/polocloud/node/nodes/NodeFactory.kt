@@ -1,6 +1,7 @@
 package de.polocloud.node.nodes
 
 import de.polocloud.common.Address
+import de.polocloud.common.version.PolocloudVersion
 
 object NodeFactory {
 
@@ -18,7 +19,7 @@ object NodeFactory {
             port = address.port,
             state = NodeState.STARTING,
             head = head,
-            version = "1.0.0",
-            gitCommitHash = "unknown"
+            version = PolocloudVersion.CURRENT.toVersionString(),
+            gitCommitHash = PolocloudVersion.CURRENT.commitId
         )
 }
