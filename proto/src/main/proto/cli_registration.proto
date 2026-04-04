@@ -6,6 +6,7 @@ option java_multiple_files = true;
 
 service CliRegistrationService {
   rpc RegisterCli (RegisterCliRequest) returns (RegisterCliResponse);
+  rpc DisconnectCli(DisconnectRequest) returns (DisconnectResponse);
 }
 
 message RegisterCliRequest {
@@ -19,3 +20,7 @@ message RegisterCliResponse {
   string certificate_pem = 5;
   string ca_certificate_pem = 6;
 }
+
+message DisconnectRequest {}
+
+message DisconnectResponse {}

@@ -5,15 +5,23 @@ import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.grpc.GrpcClientContext
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.node.cli.interceptor.CliSessionInterceptor
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.security.CertificateAuthority
 import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.proto.CliRegistrationServiceGrpcKt
+import de.polocloud.proto.DisconnectRequest
+import de.polocloud.proto.DisconnectResponse
 import de.polocloud.proto.RegisterCliRequest
 import de.polocloud.proto.RegisterCliResponse
+import io.grpc.Context
+import io.grpc.Grpc
+import io.grpc.ServerCall
+import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
+import java.security.cert.X509Certificate
 
 /**
  * gRPC service for CLI client registration and authentication.
@@ -73,7 +81,7 @@ class CliRegistrationService(
 
         val subject = extractSubject(csr)
         val clientKey = subject.lowercase()
-        val session = sessionManager.create(clientKey, clientIp)
+        val session = sessionManager.createOrUpdate(clientKey, clientIp)
 
         logger.trInfo(
             "cluster",
@@ -87,6 +95,32 @@ class CliRegistrationService(
             .setCertificatePem(certToPem(signedCert))
             .setCaCertificatePem(cliCa.getCaCertificatePem())
             .build()
+    }
+
+    override suspend fun disconnectCli(request: DisconnectRequest): DisconnectResponse {
+        val subject = CliSessionInterceptor.SUBJECT_CTX_KEY.get()
+
+        if (subject != null) {
+            val removed = sessionManager.get(subject.lowercase()) != null
+
+            sessionManager.remove(subject.lowercase())
+
+            if (removed) {
+                logger.trInfo(
+                    "cluster",
+                    "cluster.cli.session.removed",
+                    "client" to subject
+                )
+            } else {
+                logger.trInfo(
+                    "cluster",
+                    "cluster.cli.session.removed.missing",
+                    "client" to subject
+                )
+            }
+        }
+
+        return DisconnectResponse.newBuilder().build()
     }
 
     private fun denyResponse(messageId: String): RegisterCliResponse =
