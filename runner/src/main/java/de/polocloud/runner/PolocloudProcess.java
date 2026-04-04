@@ -88,7 +88,7 @@ public final class PolocloudProcess {
         elements.add(PolocloudParameters.bootKotlin());
 
         elements.add(PolocloudParameters.expenderRuntimeCache("common"));
-        elements.add(PolocloudParameters.expenderRuntimeCache("node"));
+        elements.add(PolocloudParameters.expenderRuntimeCache("cli"));
 
         return elements;
     }
