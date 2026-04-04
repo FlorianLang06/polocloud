@@ -3,7 +3,9 @@ package de.polocloud.node.internal
 import de.polocloud.common.Address
 import de.polocloud.common.grpc.GrpcEndpoint
 import de.polocloud.node.cli.CliRegistrationService
-import de.polocloud.node.cli.IpWhitelistInterceptor
+import de.polocloud.node.cli.CliSessionManager
+import de.polocloud.node.cli.interceptor.CliSessionInterceptor
+import de.polocloud.node.cli.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.security.CertificateDataStorage
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
@@ -23,6 +25,7 @@ class NodeGrpcEndpoint(
     certificateDataStorage: CertificateDataStorage,
     clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
+    cliSessionManager: CliSessionManager,
 ) {
 
     private val server = GrpcEndpoint.Builder(address)
@@ -37,7 +40,8 @@ class NodeGrpcEndpoint(
         )
         .interceptedService(
             cliRegistrationService,
-            IpWhitelistInterceptor(clusterConfig.cliAccess)
+            IpWhitelistInterceptor(clusterConfig.cliAccess),
+            CliSessionInterceptor(cliSessionManager)
         )
         .build()
 

@@ -1,8 +1,12 @@
-package de.polocloud.node.cli
+package de.polocloud.node.cli.interceptor
 
+import de.polocloud.common.grpc.GrpcClientContext
 import de.polocloud.common.i18n.trWarn
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.cluster.CliAccessConfiguration
+import io.grpc.Context
+import io.grpc.Contexts
+import io.grpc.Grpc
 import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
@@ -31,7 +35,7 @@ class IpWhitelistInterceptor(
         requestHeaders: Metadata,
         next: ServerCallHandler<T, R>
     ): ServerCall.Listener<T> {
-        val remote = call.attributes.get(io.grpc.Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
+        val remote = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
 
         if (!config.enabled) {
             logger.trWarn("cluster", "cli.access.disabled.log", "client" to remote.toString())
@@ -52,6 +56,7 @@ class IpWhitelistInterceptor(
         }
 
         val ip = remote.address.hostAddress
+        val context = Context.current().withValue(GrpcClientContext.CLIENT_IP, ip)
 
         if (!isAllowed(ip)) {
             logger.trWarn(
@@ -67,7 +72,7 @@ class IpWhitelistInterceptor(
         }
 
         logger.debug("CLI connection allowed from IP: $ip")
-        return next.startCall(call, requestHeaders)
+        return Contexts.interceptCall(context, call, requestHeaders, next)
     }
 
     private fun isAllowed(ip: String): Boolean {
