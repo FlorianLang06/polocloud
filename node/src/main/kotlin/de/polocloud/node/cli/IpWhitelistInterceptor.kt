@@ -2,6 +2,7 @@ package de.polocloud.node.cli
 
 import de.polocloud.common.i18n.trWarn
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.node.configuration.cluster.CliAccessConfiguration
 import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
@@ -20,7 +21,7 @@ import java.net.InetSocketAddress
  * @param allowedIps List of IP addresses that are permitted to connect
  */
 class IpWhitelistInterceptor(
-    private val allowedIps: List<String>
+    private val config: CliAccessConfiguration,
 ) : ServerInterceptor {
 
     private val logger = LoggerFactory.getLogger(IpWhitelistInterceptor::class.java)
@@ -30,8 +31,16 @@ class IpWhitelistInterceptor(
         requestHeaders: Metadata,
         next: ServerCallHandler<T, R>
     ): ServerCall.Listener<T> {
-
         val remote = call.attributes.get(io.grpc.Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
+
+        if (!config.enabled) {
+            logger.trWarn("cluster", "cli.access.disabled.log", "client" to remote.toString())
+            call.close(
+                Status.PERMISSION_DENIED.withDescription(TranslationService.tr("cluster", "cli.access.disabled")),
+                Metadata()
+            )
+            return object : ServerCall.Listener<T>() {}
+        }
 
         if (remote !is InetSocketAddress) {
             logger.trWarn("cluster", "cluster.cli.ip.unknown")
@@ -62,7 +71,7 @@ class IpWhitelistInterceptor(
     }
 
     private fun isAllowed(ip: String): Boolean {
-        return allowedIps.any { allowed ->
+        return config.allowedIps.any { allowed ->
             val regex = wildcardToRegex(allowed)
             regex.matches(ip)
         }

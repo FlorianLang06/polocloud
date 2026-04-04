@@ -67,6 +67,7 @@ class CliRegistrationService(
         )
 
         logger.trInfo("cluster", "cluster.registration.cli.registered") // TODO add client placeholder with session
+        //TODO add disconnect
 
         return RegisterCliResponse.newBuilder()
             .setAccepted(true)

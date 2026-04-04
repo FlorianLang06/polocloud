@@ -23,7 +23,7 @@ class RegistrationServer(
         .service(RegistrationService(registrationManager, nodeRepository, keyPair))
         .interceptedService(
             cliRegistrationService,
-            IpWhitelistInterceptor(clusterConfig.cliAccess.allowedIps)
+            IpWhitelistInterceptor(clusterConfig.cliAccess)
         )
         .build()
 

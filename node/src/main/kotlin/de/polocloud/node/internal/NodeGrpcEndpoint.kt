@@ -37,7 +37,7 @@ class NodeGrpcEndpoint(
         )
         .interceptedService(
             cliRegistrationService,
-            IpWhitelistInterceptor(clusterConfig.cliAccess.allowedIps)
+            IpWhitelistInterceptor(clusterConfig.cliAccess)
         )
         .build()
 

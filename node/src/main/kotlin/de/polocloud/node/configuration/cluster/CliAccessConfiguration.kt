@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class CliAccessConfiguration(
-    val enabled: Boolean = true, //TODO implement
+    val enabled: Boolean = true,
     val allowedIps: List<String> = listOf("127.0.0.1"),
     val registrationToken: String = "test" //TODO generate or something like this
 )
