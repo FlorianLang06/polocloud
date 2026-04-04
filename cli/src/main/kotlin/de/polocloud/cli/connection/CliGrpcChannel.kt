@@ -1,6 +1,7 @@
 package de.polocloud.cli.connection
 
 import de.polocloud.common.Address
+import de.polocloud.i18n.api.TranslationService
 import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
@@ -26,7 +27,7 @@ class CliGrpcChannel(
     private var channel: ManagedChannel? = null
 
     val isConnected: Boolean
-        get() = channel != null && !channel!!.isShutdown && !channel!!.isTerminated
+        get() = channel?.let { !it.isShutdown && !it.isTerminated } == true
 
     /**
      * Opens the mTLS channel to [address].
@@ -37,7 +38,11 @@ class CliGrpcChannel(
             "Cannot connect: CLI is not registered. Call CliRegistrationClient.register() first."
         }
 
-        logger.info("Opening mTLS channel to cluster at $address")
+        logger.info(TranslationService.tr(
+            "cli",
+            "cli.connect.channel.open",
+            "address" to address.toString()
+        ))
 
         val sslContext = GrpcSslContexts.forClient()
             .keyManager(
@@ -54,7 +59,7 @@ class CliGrpcChannel(
             .sslContext(sslContext)
             .build()
 
-        logger.info("mTLS channel established")
+        logger.info(TranslationService.tr("cli", "cli.connect.channel.established"))
     }
 
     /**
@@ -72,6 +77,6 @@ class CliGrpcChannel(
     fun close() {
         channel?.shutdown()
         channel = null
-        logger.info("mTLS channel closed")
+        logger.info(TranslationService.tr("cli", "cli.connect.channel.closed"))
     }
 }

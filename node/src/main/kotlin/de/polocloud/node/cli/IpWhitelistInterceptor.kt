@@ -1,5 +1,7 @@
 package de.polocloud.node.cli
 
+import de.polocloud.common.i18n.trWarn
+import de.polocloud.i18n.api.TranslationService
 import io.grpc.Metadata
 import io.grpc.ServerCall
 import io.grpc.ServerCallHandler
@@ -32,9 +34,9 @@ class IpWhitelistInterceptor(
         val remote = call.attributes.get(io.grpc.Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
 
         if (remote !is InetSocketAddress) {
-            logger.warn("CLI connection rejected: unable to determine remote IP")
+            logger.trWarn("cluster", "cluster.cli.ip.unknown")
             call.close(
-                Status.PERMISSION_DENIED.withDescription("Unable to determine remote IP"),
+                Status.PERMISSION_DENIED.withDescription(TranslationService.tr("cluster", "cluster.cli.ip.unknown")),
                 Metadata()
             )
             return object : ServerCall.Listener<T>() {}
@@ -43,9 +45,13 @@ class IpWhitelistInterceptor(
         val ip = remote.address.hostAddress
 
         if (!isAllowed(ip)) {
-            logger.warn("CLI connection rejected: IP $ip is not whitelisted")
+            logger.trWarn(
+                "node",
+                "cluster.cli.ip.notAllowed.log",
+                "ip" to ip
+            )
             call.close(
-                Status.PERMISSION_DENIED.withDescription("IP not whitelisted"),
+                Status.PERMISSION_DENIED.withDescription(TranslationService.tr("cluster", "cluster.cli.ip.notAllowed")),
                 Metadata()
             )
             return object : ServerCall.Listener<T>() {}

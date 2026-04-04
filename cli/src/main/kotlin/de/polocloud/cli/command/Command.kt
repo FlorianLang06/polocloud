@@ -51,7 +51,7 @@ abstract class Command(
      * @param arguments The expected argument sequence for this syntax.
      */
     fun syntax(execution: CommandExecution, vararg arguments: TerminalArgument<*>) {
-        syntaxes.add(CommandSyntax(execution, description = null, arguments.toMutableList()))
+        syntaxes.add(CommandSyntax(execution, descriptionKey = null, arguments.toMutableList()))
     }
 
     /**
@@ -61,8 +61,8 @@ abstract class Command(
      * @param description A short description for this specific syntax variant.
      * @param arguments The expected argument sequence for this syntax.
      */
-    fun syntax(execution: CommandExecution, description: String, vararg arguments: TerminalArgument<*>) {
-        syntaxes.add(CommandSyntax(execution, description, arguments.toMutableList()))
+    fun syntax(execution: CommandExecution, descriptionKey: String, vararg arguments: TerminalArgument<*>) {
+        syntaxes.add(CommandSyntax(execution, descriptionKey, arguments.toMutableList()))
     }
 
     /**

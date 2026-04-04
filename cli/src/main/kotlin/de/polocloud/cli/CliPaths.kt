@@ -22,12 +22,17 @@ object CliPaths {
     /**
      * Logs directory for CLI output files.
      */
-    val LOGS_DIR: File = ROOT_DIR.resolve("logs")
+    val LOGS_DIR: File = ROOT_DIR.resolve("logs") //TODO
 
     /**
      * Configuration file path.
      */
     val CONFIG_FILE: File = ROOT_DIR.resolve("polocloud-cli.json")
+
+    /**
+     * Installer Configuration file path.
+     */
+    val INSTALLER_FILE: File = ROOT_DIR.resolve(".installer/config.json")
 
     init {
         // Ensure required directories exist

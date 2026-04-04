@@ -3,6 +3,7 @@ package de.polocloud.node.cli
 import de.polocloud.common.certificate.certToPem
 import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.i18n.trInfo
+import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.security.CertificateAuthority
 import de.polocloud.node.security.CertificateDataStorage
@@ -43,21 +44,30 @@ class CliRegistrationService(
     }
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {
-        logger.trInfo("cli", "cli.registration.starting")
+        logger.trInfo("cluster", "cluster.registration.cli.starting") // TODO add client placeholder with session
+
+        if (!config.cliAccess.enabled) {
+            logger.trInfo("cluster", "cli.access.disabled")
+            return denyResponse(TranslationService.tr("cluster","cli.access.disabled"))
+        }
 
         if (request.token != config.cliAccess.registrationToken) {
-            logger.trInfo("cli", "cli.registration.token.invalid")
-            return denyResponse("cli.registration.token.invalid")
+            logger.trInfo("cluster", "cluster.registration.cli.token.invalid")
+            return denyResponse(TranslationService.tr("cluster", "cluster.registration.cli.token.invalid")) // TODO add client placeholder with session
         }
 
         val csr = runCatching { parseCsr(request.csrPem) }.getOrElse {
-            logger.trInfo("cli", "cli.registration.csr.invalid")
-            return denyResponse("cli.registration.csr.invalid")
+            logger.trInfo("cluster", "cli.registration.csr.invalid")
+            return denyResponse(TranslationService.tr("cluster","cli.registration.csr.invalid"))
         }
 
-        val signedCert = cliCa.signCsr(csr, subjectAltNames = listOf("cli.polocloud.local"))
+        val signedCert = cliCa.signCsr(
+            csr,
+            subjectAltNames = listOf("cli.polocloud.local")
+        )
 
-        logger.trInfo("cli", "cli.registration.success")
+        logger.trInfo("cluster", "cluster.registration.cli.registered") // TODO add client placeholder with session
+
         return RegisterCliResponse.newBuilder()
             .setAccepted(true)
             .setCertificatePem(certToPem(signedCert))

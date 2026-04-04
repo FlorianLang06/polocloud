@@ -1,5 +1,7 @@
 package de.polocloud.cli
 
+import de.polocloud.cli.CliPaths.CONFIG_FILE
+import de.polocloud.cli.CliPaths.INSTALLER_FILE
 import de.polocloud.cli.configuration.CliConfiguration
 import de.polocloud.cli.configuration.InstallerConfig
 import de.polocloud.cli.connection.CliConnectionManager
@@ -11,7 +13,6 @@ import de.polocloud.common.configuration.ConfigurationManager
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.model.Language
-import java.io.File
 
 /**
  * Application-wide logger instance, initialized once at startup.
@@ -31,6 +32,11 @@ object Cli : Closeable {
     val terminal: CliTerminal = CliTerminal(connectionManager)
 
     init {
+        TranslationService.init()
+        TranslationService.defaultLanguage(config.locale)
+        TranslationService.preloadAsync("errors")
+        TranslationService.preloadAsync("cli")
+
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             logger.fatal("Uncaught exception in thread '${thread.name}'", throwable)
         }
@@ -46,13 +52,10 @@ object Cli : Closeable {
     fun start() {
         this.terminal.clearScreen()
 
-        TranslationService.init()
-        TranslationService.defaultLanguage(config.locale)
-        TranslationService.preloadAsync("cli")
-
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
 
         this.terminal.readingThread.start()
+        //TODO if certs exist automaticlly connect, and if they exists we dont need a token!?
 
         logger.info(TranslationService.tr("cli", "cli.start.success"))
     }
@@ -61,7 +64,6 @@ object Cli : Closeable {
      * Stops the CLI application and shuts down the terminal.
      */
     override fun close(mode: ShutdownMode) {
-
         this.terminal.shutdown()
     }
 
@@ -82,7 +84,7 @@ object Cli : Closeable {
      * @return the resolved {@link CliConfiguration}, never {@code null}
      */
     private fun loadConfiguration(): CliConfiguration {
-        val path = File("polocloud-cli.json").toPath()
+        val path = CONFIG_FILE.toPath()
 
         val holder = ConfigurationManager
             .load<CliConfiguration>()
@@ -108,7 +110,7 @@ object Cli : Closeable {
      * This method is only relevant when no persistent CLI configuration exists yet.
      */
     private fun resolveInitialConfiguration(): CliConfiguration {
-        val installerPath = File(".installer/config.json").toPath()
+        val installerPath = INSTALLER_FILE.toPath()
         val installer = ConfigurationManager.read(installerPath,InstallerConfig.serializer())
 
         return installer?.let {

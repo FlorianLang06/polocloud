@@ -1,8 +1,11 @@
 package de.polocloud.cli.connection
 
+import de.polocloud.cli.error.CliError
 import de.polocloud.common.Address
+import de.polocloud.common.error.extensions.report
 import de.polocloud.common.generator.CertificateSigningRequestGenerator
 import de.polocloud.common.security.toPem
+import de.polocloud.i18n.api.TranslationService
 import de.polocloud.proto.CliRegistrationServiceGrpcKt
 import de.polocloud.proto.RegisterCliRequest
 import io.grpc.ManagedChannel
@@ -29,14 +32,16 @@ class CliRegistrationClient(
 
     /**
      * Connects to [address], registers with [token], and persists received certificates.
-     *
-     * @throws CliRegistrationException if the cluster rejects the registration
-     * @throws io.grpc.StatusException on gRPC transport errors
      */
     suspend fun register(address: Address, token: String) {
-        logger.info("Starting CLI registration with cluster at $address")
+        logger.info(TranslationService.tr(
+            "cli",
+            "cli.registration.start",
+            "address" to address.toString()
+        ))
 
         val channel = openPlaintextChannel(address)
+
         try {
             val stub = CliRegistrationServiceGrpcKt.CliRegistrationServiceCoroutineStub(channel)
 
@@ -45,23 +50,31 @@ class CliRegistrationClient(
                 UUID.randomUUID()
             ).generate()
 
-            val response = stub.registerCli(
-                RegisterCliRequest.newBuilder()
-                    .setToken(token)
-                    .setCsrPem(csr.toPem())
-                    .build()
-            )
+            val response = runCatching {
+                stub.registerCli(
+                    RegisterCliRequest.newBuilder()
+                        .setToken(token)
+                        .setCsrPem(csr.toPem())
+                        .build()
+                )
+            }.getOrElse { ex ->
+                CliError.RegistrationFailed(
+                    address = address.toString(),
+                    causeMsg = ex.message ?: "unknown"
+                ).report()
+                return
+            }
 
             if (!response.accepted) {
-                throw CliRegistrationException(
-                    "Cluster rejected CLI registration: ${response.message}"
-                )
+                CliError.RegistrationDenied(response.message).report()
+                return
             }
 
             certificateStorage.saveCertificate(response.certificatePem)
             certificateStorage.saveCaCertificate(response.caCertificatePem)
 
-            logger.info("CLI registration successful — certificates stored")
+            logger.info(TranslationService.tr("cli", "cli.registration.success"))
+
         } finally {
             channel.shutdown()
         }
@@ -73,6 +86,3 @@ class CliRegistrationClient(
             .usePlaintext()
             .build()
 }
-
-/** Thrown when the cluster explicitly rejects a CLI registration request. */
-class CliRegistrationException(message: String) : Exception(message)

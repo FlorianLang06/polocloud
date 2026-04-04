@@ -2,6 +2,7 @@ package de.polocloud.cli.command
 
 import de.polocloud.cli.command.arguments.TerminalArgument
 import de.polocloud.cli.command.arguments.type.KeywordArgument
+import de.polocloud.i18n.api.TranslationService
 
 /**
  * Represents a specific argument combination (syntax variant) for a [Command].
@@ -16,7 +17,7 @@ import de.polocloud.cli.command.arguments.type.KeywordArgument
  */
 class CommandSyntax(
     val execution: CommandExecution,
-    val description: String?,
+    val descriptionKey: String?,
     val arguments: MutableList<TerminalArgument<*>>
 ) {
 
@@ -33,6 +34,6 @@ class CommandSyntax(
             " ", arguments.stream()
                 .map { if (it is KeywordArgument) "&f" + it.key else "&8<&f" + it.key + "&8>" }
                 .toList()
-        ) + (if (description == null) "" else " &8- &7$description")
+        ) + (if (descriptionKey == null) "" else " &8- &7${TranslationService.tr("cli", descriptionKey)}")
     }
 }

@@ -7,72 +7,77 @@ import de.polocloud.cli.command.arguments.type.string.TextArgument
 import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.logger
 import de.polocloud.common.Address
+import de.polocloud.i18n.api.TranslationService
 import kotlinx.coroutines.runBlocking
 
-/**
- * Connects the CLI to a cluster.
- *
- * Syntaxes:
- *   connect <host> <clusterPort> <registrationPort> <token>
- *       — registers on the plaintext registration port, then connects via mTLS on the cluster port
- *   connect disconnect
- *       — closes the active mTLS connection
- *
- * Example:
- *   connect 127.0.0.1 4239 4240 my-token
- */
 class ConnectCommand(
     private val connectionManager: CliConnectionManager
 ) : Command("connect", "cli.command.impl.connect.description") {
 
-    private val hostArg             = TextArgument("host")
-    private val clusterPortArg      = IntArgument("clusterPort",      minValue = 1, maxValue = 65535)
-    private val registrationPortArg = IntArgument("registrationPort", minValue = 1, maxValue = 65535)
-    private val tokenArg            = TextArgument("token")
+    private val hostArg = TextArgument("host")
+    private val clusterPortArg = IntArgument("clusterPort", 1, 65535)
+    private val registrationPortArg = IntArgument("registrationPort", 1, 65535)
+    private val tokenArg = TextArgument("token")
 
     init {
         syntax(
             { ctx ->
-                val host             = ctx.arg(hostArg)
-                val clusterPort      = ctx.arg(clusterPortArg)
+                val host = ctx.arg(hostArg)
+                val clusterPort = ctx.arg(clusterPortArg)
                 val registrationPort = ctx.arg(registrationPortArg)
-                val token            = ctx.arg(tokenArg)
+                val token = ctx.arg(tokenArg)
 
                 if (connectionManager.isConnected) {
-                    logger.info("&cAlready connected. Run &fconnect disconnect &cfirst.")
+                    logger.info(TranslationService.tr("cli", "cli.connect.alreadyConnected"))
                     return@syntax
                 }
 
-                logger.info("&7Connecting to cluster at &f$host&7 (cluster: &f$clusterPort&7, registration: &f$registrationPort&7)...")
+                logger.info(TranslationService.tr(
+                    "cli",
+                    "cli.connect.connecting",
+                    "host" to host,
+                    "clusterPort" to clusterPort,
+                    "registrationPort" to registrationPort
+                ))
 
                 runBlocking {
                     runCatching {
                         connectionManager.connect(
-                            clusterAddress      = Address(host, clusterPort),
+                            clusterAddress = Address(host, clusterPort),
                             registrationAddress = Address(host, registrationPort),
-                            token               = token
+                            token = token
                         )
                     }.onSuccess {
-                        logger.info("&aSuccessfully connected to cluster at &f$host:$clusterPort&a.")
+                        logger.info(TranslationService.tr(
+                            "cli",
+                            "cli.connect.success",
+                            "host" to host,
+                            "port" to clusterPort
+                        ))
                     }.onFailure { ex ->
-                        logger.info("&cFailed to connect: &f${ex.message}")
+                        logger.info(TranslationService.tr(
+                            "cli",
+                            "cli.connect.failed",
+                            "message" to (ex.message ?: "unknown")
+                        ))
                     }
                 }
             },
-            "Connect to a cluster node",
+            "cli.command.impl.syntax.connect.description",
             hostArg, clusterPortArg, registrationPortArg, tokenArg
         )
 
         syntax(
             {
                 if (!connectionManager.isConnected) {
-                    logger.info("&cNot connected to any cluster.")
+                    logger.info(TranslationService.tr("cli", "cli.connect.notConnected"))
                     return@syntax
                 }
+
                 connectionManager.disconnect()
-                logger.info("&aDisconnected from cluster.")
+                logger.info(TranslationService.tr("cli", "cli.connect.disconnected"))
             },
-            "Disconnect from the current cluster",
+            "cli.command.impl.syntax.disconnect.description",
             KeywordArgument("disconnect")
         )
     }

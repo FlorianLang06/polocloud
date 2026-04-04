@@ -1,6 +1,7 @@
 package de.polocloud.cli.connection
 
 import de.polocloud.common.Address
+import de.polocloud.i18n.api.TranslationService
 import io.grpc.ManagedChannel
 import org.slf4j.LoggerFactory
 
@@ -41,27 +42,43 @@ class CliConnectionManager(
      *
      * No-op if already connected.
      */
-    override suspend fun connect(clusterAddress: Address, registrationAddress: Address, token: String) {
+    override suspend fun connect(
+        clusterAddress: Address,
+        registrationAddress: Address,
+        token: String
+    ) {
         if (isConnected) {
-            logger.debug("Already connected, ignoring connect() call")
+            logger.debug("connect() ignored — already connected")
             return
         }
 
         if (!certificateStorage.isRegistered()) {
-            logger.info("No certificates found — starting registration on $registrationAddress")
+            logger.info(TranslationService.tr(
+                "cli",
+                "cli.connect.registration.start",
+                "address" to registrationAddress.toString()
+            ))
+
             registrationClient.register(registrationAddress, token)
         } else {
-            logger.info("Certificates found — skipping registration")
+            logger.info(TranslationService.tr("cli", "cli.connect.registration.skip"))
         }
+
+        logger.info(TranslationService.tr(
+            "cli",
+            "cli.connect.channel.open",
+            "address" to clusterAddress.toString()
+        ))
 
         grpcChannel.connect(clusterAddress)
     }
+
 
     override fun channel(): ManagedChannel = grpcChannel.channel()
 
     override fun disconnect() {
         grpcChannel.close()
-        logger.info("Disconnected from cluster")
+        logger.info(TranslationService.tr("cli", "cli.connect.disconnected"))
     }
 
     /**
@@ -71,6 +88,6 @@ class CliConnectionManager(
     fun forceReregistration() {
         disconnect()
         certificateStorage.clearCertificates()
-        logger.info("Certificates cleared — will re-register on next connect()")
+        logger.info(TranslationService.tr("cli", "cli.connect.reregistration.forced"))
     }
 }
