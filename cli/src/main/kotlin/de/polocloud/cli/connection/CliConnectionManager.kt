@@ -2,8 +2,13 @@ package de.polocloud.cli.connection
 
 import de.polocloud.common.Address
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.proto.CliRegistrationServiceGrpcKt
+import de.polocloud.proto.DisconnectRequest
+import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import java.util.concurrent.TimeUnit
 
 /**
  * Orchestrates the full CLI → cluster connection lifecycle.
@@ -77,6 +82,28 @@ class CliConnectionManager(
     override fun channel(): ManagedChannel = grpcChannel.channel()
 
     override fun disconnect() {
+        if (!grpcChannel.isConnected) {
+            grpcChannel.close()
+            return
+        }
+
+        try {
+            val state = channel().getState(false)
+
+            if (state == ConnectivityState.READY) {
+                val stub = CliRegistrationServiceGrpcKt
+                    .CliRegistrationServiceCoroutineStub(channel())
+
+                runBlocking {
+                    stub.withDeadlineAfter(2, TimeUnit.SECONDS)
+                        .disconnectCli(DisconnectRequest.newBuilder().build())
+                }
+            }
+
+        } catch (_: Exception) {
+
+        }
+
         grpcChannel.close()
         logger.info(TranslationService.tr("cli", "cli.connect.disconnected"))
     }

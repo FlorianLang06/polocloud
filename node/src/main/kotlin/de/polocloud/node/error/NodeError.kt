@@ -43,4 +43,13 @@ sealed class NodeError {
         context      = ErrorContext.from("NodeHeartBeatService.startScheduler", "nodeId" to nodeId),
     )
 
+    @Serializable
+    data class SessionCleanupFailed(val reason: String) : BasePoloError(
+        code = NodeErrorCodes.SESSION_CLEANUP_FAILED,
+        key = "node.session.cleanup_failed",
+        placeholders = mapOf("reason" to reason),
+        severity = ErrorSeverity.WARNING,
+        context = ErrorContext.from("NodeGrpcEndpoint.cleanup"),
+    )
+
 }

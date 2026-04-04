@@ -75,7 +75,6 @@ class ConnectCommand(
                 }
 
                 connectionManager.disconnect()
-                logger.info(TranslationService.tr("cli", "cli.connect.disconnected"))
             },
             "cli.command.impl.syntax.disconnect.description",
             KeywordArgument("disconnect")
