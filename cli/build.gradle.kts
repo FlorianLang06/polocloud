@@ -24,6 +24,7 @@ dependencies {
     polocloudRuntime(libs.kotlin.reflect)
     polocloudRuntime(libs.bcprov)
     polocloudRuntime(libs.bcpkix)
+    polocloudRuntime(libs.bctls)
 
     polocloudRuntime(libs.grpc.api)
     polocloudRuntime(libs.grpc.stub)

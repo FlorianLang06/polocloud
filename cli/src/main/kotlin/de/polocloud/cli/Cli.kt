@@ -2,11 +2,10 @@ package de.polocloud.cli
 
 import de.polocloud.cli.configuration.CliConfiguration
 import de.polocloud.cli.configuration.InstallerConfig
-import de.polocloud.cli.connection.CliCertificateStorage
-import de.polocloud.cli.connection.ClusterConnection
+import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.logging.CliLogger
 import de.polocloud.cli.terminal.CliTerminal
-import de.polocloud.common.Address
+import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.configuration.ConfigurationManager
 import de.polocloud.common.version.PolocloudVersion
@@ -25,12 +24,11 @@ var logger = CliLogger.initLogging(PolocloudVersion.CURRENT.isDebugEnabled)
  * Responsible for initializing the terminal, loading translations,
  * starting the command reading loop, and handling graceful shutdown.
  */
-object Cli {
+object Cli : Closeable {
     val config: CliConfiguration = loadConfiguration()
-    val terminal: CliTerminal = CliTerminal()
-    val certificateStorage = CliCertificateStorage()
-    var clusterConnection: ClusterConnection? = null
-        private set
+
+    val connectionManager = CliConnectionManager()
+    val terminal: CliTerminal = CliTerminal(connectionManager)
 
     init {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -56,33 +54,14 @@ object Cli {
 
         this.terminal.readingThread.start()
 
-        if (certificateStorage.isRegistered() && config.nodeAddress != null) {
-            connectToCluster(config.nodeAddress)
-        } else {
-            logger.info(TranslationService.tr("cli", "cli.cluster.not_connected"))
-        }
-
         logger.info(TranslationService.tr("cli", "cli.start.success"))
-    }
-
-    fun connectToCluster(address: Address) {
-        val conn = ClusterConnection(address, certificateStorage)
-        runCatching { conn.connect() }
-            .onSuccess {
-                clusterConnection = conn
-                terminal.updatePrompt("&bpolocloud&8@&a${address.hostname} &8» &7")
-                logger.info("Connected to cluster at ${address.asString()}")
-            }
-            .onFailure {
-                logger.error("Failed to connect to cluster: ${it.message}")
-            }
     }
 
     /**
      * Stops the CLI application and shuts down the terminal.
      */
-    fun stop() {
-        clusterConnection?.close(ShutdownMode.GRACEFUL)
+    override fun close(mode: ShutdownMode) {
+
         this.terminal.shutdown()
     }
 

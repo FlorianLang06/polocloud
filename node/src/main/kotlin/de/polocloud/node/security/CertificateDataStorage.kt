@@ -6,25 +6,34 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.openssl.PEMKeyPair
+import org.bouncycastle.openssl.PEMParser
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import java.io.File
+import java.io.FileReader
 import java.io.FileWriter
 import java.math.BigInteger
 import java.nio.file.Files
 import java.security.*
 import java.security.cert.X509Certificate
-import java.security.spec.PKCS8EncodedKeySpec
-import java.security.spec.X509EncodedKeySpec
 import java.util.*
 
 class CertificateDataStorage {
 
-    private val storagePath = rootDir().resolve(".cache")
-    private val privateKeyFile = storagePath.resolve("private-key.pem").toFile()
-    private val publicKeyFile = storagePath.resolve("public-key.pem").toFile()
-    private val certificateFile = storagePath.resolve("certificate.pem").toFile()
-    private val caCertificateFile = storagePath.resolve("ca.pem").toFile()
+    private val basePath = rootDir().resolve(".cache")
+    private val clusterPath = basePath.resolve("cluster")
+    private val cliPath = basePath.resolve("cli")
+
+    private val privateKeyFile = clusterPath.resolve("private-key.pem").toFile()
+    private val publicKeyFile = clusterPath.resolve("public-key.pem").toFile()
+    private val certificateFile = clusterPath.resolve("certificate.pem").toFile()
+    private val caCertificateFile = clusterPath.resolve("ca.pem").toFile()
+
+    private val cliCaCertificateFile = cliPath.resolve("ca.pem").toFile()
+    private val cliCaPrivateKeyFile = cliPath.resolve("ca-private-key.pem").toFile()
+    private val cliCaPublicKeyFile = cliPath.resolve("ca-public-key.pem").toFile()
 
     val keyPair: KeyPair
 
@@ -32,20 +41,26 @@ class CertificateDataStorage {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(BouncyCastleProvider())
         }
-        if (!Files.exists(storagePath)) {
-            Files.createDirectories(storagePath)
-        }
+
+        Files.createDirectories(clusterPath)
+        Files.createDirectories(cliPath)
 
         keyPair = loadOrCreateKeyPair()
 
         // 🔥 Bootstrap Root of Trust
-        if (!isRegistered()) {
-            bootstrapRootOfTrust()
+        if (!isNodeRegistered()) {
+            bootstrapNodeRootOfTrust()
+        }
+
+        if (!isCliCaPresent()) {
+            bootstrapCliCa()
         }
     }
 
-    fun isRegistered(): Boolean =
+    fun isNodeRegistered(): Boolean =
         certificateFile.exists() && caCertificateFile.exists()
+
+    fun isCliCaPresent(): Boolean = cliCaCertificateFile.exists()
 
     fun saveCertificate(certPem: String) {
         certificateFile.writeText(certPem)
@@ -58,43 +73,64 @@ class CertificateDataStorage {
     fun certificateFile(): File = certificateFile
     fun privateKeyFile(): File = privateKeyFile
     fun caCertificateFile(): File = caCertificateFile
+    fun cliCaCertificateFile(): File = cliCaCertificateFile
 
-    private fun bootstrapRootOfTrust() {
-        // 1. CA KeyPair
+    fun loadCliCertificateAuthority(): CertificateAuthority {
+        val caKeyPair = if (cliCaPrivateKeyFile.exists() && cliCaPublicKeyFile.exists()) {
+            loadKeyPairFromFiles(cliCaPrivateKeyFile, cliCaPublicKeyFile)
+        } else {
+            val kp = generateKeyPair()
+            writeKeyPair(kp, cliCaPrivateKeyFile, cliCaPublicKeyFile)
+            kp
+        }
+
+        val caCert = loadCertificateFromPem(cliCaCertificateFile)
+        return CertificateAuthority(caKeyPair, caCert)
+    }
+
+    private fun bootstrapNodeRootOfTrust() {
         val caKeyPair = generateKeyPair()
 
-        // 2. Self-signed CA Cert
         val caCert = generateCertificate(
             subject = "CN=Polocloud-Root-CA",
             keyPair = caKeyPair,
             issuerKeyPair = caKeyPair,
-            issuer = "CN=Polocloud-Root-CA",
-            isCa = true
+            issuer = "CN=Polocloud-Root-CA"
         )
 
-        // 3. Node Cert (signed by CA)
         val nodeCert = generateCertificate(
             subject = "CN=Node",
             keyPair = keyPair,
             issuerKeyPair = caKeyPair,
-            issuer = "CN=Polocloud-Root-CA",
-            isCa = false
+            issuer = "CN=Polocloud-Root-CA"
         )
 
         writePem(caCertificateFile, caCert)
         writePem(certificateFile, nodeCert)
     }
 
+    private fun bootstrapCliCa() {
+        val caKeyPair = generateKeyPair()
+        writeKeyPair(caKeyPair, cliCaPrivateKeyFile, cliCaPublicKeyFile)
+
+        val caCert = generateCertificate(
+            subject       = "CN=Polocloud-CLI-CA",
+            keyPair       = caKeyPair,
+            issuerKeyPair = caKeyPair,
+            issuer        = "CN=Polocloud-CLI-CA"
+        )
+
+        writePem(cliCaCertificateFile, caCert)
+    }
+
     private fun generateCertificate(
         subject: String,
         keyPair: KeyPair,
         issuerKeyPair: KeyPair,
-        issuer: String,
-        isCa: Boolean
+        issuer: String
     ): X509Certificate {
-
-        val now = Date()
-        val until = Date(now.time + 3650L * 24 * 60 * 60 * 1000) // 10 Jahre
+        val now   = Date()
+        val until = Date(now.time + 3650L * 24 * 60 * 60 * 1000)
 
         val builder = JcaX509v3CertificateBuilder(
             X500Name(issuer),
@@ -105,9 +141,7 @@ class CertificateDataStorage {
             keyPair.public
         )
 
-        val signer = JcaContentSignerBuilder("SHA256WithRSA")
-            .build(issuerKeyPair.private)
-
+        val signer = JcaContentSignerBuilder("SHA256WithRSA").build(issuerKeyPair.private)
         val holder: X509CertificateHolder = builder.build(signer)
 
         return JcaX509CertificateConverter()
@@ -115,18 +149,42 @@ class CertificateDataStorage {
             .getCertificate(holder)
     }
 
-    private fun writePem(file: File, obj: Any) {
-        JcaPEMWriter(FileWriter(file)).use { it.writeObject(obj) }
+    private fun loadCertificateFromPem(file: File): X509Certificate {
+        PEMParser(FileReader(file)).use { parser ->
+            val obj = parser.readObject()
+            return JcaX509CertificateConverter()
+                .setProvider(BouncyCastleProvider.PROVIDER_NAME)
+                .getCertificate(obj as X509CertificateHolder)
+        }
     }
 
     private fun loadOrCreateKeyPair(): KeyPair {
         return if (privateKeyFile.exists() && publicKeyFile.exists()) {
-            loadKeyPair()
+            loadKeyPairFromFiles(privateKeyFile, publicKeyFile)
         } else {
-            val keyPair = generateKeyPair()
-            saveKeyPair(keyPair)
-            keyPair
+            val kp = generateKeyPair()
+            writeKeyPair(kp, privateKeyFile, publicKeyFile)
+            kp
         }
+    }
+
+    private fun loadKeyPairFromFiles(privateFile: File, publicFile: File): KeyPair {
+        val privateKey = PEMParser(FileReader(privateFile)).use { parser ->
+            when (val obj = parser.readObject()) {
+                is PEMKeyPair -> JcaPEMKeyConverter().setProvider("BC").getKeyPair(obj).private
+                else -> JcaPEMKeyConverter().setProvider("BC").getPrivateKey(
+                    org.bouncycastle.asn1.pkcs.PrivateKeyInfo.getInstance(obj)
+                )
+            }
+        }
+
+        val publicKey = PEMParser(FileReader(publicFile)).use { parser ->
+            JcaPEMKeyConverter().setProvider("BC").getPublicKey(
+                org.bouncycastle.asn1.x509.SubjectPublicKeyInfo.getInstance(parser.readObject())
+            )
+        }
+
+        return KeyPair(publicKey, privateKey)
     }
 
     private fun generateKeyPair(): KeyPair {
@@ -135,19 +193,12 @@ class CertificateDataStorage {
         return generator.generateKeyPair()
     }
 
-    private fun saveKeyPair(keyPair: KeyPair) {
-        JcaPEMWriter(FileWriter(privateKeyFile)).use { it.writeObject(keyPair.private) }
-        JcaPEMWriter(FileWriter(publicKeyFile)).use { it.writeObject(keyPair.public) }
+    private fun writeKeyPair(keyPair: KeyPair, privateFile: File, publicFile: File) {
+        writePem(privateFile, keyPair.private)
+        writePem(publicFile, keyPair.public)
     }
 
-    private fun loadKeyPair(): KeyPair {
-        val privateSpec = PKCS8EncodedKeySpec(privateKeyFile.readBytes())
-        val keyFactory = KeyFactory.getInstance("RSA")
-        val privateKey: PrivateKey = keyFactory.generatePrivate(privateSpec)
-
-        val publicSpec = X509EncodedKeySpec(publicKeyFile.readBytes())
-        val publicKey: PublicKey = keyFactory.generatePublic(publicSpec)
-
-        return KeyPair(publicKey, privateKey)
+    private fun writePem(file: File, obj: Any) {
+        JcaPEMWriter(FileWriter(file)).use { it.writeObject(obj) }
     }
 }

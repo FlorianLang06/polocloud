@@ -1,48 +1,79 @@
 package de.polocloud.cli.command.impl
 
-import de.polocloud.cli.Cli
 import de.polocloud.cli.command.Command
+import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
 import de.polocloud.cli.command.arguments.type.string.TextArgument
-import de.polocloud.cli.connection.ClusterConnection
+import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.logger
 import de.polocloud.common.Address
-import de.polocloud.common.error.extensions.getOrReport
+import kotlinx.coroutines.runBlocking
 
-class ConnectCommand : Command("connect", "cli.command.impl.connect.description") {
+/**
+ * Connects the CLI to a cluster.
+ *
+ * Syntaxes:
+ *   connect <host> <clusterPort> <registrationPort> <token>
+ *       — registers on the plaintext registration port, then connects via mTLS on the cluster port
+ *   connect disconnect
+ *       — closes the active mTLS connection
+ *
+ * Example:
+ *   connect 127.0.0.1 4239 4240 my-token
+ */
+class ConnectCommand(
+    private val connectionManager: CliConnectionManager
+) : Command("connect", "cli.command.impl.connect.description") {
 
-    private val hostArg = TextArgument("host")
-    private val portArg = IntArgument("port", minValue = 1, maxValue = 65535)
-    private val tokenArg = TextArgument("token")
+    private val hostArg             = TextArgument("host")
+    private val clusterPortArg      = IntArgument("clusterPort",      minValue = 1, maxValue = 65535)
+    private val registrationPortArg = IntArgument("registrationPort", minValue = 1, maxValue = 65535)
+    private val tokenArg            = TextArgument("token")
 
     init {
-        // connect <host> <port> <token>  — erstmalige Registrierung
         syntax(
             { ctx ->
-                val address = Address(ctx.arg(hostArg), ctx.arg(portArg))
-                val conn = ClusterConnection(address, Cli.certificateStorage)
+                val host             = ctx.arg(hostArg)
+                val clusterPort      = ctx.arg(clusterPortArg)
+                val registrationPort = ctx.arg(registrationPortArg)
+                val token            = ctx.arg(tokenArg)
 
-                val result = conn.register(ctx.arg(tokenArg))
+                if (connectionManager.isConnected) {
+                    logger.info("&cAlready connected. Run &fconnect disconnect &cfirst.")
+                    return@syntax
+                }
 
-                if (result.isSuccess) {
-                    logger.info("Registration successful — connecting...")
-                    Cli.connectToCluster(address)
-                } else {
-                    result.getOrReport()
+                logger.info("&7Connecting to cluster at &f$host&7 (cluster: &f$clusterPort&7, registration: &f$registrationPort&7)...")
+
+                runBlocking {
+                    runCatching {
+                        connectionManager.connect(
+                            clusterAddress      = Address(host, clusterPort),
+                            registrationAddress = Address(host, registrationPort),
+                            token               = token
+                        )
+                    }.onSuccess {
+                        logger.info("&aSuccessfully connected to cluster at &f$host:$clusterPort&a.")
+                    }.onFailure { ex ->
+                        logger.info("&cFailed to connect: &f${ex.message}")
+                    }
                 }
             },
-            "Register and connect to a cluster node",
-            hostArg, portArg, tokenArg
+            "Connect to a cluster node",
+            hostArg, clusterPortArg, registrationPortArg, tokenArg
         )
 
-        // connect <host> <port>  — mit vorhandenem Cert
         syntax(
-            { ctx ->
-                val address = Address(ctx.arg(hostArg), ctx.arg(portArg))
-                Cli.connectToCluster(address)
+            {
+                if (!connectionManager.isConnected) {
+                    logger.info("&cNot connected to any cluster.")
+                    return@syntax
+                }
+                connectionManager.disconnect()
+                logger.info("&aDisconnected from cluster.")
             },
-            "Connect using existing certificate",
-            hostArg, portArg
+            "Disconnect from the current cluster",
+            KeywordArgument("disconnect")
         )
     }
 }

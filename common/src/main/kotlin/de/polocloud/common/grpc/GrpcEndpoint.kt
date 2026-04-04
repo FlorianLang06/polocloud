@@ -10,8 +10,10 @@ import de.polocloud.common.i18n.trDebug
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.i18n.trWarn
 import io.grpc.BindableService
-import io.grpc.Grpc
 import io.grpc.Server
+import io.grpc.ServerInterceptor
+import io.grpc.ServerInterceptors
+import io.grpc.ServerServiceDefinition
 import io.grpc.health.v1.HealthCheckResponse
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
@@ -19,7 +21,9 @@ import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import io.grpc.protobuf.services.HealthStatusManager
 import org.slf4j.LoggerFactory
 import java.io.File
-import java.nio.file.Files
+import java.io.FileInputStream
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -35,7 +39,8 @@ import java.util.concurrent.atomic.AtomicReference
 class GrpcEndpoint private constructor(
     private val address: Address,
     private val services: List<BindableService>,
-    private val caCertFile: File?,
+    private val interceptedServices: List<ServerServiceDefinition>,
+    private val caCertFiles: List<File>,
     private val certFile: File?,
     private val keyFile: File?,
     private val clientAuth: ClientAuth,
@@ -67,14 +72,22 @@ class GrpcEndpoint private constructor(
 
         if (certFile != null && keyFile != null) {
             val sslContext = runCatching {
-                val sslBuilder = GrpcSslContexts
-                    .forServer(certFile, keyFile)
-
-                if (caCertFile != null) {
-                    sslBuilder.trustManager(caCertFile)
-                }
-
-                sslBuilder
+                GrpcSslContexts.forServer(certFile, keyFile)
+                    .apply {
+                        if (caCertFiles.isNotEmpty()) {
+                            // Parse each CA File into X509Certificate objects and pass as Iterable.
+                            // This is the only trustManager overload that accepts multiple entries.
+                            // Clients presenting a cert signed by ANY of these CAs will be accepted.
+                            val cf = CertificateFactory.getInstance("X.509")
+                            val certs: List<X509Certificate> = caCertFiles.flatMap { file ->
+                                FileInputStream(file).use { stream ->
+                                    @Suppress("UNCHECKED_CAST")
+                                    cf.generateCertificates(stream) as Collection<X509Certificate>
+                                }
+                            }
+                            trustManager(certs)
+                        }
+                    }
                     .clientAuth(clientAuth)
                     .build()
             }.getOrElse { e ->
@@ -89,6 +102,8 @@ class GrpcEndpoint private constructor(
         }
 
         services.forEach(builder::addService)
+        interceptedServices.forEach(builder::addService)
+
         val server = runCatching {
             builder.build().apply {
                 val servingStatus = HealthCheckResponse.ServingStatus.SERVING
@@ -167,8 +182,9 @@ class GrpcEndpoint private constructor(
      */
     class Builder(private val address: Address) {
 
+        private val interceptedServices = mutableListOf<ServerServiceDefinition>()
         private val services = mutableListOf<BindableService>()
-        private var caCertFile: File? = null
+        private val caCertFiles = mutableListOf<File>()
         private var certFile: File? = null
         private var keyFile: File? = null
         private var clientAuth: ClientAuth = ClientAuth.NONE
@@ -180,18 +196,25 @@ class GrpcEndpoint private constructor(
         /** Registers multiple gRPC services with this endpoint. */
         fun services(vararg s: BindableService) = apply { services += s }
 
+        fun interceptedService(service: BindableService, vararg interceptors: ServerInterceptor) = apply {
+            interceptedServices += ServerInterceptors.intercept(service, *interceptors)
+        }
+
         /**
          * Enables TLS for this gRPC endpoint.
          *
          * @param certFile Server certificate
          * @param keyFile Server private key
          * @param clientAuth Optional client certificate authentication
+         * @param caCertFiles  One or more CA certificates to trust.
+         *                     Clients signed by **any** of these CAs will be accepted.
+         *                     Pass multiple files to support different client types on the same port.
          */
-        fun tls(caCertFile: File, certFile: File, keyFile: File, clientAuth: ClientAuth = ClientAuth.NONE) = apply {
+        fun tls(certFile: File, keyFile: File, clientAuth: ClientAuth = ClientAuth.NONE, vararg caCertFiles: File) = apply {
             this.certFile = certFile
             this.keyFile = keyFile
             this.clientAuth = clientAuth
-            this.caCertFile = caCertFile
+            this.caCertFiles += caCertFiles
         }
 
         /** Sets shutdown timeout in seconds for graceful termination. */
@@ -202,7 +225,8 @@ class GrpcEndpoint private constructor(
             return GrpcEndpoint(
                 address,
                 services,
-                caCertFile,
+                interceptedServices,
+                caCertFiles,
                 certFile,
                 keyFile,
                 clientAuth,

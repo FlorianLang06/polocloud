@@ -1,0 +1,76 @@
+package de.polocloud.cli.connection
+
+import de.polocloud.common.Address
+import io.grpc.ManagedChannel
+import org.slf4j.LoggerFactory
+
+/**
+ * Orchestrates the full CLI → cluster connection lifecycle.
+ *
+ * Port responsibilities:
+ * - [registrationAddress] (e.g. 4240) — plaintext, one-time registration (token + CSR → signed cert)
+ * - [clusterAddress]      (e.g. 4239) — mTLS, all subsequent cluster communication
+ *
+ * Usage:
+ * ```kotlin
+ * val connection = CliConnectionManager()
+ * connection.connect(
+ *     clusterAddress      = Address("localhost", 4239),
+ *     registrationAddress = Address("localhost", 4240),
+ *     token               = "my-token"
+ * )
+ * val stub = MyServiceGrpcKt.MyServiceCoroutineStub(connection.channel())
+ * ```
+ */
+class CliConnectionManager(
+    private val certificateStorage: CliCertificateStorage = CliCertificateStorage(),
+    private val registrationClient: CliRegistrationClient = CliRegistrationClient(certificateStorage),
+    private val grpcChannel: CliGrpcChannel = CliGrpcChannel(certificateStorage),
+) : CliConnection {
+
+    private val logger = LoggerFactory.getLogger(CliConnectionManager::class.java)
+
+    override val isConnected: Boolean
+        get() = grpcChannel.isConnected
+
+    /**
+     * Connects to the cluster.
+     *
+     * - If not registered → runs registration on [registrationAddress] (plaintext)
+     * - Opens the mTLS channel on [clusterAddress]
+     *
+     * No-op if already connected.
+     */
+    override suspend fun connect(clusterAddress: Address, registrationAddress: Address, token: String) {
+        if (isConnected) {
+            logger.debug("Already connected, ignoring connect() call")
+            return
+        }
+
+        if (!certificateStorage.isRegistered()) {
+            logger.info("No certificates found — starting registration on $registrationAddress")
+            registrationClient.register(registrationAddress, token)
+        } else {
+            logger.info("Certificates found — skipping registration")
+        }
+
+        grpcChannel.connect(clusterAddress)
+    }
+
+    override fun channel(): ManagedChannel = grpcChannel.channel()
+
+    override fun disconnect() {
+        grpcChannel.close()
+        logger.info("Disconnected from cluster")
+    }
+
+    /**
+     * Forces re-registration on the next [connect] call.
+     * Useful when the cluster's CLI CA has rotated or the token changed.
+     */
+    fun forceReregistration() {
+        disconnect()
+        certificateStorage.clearCertificates()
+        logger.info("Certificates cleared — will re-register on next connect()")
+    }
+}

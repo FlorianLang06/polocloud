@@ -1,5 +1,6 @@
 package de.polocloud.cli
 
+import de.polocloud.common.ShutdownMode
 import de.polocloud.i18n.api.TranslationService
 import org.jline.jansi.AnsiConsole
 import kotlin.system.exitProcess
@@ -23,7 +24,7 @@ fun exitPolocloud(cleanShutdown: Boolean = true) {
     logger.info(TranslationService.tr("cli", "cli.shutdown.initiating"))
 
     //TODO some shutdown logic between the two translations
-    Cli.stop()
+    Cli.close(if (cleanShutdown) ShutdownMode.GRACEFUL else ShutdownMode.FORCE)
 
     val key = if (cleanShutdown) {
         "cli.shutdown.clean"

@@ -12,8 +12,7 @@ import java.util.Locale
 @ConfigurationFile("polocloud-cli.json")
 data class CliConfiguration(
     @Serializable(with = LocaleSerializer::class)
-    val locale: Locale = Language.of("en_US"),
-    val nodeAddress: Address? = null,
+    val locale: Locale = Language.of("en_US")
 ) {
     companion object : DefaultableConfiguration<CliConfiguration> {
         override fun createDefault(): CliConfiguration {

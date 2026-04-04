@@ -8,7 +8,7 @@ import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.cli.CliServer
+import de.polocloud.node.cli.CliRegistrationService
 import de.polocloud.node.configuration.NodeConfigurations
 import de.polocloud.node.error.NodeError
 import de.polocloud.node.generator.LocalIdGenerator
@@ -44,10 +44,10 @@ class NodeInstance(
     val nodeRepository: NodeRepository
     val registrationManager: RegistrationManager
 
+    val cliRegistrationService: CliRegistrationService
+
     val nodeGrpcEndpoint: NodeGrpcEndpoint
     lateinit var headNodeConnection: NodeGrpcClient
-
-    val cliServer : CliServer
 
     init {
         TranslationService.init()
@@ -57,12 +57,21 @@ class NodeInstance(
 
         this.database = this.initializeDatabase()
         this.nodeRepository = NodeRepository(this.database)
-        this.registrationManager = RegistrationManager(configurations.clusterConfig, nodeRepository, certificateDataStorage.keyPair)
-        this.nodeGrpcEndpoint = NodeGrpcEndpoint(resolveBindAddress(), certificateDataStorage)
-        this.cliServer = CliServer(configurations.clusterConfig.cliAccess, nodeRepository, certificateDataStorage.keyPair, certificateDataStorage,)
+        this.cliRegistrationService = CliRegistrationService(configurations.clusterConfig, certificateDataStorage)
+        this.registrationManager = RegistrationManager(
+            configurations.clusterConfig,
+            nodeRepository,
+            certificateDataStorage.keyPair,
+            cliRegistrationService
+        )
+        this.nodeGrpcEndpoint = NodeGrpcEndpoint(
+            resolveBindAddress(),
+            certificateDataStorage,
+            configurations.clusterConfig,
+            cliRegistrationService
+        )
 
         this.initialize()
-        cliServer.start()
     }
 
     fun initialize() {
@@ -125,7 +134,6 @@ class NodeInstance(
             return
         }
 
-        this.cliServer.close(mode)
         this.localNodeContainer.markStopping()
         this.registrationManager.close(mode)
         this.localNodeContainer.markStopped()

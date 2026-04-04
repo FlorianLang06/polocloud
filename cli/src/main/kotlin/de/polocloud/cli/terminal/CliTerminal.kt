@@ -1,6 +1,7 @@
 package de.polocloud.cli.terminal
 
 import de.polocloud.cli.command.CommandService
+import de.polocloud.cli.connection.CliConnectionManager
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.LineReaderImpl
@@ -19,9 +20,11 @@ import java.nio.charset.StandardCharsets
  * Use [readingThread] to start the background input loop and [shutdown] to gracefully
  * close the terminal and stop the reading thread.
  */
-class CliTerminal {
+class CliTerminal(
+    connectionManager: CliConnectionManager
+) {
 
-    val commandService = CommandService()
+    val commandService = CommandService(connectionManager)
 
     /**
      * The currently displayed prompt string (ANSI-translated).

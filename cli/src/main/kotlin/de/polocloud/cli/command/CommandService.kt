@@ -1,9 +1,11 @@
 package de.polocloud.cli.command
 
+import de.polocloud.cli.Cli
 import de.polocloud.cli.command.impl.ClearCommand
 import de.polocloud.cli.command.impl.ConnectCommand
 import de.polocloud.cli.command.impl.HelpCommand
 import de.polocloud.cli.command.impl.ShutdownCommand
+import de.polocloud.cli.connection.CliConnectionManager
 
 /**
  * Central registry and dispatcher for all CLI commands.
@@ -13,7 +15,9 @@ import de.polocloud.cli.command.impl.ShutdownCommand
  *
  * Built-in commands are registered automatically in [init].
  */
-class CommandService {
+class CommandService(
+    connectionManager: CliConnectionManager
+) {
 
     private val registeredCommands = mutableListOf<Command>()
     private val parser = CommandParser(this)
@@ -22,7 +26,7 @@ class CommandService {
         registerCommand(HelpCommand())
         registerCommand(ShutdownCommand())
         registerCommand(ClearCommand())
-        registerCommand(ConnectCommand())
+        registerCommand(ConnectCommand(connectionManager))
     }
 
     /**
