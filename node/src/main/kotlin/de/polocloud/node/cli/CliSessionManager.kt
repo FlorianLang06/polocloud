@@ -28,7 +28,7 @@ class CliSessionManager {
         }!!
     }
 
-    //TODO remove session on disconnect and create session also if cli already registered
+    //TODO create session also if cli already registered
     fun touch(subject: String, now: Long = now()) {
         sessions.computeIfPresent(subject) { _, session ->
             session.copy(lastAccess = now)
