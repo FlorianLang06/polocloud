@@ -60,7 +60,7 @@ class RegistrationClient {
                 .setToken(info.token)
                 .build()
 
-            logger.trInfo("cluster","cluster.registration.sendingRequest", "address" to address)
+            logger.trInfo("cluster", "cluster.registration.sendingRequest", "address" to address)
 
             runBlocking { stub.registerNode(request) }
 
@@ -69,7 +69,7 @@ class RegistrationClient {
         }.getOrElse { ex ->
             return NodeError.RegistrationFailed(
                 address = address,
-                reason  = ex.message ?: "unknown"
+                reason = ex.message ?: "unknown"
             ).asFailure()
         }.let {
             Result.success(it)
@@ -84,12 +84,10 @@ class RegistrationClient {
      * @param address The hostname and port of the target cluster node.
      * @return A managed gRPC channel.
      */
-    private fun createChannel(address: Address): ManagedChannel {
-        return NettyChannelBuilder
-            .forAddress(address.hostname, address.port)
-            .usePlaintext() // Registration does not require TLS; secure communication is established after registration
-            .build()
-    }
+    private fun createChannel(address: Address) = NettyChannelBuilder
+        .forAddress(address.hostname, address.port)
+        .usePlaintext() // Registration does not require TLS; secure communication is established after registration
+        .build()
 
     /**
      * Gracefully shuts down a gRPC channel.

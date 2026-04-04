@@ -62,7 +62,7 @@ class NodeInstance(
         this.cliServer = CliServer(configurations.clusterConfig.cliAccess, nodeRepository, certificateDataStorage.keyPair, certificateDataStorage,)
 
         this.initialize()
-        cliServer.start()
+//        cliServer.start()
     }
 
     fun initialize() {
