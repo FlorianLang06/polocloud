@@ -3,15 +3,13 @@ package de.polocloud.cli
 import de.polocloud.common.dependency.DependencyRegistry
 import de.polocloud.common.dependency.insert.ClasspathInsert
 import de.polocloud.common.dependency.scanning.OwnBlobScanner
-import de.polocloud.common.version.PolocloudVersion
+import de.polocloud.common.system.PolocloudSystemProperties
 import java.nio.file.Path
 
 fun main() {
     val dependencyRegistry = DependencyRegistry(ClasspathInsert())
 
-    // TODO
-    //val version = PolocloudVersion.CURRENT.toVersionString() // TODO we cant do this here because error system ist not loaded because of dependencies
-    val cliJar = Path.of(".cache/dependencies/de/polocloud/cli/3.0.0-snapshot.local/cli-3.0.0-snapshot.local.jar").toFile()
+    val cliJar = Path.of(System.getProperty(PolocloudSystemProperties.RUNTIME_PATH)).toFile()
 
     dependencyRegistry.scan(OwnBlobScanner(cliJar))
     dependencyRegistry.downloadAndRegister()

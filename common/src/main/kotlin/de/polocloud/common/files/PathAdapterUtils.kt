@@ -1,11 +1,14 @@
 package de.polocloud.common.files
 
+import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
+
+private val logger = LoggerFactory.getLogger("PathAdapterUtils")
 
 fun Path.deleteComplete() {
     if (!Files.exists(this)) return
@@ -24,6 +27,6 @@ fun Path.deleteComplete() {
             }
         })
     } catch (e: IOException) {
-        e.printStackTrace() //TODO remove this or better error printing
+        logger.error("Failed to delete path $this", e)
     }
 }
