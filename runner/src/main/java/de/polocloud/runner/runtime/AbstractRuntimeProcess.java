@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,6 +35,10 @@ public abstract class AbstractRuntimeProcess implements RuntimeProcess {
 
     protected abstract String getName();
 
+    protected List<String> getRequiredModules() {
+        return Collections.emptyList();
+    }
+
     private void prepareRuntimeEnvironment() throws Exception {
         ExpenderRuntimeCache.migrateCacheFiles();
         ensureBootstrapLibrariesPresent();
@@ -53,7 +58,11 @@ public abstract class AbstractRuntimeProcess implements RuntimeProcess {
         List<Path> elements = new ArrayList<>();
 
         elements.add(PolocloudParameters.bootKotlin());
-        elements.add(PolocloudParameters.expenderRuntimeCache("common"));
+
+        for (String module : getRequiredModules()) {
+            elements.add(PolocloudParameters.expenderRuntimeCache(module));
+        }
+
         elements.add(PolocloudParameters.expenderRuntimeCache(getArtifactId()));
 
         return elements;

@@ -26,7 +26,7 @@ public final class PolocloudClassLoader extends URLClassLoader {
      * @param urls   the classpath URLs
      */
     public PolocloudClassLoader(URL[] urls) {
-        super(urls, null);
+        super(urls, resolveParent());
     }
 
     /**
@@ -41,5 +41,15 @@ public final class PolocloudClassLoader extends URLClassLoader {
     @Override
     public void addURL(URL url) {
         super.addURL(url);
+    }
+
+    private static ClassLoader resolveParent() {
+        try {
+            return (ClassLoader) ClassLoader.class
+                    .getMethod("getPlatformClassLoader")
+                    .invoke(null);
+        } catch (Exception ignored) {
+            return null; // Java 8
+        }
     }
 }

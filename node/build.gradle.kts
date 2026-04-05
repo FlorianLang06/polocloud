@@ -1,3 +1,5 @@
+import de.polocloud.dependency.plugin.polocloudRuntime
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -18,56 +20,57 @@ repositories {
 }
 
 dependencies {
+    //kotlin
+    polocloudRuntime(libs.kotlinx.serialization.json)
+    polocloudRuntime(libs.kotlinx.coroutines.core)
+    polocloudRuntime(libs.kotlin.reflect)
 
-    // internal modules
-    compileOnly(projects.common)
+    //logging
+    annotationProcessor(libs.log4j.core)
+    polocloudRuntime(libs.slf4j.api)
+    polocloudRuntime(libs.log4j.api)
+    polocloudRuntime(libs.log4j.core)
+    polocloudRuntime(libs.log4j.slf4j)
+
+    // grpc
+    polocloudRuntime(libs.grpc.api)
+    polocloudRuntime(libs.grpc.stub)
+    polocloudRuntime(libs.grpc.kotlin.stub)
+    polocloudRuntime(libs.grpc.services)
+    polocloudRuntime(libs.protobuf.kotlin)
+    polocloudRuntime(libs.grpc.netty.shaded)
+    //"grpc-api", "grpc-stub", "grpc-services", "protobuf-java", "grpc-netty-shaded" old, maybe missing
+
+    // database
+    polocloudRuntime(libs.hikariCp)
+    polocloudRuntime(libs.postgreSql)
+
+    //polocloud
+    polocloudRuntime(libs.polocloud.i18n)
+
+    //hashing
+    polocloudRuntime(libs.argon2)
+
+    //security
+    polocloudRuntime(libs.bcprov)
+    polocloudRuntime(libs.bcpkix)
+
+    //system
+    polocloudRuntime(libs.oshi)
+
+
     compileOnly(projects.database)
-    compileOnly(projects.proto)
+    compileOnly(projects.common)
+    implementation(projects.proto)
 
-    runtimeOnly(projects.common)
-    runtimeOnly(projects.database)
-    runtimeOnly(projects.proto)
+    //-----------------------------------
 
     testImplementation(projects.common)
     testImplementation(projects.database)
     testImplementation(projects.proto)
-
-    // grpc
-    compileOnly(libs.bundles.grpc)
-    runtimeOnly(libs.bundles.grpc)
-
-    // logging
-    compileOnly(libs.bundles.logging.full)
-    runtimeOnly(libs.bundles.logging.full)
-    annotationProcessor(libs.log4j.core)
-
-    // database
-    compileOnly(libs.bundles.database)
-    runtimeOnly(libs.bundles.database)
-
-    // kotlin
-    compileOnly(libs.bundles.kotlin.full)
-    runtimeOnly(libs.bundles.kotlin.full)
-
-    // polocloud
-    compileOnly(libs.polocloud.i18n)
-    runtimeOnly(libs.polocloud.i18n)
-
     testImplementation(libs.polocloud.i18n)
 
-    // cli / system
-    compileOnly(libs.oshi)
-    runtimeOnly(libs.oshi)
-
-    // security
-    compileOnly(libs.bundles.tls)
-    runtimeOnly(libs.bundles.tls)
-
     //implementation(projects.serviceSdk) TODO implement this
-
-    // hashing
-    compileOnly(libs.argon2)
-    runtimeOnly(libs.argon2)
 
     testImplementation(libs.bundles.testcontainers)
     testImplementation(libs.bundles.testing)
@@ -77,4 +80,8 @@ dependencies {
 tasks.test {
     systemProperty("PID", ProcessHandle.current().pid().toString())
     useJUnitPlatform()
+}
+
+tasks.jar {
+    from(project(":proto").sourceSets.main.get().output) //TODO better proto implementation
 }

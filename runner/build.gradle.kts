@@ -18,6 +18,7 @@ tasks.named<Jar>("jar") {
     }
 
     val subprojects = listOf(
+        ":database",
         ":common",
         ":cli",
         ":node"
