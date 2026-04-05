@@ -1,18 +1,51 @@
 package de.polocloud.node.services
 
-import de.polocloud.node.services.process.ServiceProcess
-import de.polocloud.node.services.process.ServiceProcessRepository
+import java.net.URLClassLoader
+import java.util.jar.JarFile
+import kotlin.io.path.Path
+import kotlin.io.path.exists
+import kotlin.io.path.listDirectoryEntries
 
-class ServiceFactory(val serviceProcessRepository: ServiceProcessRepository) {
+object ServiceFactory {
 
-    fun bootService() {
+    private val path = Path("local/services/cache")
 
+    fun scanServices() : List<Service> {
+        if (!path.exists()) {
+            return listOf()
+        }
 
+        val serviceList = mutableListOf<Service>()
+        val jars = path.listDirectoryEntries("*.jar")
 
-        val process = ProcessBuilder().start()
+        for (jarPath in jars) {
+            val jarFile = JarFile(jarPath.toFile())
+            val urls = arrayOf(jarPath.toUri().toURL())
 
+            URLClassLoader(urls, this::class.java.classLoader).use { classLoader ->
 
-        process.pid()
+                val entries = jarFile.entries()
+
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+
+                    if (!entry.name.endsWith(".class")) continue
+
+                    val className = entry.name.replace("/", ".")
+                        .removeSuffix(".class")
+
+                    try {
+                        val clazz = classLoader.loadClass(className)
+
+                        if (Service::class.java.isAssignableFrom(clazz) && clazz != Service::class.java) {
+                            println("Gefundener Service: ${clazz.name}")
+                            //todo register service here
+                        }
+
+                    } catch (_: Throwable) { }
+                }
+            }
+        }
+        return serviceList
     }
-
 }

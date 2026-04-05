@@ -63,6 +63,8 @@ dependencies {
     compileOnly(libs.bundles.tls)
     runtimeOnly(libs.bundles.tls)
 
+    implementation(projects.serviceSdk)
+
     // hashing
     compileOnly(libs.argon2)
     runtimeOnly(libs.argon2)
