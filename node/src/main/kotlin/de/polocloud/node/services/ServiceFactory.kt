@@ -1,6 +1,7 @@
 package de.polocloud.node.services
 
 import java.net.URLClassLoader
+import java.nio.file.Files
 import java.util.jar.JarFile
 import kotlin.io.path.Path
 import kotlin.io.path.exists
@@ -12,6 +13,7 @@ object ServiceFactory {
 
     fun scanServices() : List<Service> {
         if (!path.exists()) {
+            Files.createDirectories(path)
             return listOf()
         }
 

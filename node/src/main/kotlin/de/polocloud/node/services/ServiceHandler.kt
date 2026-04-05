@@ -1,13 +1,16 @@
 package de.polocloud.node.services
 
-class ServiceHandler {
+import org.slf4j.LoggerFactory
 
-    private val localServices = ServiceFactory.scanServices()
+object ServiceHandler {
 
-    init {
+    private val logger = LoggerFactory.getLogger(ServiceHandler::class.java)
+    private var localServices : List<Service> = emptyList()
 
+    fun initialize() {
+        this.localServices = ServiceFactory.scanServices()
+        logger.info("Loaded local services from cache ${localServices.size}")
     }
-
 
 
 }

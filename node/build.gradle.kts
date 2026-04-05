@@ -62,19 +62,6 @@ dependencies {
     compileOnly(projects.database)
     compileOnly(projects.common)
     implementation(projects.proto)
-
-    //-----------------------------------
-
-    testImplementation(projects.common)
-    testImplementation(projects.database)
-    testImplementation(projects.proto)
-    testImplementation(libs.polocloud.i18n)
-
-    //implementation(projects.serviceSdk) TODO implement this
-
-    testImplementation(libs.bundles.testcontainers)
-    testImplementation(libs.bundles.testing)
-    testImplementation(kotlin("test"))
 }
 
 tasks.test {

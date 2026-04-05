@@ -22,6 +22,7 @@ import de.polocloud.node.nodes.NodeFactory
 import de.polocloud.node.registration.RegistrationManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
+import de.polocloud.node.services.ServiceHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
@@ -144,6 +145,9 @@ class NodeInstance(
 
         // allow other nodes to connect
         registrationManager.allowRequests()
+
+        // scan local services
+        ServiceHandler.initialize()
 
         this.localNodeContainer.markOnline()
 
