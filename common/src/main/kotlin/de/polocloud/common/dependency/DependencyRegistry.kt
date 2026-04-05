@@ -2,6 +2,8 @@ package de.polocloud.common.dependency
 
 import de.polocloud.common.dependency.insert.DependencyInsert
 import de.polocloud.common.dependency.scanning.DependencyScanner
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 
 /**
  * Manages a collection of dependencies, allowing scanning, downloading, and binding
@@ -26,12 +28,25 @@ class DependencyRegistry(val insert: DependencyInsert<*>) {
     /**
      * Downloads all registered dependencies in parallel.
      *
-     * This uses [parallelStream] to improve download performance.
+     * This uses [Executors] to improve download performance.
      */
     fun downloadAndRegister() {
-        registeredDependencies.forEach { //TODO add parallelStream but set the right classloader
-            it.download()
-            this.insert.register(it)
+        val executor = Executors.newFixedThreadPool(4)
+
+        try {
+            val futures = registeredDependencies.map { dependency ->
+                executor.submit(Callable {
+                    dependency.download()
+                    dependency
+                })
+            }
+
+            futures.forEach { future ->
+                val dependency = future.get()
+                insert.register(dependency)
+            }
+        } finally {
+            executor.shutdown()
         }
     }
 
