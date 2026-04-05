@@ -6,7 +6,7 @@ plugins {
 }
 
 polocloud {
-    mainClass = "de.polocloud.node.PolocloudNodeLauncher"
+    mainClass = "de.polocloud.node.launch.NodeLaunchBootstrapKt"
 }
 
 repositories {
@@ -63,7 +63,7 @@ dependencies {
     compileOnly(libs.bundles.tls)
     runtimeOnly(libs.bundles.tls)
 
-    implementation(projects.serviceSdk)
+    //implementation(projects.serviceSdk) TODO implement this
 
     // hashing
     compileOnly(libs.argon2)

@@ -18,8 +18,9 @@ tasks.named<Jar>("jar") {
     }
 
     val subprojects = listOf(
-        ":cli",
         ":common",
+        ":cli",
+        ":node"
     )
 
     dependsOn(subprojects.map { "$it:jar" })

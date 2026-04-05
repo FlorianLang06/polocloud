@@ -1,51 +1,42 @@
 package de.polocloud.runner;
 
+import de.polocloud.runner.runtime.RuntimeMode;
+import de.polocloud.runner.runtime.RuntimeProcess;
+import de.polocloud.runner.runtime.RuntimeResolver;
+import de.polocloud.runner.runtime.impl.CliRuntimeProcess;
+import de.polocloud.runner.runtime.impl.NodeRuntimeProcess;
 import de.polocloud.runner.utils.Manifests;
 
-/**
- * Entry point for the PoloCloud runtime.
- * <p>
- * This launcher is responsible for:
- * <ul>
- *     <li>Validating the runtime environment</li>
- *     <li>Resolving the current runtime version from the manifest</li>
- *     <li>Starting the PoloCloud process</li>
- *     <li>Exiting the JVM with the process exit code</li>
- * </ul>
- */
 final class PolocloudRuntimeLauncher {
 
-    /**
-     * Utility class – instantiation is not allowed.
-     */
-    private PolocloudRuntimeLauncher() {
-        throw new UnsupportedOperationException("This is a boot class");
-    }
+    private PolocloudRuntimeLauncher() {}
 
-    /**
-     * Launches the PoloCloud runtime.
-     *
-     * @param args command-line arguments (currently unused)
-     */
     public static void main(String[] args) {
         PolocloudParameters.ensureCacheDirectory();
 
-        final PolocloudRuntimeBootValidator validator = new PolocloudRuntimeBootValidator();
-
-        if (!validator.isValid()) {
+        if (!new PolocloudRuntimeBootValidator().isValid()) {
             System.exit(1);
         }
 
-        final String runtimeVersion = Manifests
+        String version = Manifests
                 .readOwnManifest()
                 .getMainAttributes()
                 .getValue(PolocloudParameters.VERSION_ENV);
 
-        System.setProperty(PolocloudParameters.VERSION_ENV, runtimeVersion);
+        System.setProperty(PolocloudParameters.VERSION_ENV, version);
 
-        final PolocloudProcess process = new PolocloudProcess();
-        final int status = process.start();
+        RuntimeMode mode = RuntimeResolver.resolve(args);
+        RuntimeProcess process = createProcess(mode);
 
+        int status = process.start();
         System.exit(status);
+    }
+
+    private static RuntimeProcess createProcess(RuntimeMode mode) {
+        switch (mode) {
+            case CLI: return new CliRuntimeProcess();
+            case NODE: return new NodeRuntimeProcess();
+            default: throw new IllegalStateException("Unsupported mode: " + mode);
+        }
     }
 }
