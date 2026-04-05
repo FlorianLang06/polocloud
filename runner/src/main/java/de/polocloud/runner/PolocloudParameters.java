@@ -1,5 +1,6 @@
 package de.polocloud.runner;
 
+import de.polocloud.runner.utils.FileHelper;
 import de.polocloud.runner.utils.Manifests;
 
 import java.io.IOException;
@@ -153,14 +154,7 @@ public final class PolocloudParameters {
     public static void ensureCacheDirectory() {
         try {
             Files.createDirectories(EXPENDER_RUNTIME_CACHE);
-
-            Path root = EXPENDER_RUNTIME_CACHE.getParent();
-            DosFileAttributeView view = Files.getFileAttributeView(root, DosFileAttributeView.class);
-
-            if (view != null && !view.readAttributes().isHidden()) {
-                view.setHidden(true);
-            }
-
+            FileHelper.hideFile(EXPENDER_RUNTIME_CACHE.getParent());
         } catch (IOException e) {
             throw new RuntimeException("Failed to initialize cache", e);
         }

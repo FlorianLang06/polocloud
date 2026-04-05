@@ -1,5 +1,7 @@
 package de.polocloud.runner.validator;
 
+import de.polocloud.runner.utils.FileHelper;
+
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.management.ManagementFactory;
@@ -51,6 +53,7 @@ public final class DuplicateRuntimeCheck implements BootReasonValidator {
             }
 
             channel.force(true);
+            FileHelper.hideFile(lockFile.toPath());
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
