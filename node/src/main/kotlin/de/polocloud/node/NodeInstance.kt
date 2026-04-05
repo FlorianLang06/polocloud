@@ -93,7 +93,14 @@ class NodeInstance(
             // we are the only and new head
             logger.trInfo("cluster", "cluster.node.identity.created")
 
-            this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(localId, resolveBindAddress()))
+            this.localNodeContainer = LocalNodeContainer(
+                nodeRepository,
+                NodeFactory.createInitial(
+                    localId,
+                    resolveBindAddress(),
+                    launchProperties.group
+                )
+            )
             this.nodeRepository.save(this.localNodeContainer.data)
 
             val clusterToken = this.registrationManager.registrationTokenManger.createInitialCliToken()

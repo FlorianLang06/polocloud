@@ -24,7 +24,7 @@ final class PolocloudRuntimeLauncher {
                 .getValue(PolocloudParameters.VERSION_ENV);
 
         System.setProperty(PolocloudParameters.VERSION_ENV, version);
-        applyJoinProperties(args);
+        applyProperties(args);
 
         RuntimeMode mode = RuntimeResolver.resolve(args);
         RuntimeProcess process = createProcess(mode);
@@ -41,7 +41,7 @@ final class PolocloudRuntimeLauncher {
         }
     }
 
-    private static void applyJoinProperties(String[] args) {
+    private static void applyProperties(String[] args) {
         for (String arg : args) {
             if (!arg.startsWith("--")) continue;
 
@@ -57,6 +57,9 @@ final class PolocloudRuntimeLauncher {
                     break;
                 case "join-port":
                     System.setProperty(PolocloudSystemProperties.JOIN_PORT, parts[1]);
+                    break;
+                case "group":
+                    System.setProperty(PolocloudSystemProperties.NODE_GROUP, parts[1]);
                     break;
             }
         }

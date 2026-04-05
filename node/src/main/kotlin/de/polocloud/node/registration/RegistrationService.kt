@@ -55,6 +55,7 @@ class RegistrationService(
             NodeData(
                 UUID.fromString(request.localId),
                 NodeIndexGenerator(repository).generate(),
+                        request.group,
                 request.hostname,
                 request.port,
                 NodeState.STARTING,

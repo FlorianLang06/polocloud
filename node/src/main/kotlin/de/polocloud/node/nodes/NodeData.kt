@@ -10,6 +10,7 @@ import kotlin.time.Instant
 data class NodeData(
     @EntryIdentifier val id : UUID,
     val index: Int,
+    val groupName: String = "node",
     val hostname: String,
     val port: Int,
     var state: NodeState,
@@ -21,6 +22,6 @@ data class NodeData(
 ) {
 
     fun name(): String {
-        return "node-$index"
+        return "$groupName-$index"
     }
 }

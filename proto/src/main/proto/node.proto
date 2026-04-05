@@ -13,11 +13,12 @@ service NodeRegistrationService {
 
 message RegisterNodeRequest {
   string localId = 1;
-  string hostname = 2;
-  int32 port = 3;
-  string token = 4;
-  string publicKey = 5;
-  NodeVersion details = 6;
+  string group = 2;
+  string hostname = 3;
+  int32 port = 4;
+  string token = 5;
+  string publicKey = 6;
+  NodeVersion details = 7;
 }
 
 message RegisterNodeResponse {

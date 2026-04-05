@@ -6,18 +6,20 @@ import java.util.UUID
 
 object NodeFactory {
 
-    fun createInitial(id : UUID, address: Address): NodeData =
-        create(id, 1, address, head = true)
+    fun createInitial(id: UUID, address: Address, group: String): NodeData =
+        create(id, 1, group, address, true)
 
     fun create(
         id: UUID,
         index: Int,
+        groupName: String,
         address: Address,
         head: Boolean = false
     ): NodeData =
         NodeData(
             id = id,
             index = index,
+            groupName = groupName,
             hostname = address.hostname,
             port = address.port,
             state = NodeState.STARTING,
