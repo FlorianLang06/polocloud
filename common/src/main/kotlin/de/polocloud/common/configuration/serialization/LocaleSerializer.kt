@@ -1,9 +1,12 @@
-package de.polocloud.cli.configuration.serialization
+package de.polocloud.common.configuration.serialization
 
 import de.polocloud.i18n.model.Language
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.descriptors.*
-import kotlinx.serialization.encoding.*
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import java.util.Locale
 
 object LocaleSerializer : KSerializer<Locale> {

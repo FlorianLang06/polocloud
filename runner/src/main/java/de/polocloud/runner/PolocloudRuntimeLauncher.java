@@ -24,6 +24,7 @@ final class PolocloudRuntimeLauncher {
                 .getValue(PolocloudParameters.VERSION_ENV);
 
         System.setProperty(PolocloudParameters.VERSION_ENV, version);
+        applyJoinProperties(args);
 
         RuntimeMode mode = RuntimeResolver.resolve(args);
         RuntimeProcess process = createProcess(mode);
@@ -37,6 +38,27 @@ final class PolocloudRuntimeLauncher {
             case CLI: return new CliRuntimeProcess();
             case NODE: return new NodeRuntimeProcess();
             default: throw new IllegalStateException("Unsupported mode: " + mode);
+        }
+    }
+
+    private static void applyJoinProperties(String[] args) {
+        for (String arg : args) {
+            if (!arg.startsWith("--")) continue;
+
+            String[] parts = arg.substring(2).split("=", 2);
+            if (parts.length != 2) continue;
+
+            switch (parts[0]) {
+                case "join-token":
+                    System.setProperty(PolocloudSystemProperties.JOIN_TOKEN, parts[1]);
+                    break;
+                case "join-host":
+                    System.setProperty(PolocloudSystemProperties.JOIN_HOST, parts[1]);
+                    break;
+                case "join-port":
+                    System.setProperty(PolocloudSystemProperties.JOIN_PORT, parts[1]);
+                    break;
+            }
         }
     }
 }

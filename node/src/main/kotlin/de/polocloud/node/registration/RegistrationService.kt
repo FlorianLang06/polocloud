@@ -36,7 +36,7 @@ class RegistrationService(
             return this.sendDenyResponse("cluster.registration.node.alreadyRegistered")
         }
 
-        if (!request.token.equals(registrationManager.publicRegistrationToken)) {
+        if (!registrationManager.registrationTokenManger.validate(request.token)) {
             return this.sendDenyResponse("cluster.registration.node.token.invalid")
         }
 

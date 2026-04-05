@@ -8,6 +8,7 @@ import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.generator.CSPRNGGenerator
+import de.polocloud.node.registration.token.RegistrationTokenManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
@@ -26,7 +27,7 @@ class RegistrationManager(
 
     private val logger = LoggerFactory.getLogger(RegistrationManager::class.java)
 
-    val publicRegistrationToken = CSPRNGGenerator.generate()
+    val registrationTokenManger = RegistrationTokenManager()
 
     private val registrationServer = RegistrationServer(
         registrationManager   = this,

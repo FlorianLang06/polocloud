@@ -23,6 +23,8 @@ import de.polocloud.node.registration.RegistrationManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
 import org.slf4j.LoggerFactory
+import java.time.Instant
+import java.time.ZoneId
 
 class NodeInstance(
     /**
@@ -88,16 +90,29 @@ class NodeInstance(
 
         if (nodeRepository.count() == 0L) {
             // we are the only and new head
+            logger.trInfo("cluster", "cluster.node.identity.created")
+
             this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(resolveBindAddress()))
             this.nodeRepository.save(this.localNodeContainer.data)
+
+            val clusterToken = this.registrationManager.registrationTokenManger.createInitialCliToken()
+            val expire = Instant.ofEpochMilli(clusterToken.expiresAt)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+
+            logger.trInfo("cluster", "cluster.node.identity.alert.token", "clusterToken" to clusterToken.token, "expire" to expire)
+
             this.nodeGrpcEndpoint.start()
             return
         }
 
         val possibleNode = nodeRepository.find(localId)
         if (possibleNode != null) {
+            logger.trInfo("cluster", "cluster.node.identity.detected") //TODO MIRCOOO LOCALID FIX
+
             this.nodeGrpcEndpoint.start()
             this.localNodeContainer = LocalNodeContainer(nodeRepository, possibleNode)
+
             return
         }
 

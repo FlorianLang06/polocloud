@@ -1,6 +1,6 @@
 package de.polocloud.cli.configuration
 
-import de.polocloud.cli.configuration.serialization.LocaleSerializer
+import de.polocloud.common.configuration.serialization.LocaleSerializer
 import de.polocloud.common.configuration.ConfigurationFile
 import de.polocloud.common.configuration.DefaultableConfiguration
 import de.polocloud.i18n.model.Language

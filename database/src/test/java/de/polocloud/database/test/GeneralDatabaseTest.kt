@@ -3,7 +3,7 @@ package de.polocloud.database.test
 import de.polocloud.common.ShutdownMode
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseKey
-import dev.httpmarco.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.TranslationService
 import org.junit.jupiter.api.*
 import org.slf4j.LoggerFactory
 import org.testcontainers.junit.jupiter.Testcontainers

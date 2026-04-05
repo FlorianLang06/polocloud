@@ -1,6 +1,8 @@
 package de.polocloud.node.launch
 
 import de.polocloud.common.Address
+import de.polocloud.common.system.PolocloudSystemProperties
+import de.polocloud.node.registration.RegistrationInfo
 import java.nio.file.Path
 
 /**
@@ -46,7 +48,23 @@ object NodeLaunchPropertiesParser {
 
         return NodeLaunchProperties(
             rootDir = rootDir,
-            address = if(map["hostname"] != null && map["port"] != null ) address else null
+            address = if(map["hostname"] != null && map["port"] != null ) address else null,
+            clusterRegistration = resolveRegistration()
+        )
+    }
+
+    private fun resolveRegistration(): RegistrationInfo? {
+        val token = System.getProperty(PolocloudSystemProperties.JOIN_TOKEN)
+        val host = System.getProperty(PolocloudSystemProperties.JOIN_HOST)
+        val port = System.getProperty(PolocloudSystemProperties.JOIN_PORT)?.toIntOrNull()
+
+        if (token == null || host == null || port == null) {
+            return null
+        }
+
+        return RegistrationInfo(
+            token = token,
+            address = Address(host, port)
         )
     }
 }
