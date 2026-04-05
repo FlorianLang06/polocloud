@@ -12,7 +12,7 @@ class LocalNodeContainer(val stateRepository : NodeRepository, val data: NodeDat
 
     fun markStarting() =
         changeState(NodeState.STARTING) {
-            it == NodeState.OFFLINE
+           true
         }
 
     fun markStopping() =

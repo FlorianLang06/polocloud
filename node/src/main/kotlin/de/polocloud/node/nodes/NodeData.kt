@@ -8,7 +8,7 @@ import kotlin.time.Instant
 
 @RepositoryName("nodes")
 data class NodeData(
-    @EntryIdentifier val id: UUID = UUID.randomUUID(),
+    @EntryIdentifier val id : UUID,
     val index: Int,
     val hostname: String,
     val port: Int,

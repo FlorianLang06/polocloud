@@ -92,7 +92,7 @@ class NodeInstance(
             // we are the only and new head
             logger.trInfo("cluster", "cluster.node.identity.created")
 
-            this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(resolveBindAddress()))
+            this.localNodeContainer = LocalNodeContainer(nodeRepository, NodeFactory.createInitial(localId, resolveBindAddress()))
             this.nodeRepository.save(this.localNodeContainer.data)
 
             val clusterToken = this.registrationManager.registrationTokenManger.createInitialCliToken()
@@ -108,11 +108,11 @@ class NodeInstance(
 
         val possibleNode = nodeRepository.find(localId)
         if (possibleNode != null) {
-            logger.trInfo("cluster", "cluster.node.identity.detected") //TODO MIRCOOO LOCALID FIX
+            logger.trInfo("cluster", "cluster.node.identity.detected")
 
             this.nodeGrpcEndpoint.start()
             this.localNodeContainer = LocalNodeContainer(nodeRepository, possibleNode)
-
+            this.localNodeContainer.markStarting()
             return
         }
 

@@ -2,7 +2,9 @@ package de.polocloud.node.services
 
 class ServiceHandler {
 
-    fun collectRunningServices() {
+    private val localServices = ServiceFactory.scanServices()
+
+    init {
 
     }
 
