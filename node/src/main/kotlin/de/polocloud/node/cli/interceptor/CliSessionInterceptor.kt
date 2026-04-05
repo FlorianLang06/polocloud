@@ -1,14 +1,21 @@
 package de.polocloud.node.cli.interceptor
 
-import de.polocloud.node.cli.CliSessionManager
+import de.polocloud.node.cli.session.ICliSessionManager
 import io.grpc.*
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
 import java.net.InetSocketAddress
 import java.security.cert.X509Certificate
 
+/**
+ * gRPC interceptor that extracts the CLI client's certificate subject (CN)
+ * and keeps the [ICliSessionManager] up to date on every inbound call.
+ *
+ * The extracted subject is published via [SUBJECT_CTX_KEY] so downstream
+ * handlers (e.g. disconnect) can identify the caller without re-parsing the cert.
+ */
 class CliSessionInterceptor(
-    private val sessionManager: CliSessionManager
+    private val sessionManager: ICliSessionManager,
 ) : ServerInterceptor {
 
     companion object {
@@ -18,11 +25,10 @@ class CliSessionInterceptor(
     override fun <ReqT, RespT> interceptCall(
         call: ServerCall<ReqT, RespT>,
         headers: Metadata,
-        next: ServerCallHandler<ReqT, RespT>
+        next: ServerCallHandler<ReqT, RespT>,
     ): ServerCall.Listener<ReqT> {
-
         val subject = extractSubject(call)
-        val ip = extractIp(call)
+        val ip      = extractIp(call)
 
         if (subject != null && ip != null) {
             sessionManager.createOrUpdate(subject, ip)
@@ -38,12 +44,14 @@ class CliSessionInterceptor(
     }
 
     private fun extractSubject(call: ServerCall<*, *>): String? {
-        val sslSession = call.attributes.get(Grpc.TRANSPORT_ATTR_SSL_SESSION)
-        val cert = sslSession?.peerCertificates?.firstOrNull() as? X509Certificate ?: return null
+        val cert = call.attributes
+            .get(Grpc.TRANSPORT_ATTR_SSL_SESSION)
+            ?.peerCertificates
+            ?.firstOrNull() as? X509Certificate
+            ?: return null
 
-        val x500 = X500Name(cert.subjectX500Principal.name)
-
-        return x500.getRDNs(BCStyle.CN)
+        return X500Name(cert.subjectX500Principal.name)
+            .getRDNs(BCStyle.CN)
             .firstOrNull()
             ?.first
             ?.value
@@ -51,8 +59,8 @@ class CliSessionInterceptor(
             ?.lowercase()
     }
 
-    private fun extractIp(call: ServerCall<*, *>): String? {
-        val remote = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
-        return (remote as? InetSocketAddress)?.address?.hostAddress
-    }
+    private fun extractIp(call: ServerCall<*, *>): String? =
+        (call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR) as? InetSocketAddress)
+            ?.address
+            ?.hostAddress
 }

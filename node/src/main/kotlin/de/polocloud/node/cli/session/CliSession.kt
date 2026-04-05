@@ -1,4 +1,4 @@
-package de.polocloud.node.cli
+package de.polocloud.node.cli.session
 
 data class CliSession(
     val sessionId: String,

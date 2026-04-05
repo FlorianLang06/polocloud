@@ -4,7 +4,7 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.grpc.GrpcEndpoint
-import de.polocloud.node.cli.CliRegistrationService
+import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.cli.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.repositories.NodeRepository

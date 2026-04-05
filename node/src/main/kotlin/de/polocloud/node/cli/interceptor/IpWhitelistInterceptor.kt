@@ -18,11 +18,10 @@ import java.net.InetSocketAddress
 /**
  * gRPC interceptor that validates incoming CLI connections against an IP whitelist.
  *
- * This interceptor extracts the remote IP from the gRPC call context and checks
- * it against the configured list of allowed IPs. Connections from non-whitelisted
- * IPs are rejected with PERMISSION_DENIED status.
+ * Rejects connections from non-whitelisted IPs with [Status.PERMISSION_DENIED].
+ * Wildcard patterns (e.g. `127.0.0.*`) are supported.
  *
- * @param allowedIps List of IP addresses that are permitted to connect
+ * @param config CLI access configuration containing the allowed IP list
  */
 class IpWhitelistInterceptor(
     private val config: CliAccessConfiguration,
@@ -32,66 +31,61 @@ class IpWhitelistInterceptor(
 
     override fun <T, R> interceptCall(
         call: ServerCall<T, R>,
-        requestHeaders: Metadata,
-        next: ServerCallHandler<T, R>
+        headers: Metadata,
+        next: ServerCallHandler<T, R>,
     ): ServerCall.Listener<T> {
-        val remote = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
-
         if (!config.enabled) {
-            logger.trWarn("cluster", "cli.access.disabled.log", "client" to remote.toString())
-            call.close(
-                Status.PERMISSION_DENIED.withDescription(TranslationService.tr("cluster", "cli.access.disabled")),
-                Metadata()
-            )
-            return object : ServerCall.Listener<T>() {}
+            val remote = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR).toString()
+            logger.trWarn("cluster", "cli.access.disabled.log", "client" to remote)
+            return deny(call, "cli.access.disabled")
         }
+
+        val remote = call.attributes.get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR)
 
         if (remote !is InetSocketAddress) {
             logger.trWarn("cluster", "cluster.cli.ip.unknown")
-            call.close(
-                Status.PERMISSION_DENIED.withDescription(TranslationService.tr("cluster", "cluster.cli.ip.unknown")),
-                Metadata()
-            )
-            return object : ServerCall.Listener<T>() {}
+            return deny(call, "cluster.cli.ip.unknown")
         }
 
         val ip = remote.address.hostAddress
-        val context = Context.current().withValue(GrpcClientContext.CLIENT_IP, ip)
 
         if (!isAllowed(ip)) {
-            logger.trWarn(
-                "node",
-                "cluster.cli.ip.notAllowed.log",
-                "ip" to ip
-            )
-            call.close(
-                Status.PERMISSION_DENIED.withDescription(TranslationService.tr("cluster", "cluster.cli.ip.notAllowed")),
-                Metadata()
-            )
-            return object : ServerCall.Listener<T>() {}
+            logger.trWarn("cluster", "cluster.cli.ip.notAllowed.log", "ip" to ip)
+            return deny(call, "cluster.cli.ip.notAllowed")
         }
 
         logger.debug("CLI connection allowed from IP: $ip")
-        return Contexts.interceptCall(context, call, requestHeaders, next)
+        val context = Context.current().withValue(GrpcClientContext.CLIENT_IP, ip)
+        return Contexts.interceptCall(context, call, headers, next)
     }
 
-    private fun isAllowed(ip: String): Boolean {
-        return config.allowedIps.any { allowed ->
-            val regex = wildcardToRegex(allowed)
-            regex.matches(ip)
-        }
-    }
+    private fun isAllowed(ip: String): Boolean =
+        config.allowedIps.any { wildcardToRegex(it).matches(ip) }
 
     /**
-     * Converts wildcard patterns to safe regex:
-     * 127.0.0.*  -> ^127\.0\.0\..*$
-     * *          -> ^.*$
+     * Converts a wildcard pattern to a regex.
+     *
+     * Examples:
+     * - `127.0.0.*` → `^127\.0\.0\..*$`
+     * - `*`         → `^.*$`
      */
     private fun wildcardToRegex(pattern: String): Regex {
         val escaped = pattern
-            .replace(".", "\\.")   // escape dots
-            .replace("*", ".*")    // wildcard
-
+            .replace(".", "\\.")
+            .replace("*", ".*")
         return Regex("^$escaped$")
+    }
+
+    private fun <T, R> deny(
+        call: ServerCall<T, R>,
+        translationKey: String,
+    ): ServerCall.Listener<T> {
+        call.close(
+            Status.PERMISSION_DENIED.withDescription(
+                TranslationService.tr("cluster", translationKey)
+            ),
+            Metadata(),
+        )
+        return object : ServerCall.Listener<T>() {}
     }
 }

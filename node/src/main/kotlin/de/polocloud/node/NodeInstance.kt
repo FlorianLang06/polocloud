@@ -8,8 +8,9 @@ import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.cli.CliRegistrationService
-import de.polocloud.node.cli.CliSessionManager
+import de.polocloud.node.cli.registration.CliRegistrationService
+import de.polocloud.node.cli.session.CliSessionManager
+import de.polocloud.node.cli.session.ICliSessionManager
 import de.polocloud.node.configuration.NodeConfigurations
 import de.polocloud.node.error.NodeError
 import de.polocloud.node.generator.LocalIdGenerator
@@ -46,7 +47,7 @@ class NodeInstance(
     val registrationManager: RegistrationManager
 
     val cliRegistrationService: CliRegistrationService
-    val cliSessionManager = CliSessionManager()
+    val cliSessionManager: ICliSessionManager
 
     val nodeGrpcEndpoint: NodeGrpcEndpoint
     lateinit var headNodeConnection: NodeGrpcClient
@@ -59,7 +60,12 @@ class NodeInstance(
 
         this.database = this.initializeDatabase()
         this.nodeRepository = NodeRepository(this.database)
-        this.cliRegistrationService = CliRegistrationService(configurations.clusterConfig, certificateDataStorage, cliSessionManager)
+        this.cliSessionManager = CliSessionManager()
+        this.cliRegistrationService = CliRegistrationService(
+            configurations.clusterConfig,
+            certificateDataStorage,
+            cliSessionManager
+        )
         this.registrationManager = RegistrationManager(
             configurations.clusterConfig,
             nodeRepository,

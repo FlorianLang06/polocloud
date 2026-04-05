@@ -1,40 +1,40 @@
 package de.polocloud.node.internal
 
 import de.polocloud.common.Address
-import de.polocloud.common.error.extensions.report
+import de.polocloud.common.Closeable
+import de.polocloud.common.ShutdownMode
 import de.polocloud.common.grpc.GrpcEndpoint
-import de.polocloud.node.cli.CliRegistrationService
-import de.polocloud.node.cli.CliSessionManager
+import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.cli.interceptor.CliSessionInterceptor
 import de.polocloud.node.cli.interceptor.IpWhitelistInterceptor
+import de.polocloud.node.cli.session.CliSessionCleanup
+import de.polocloud.node.cli.session.ICliSessionManager
 import de.polocloud.node.configuration.ClusterConfiguration
-import de.polocloud.node.error.NodeError
 import de.polocloud.node.security.CertificateDataStorage
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
-import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 /**
- * gRPC endpoint for the node/cluster.
+ * gRPC endpoint for the cluster node.
  *
- * Hosts all services on a single port with mTLS (ClientAuth.REQUIRE):
- * - Node registration + cluster services (trusted via node CA)
- * - CLI registration (trusted via CLI CA, additionally IP-whitelisted)
+ * Hosts all services on a single mTLS port (ClientAuth.REQUIRE):
+ * - CLI registration and commands  → trusted via CLI CA, additionally IP-whitelisted
+ * - Node-to-node communication     → trusted via node CA
  *
- * Both the node CA and the CLI CA are passed as trust anchors so the server
- * accepts both node peers and CLI clients on the same TLS listener.
+ * Both CAs are passed as trust anchors so the server accepts both client types
+ * on the same TLS listener.
+ *
+ * Session cleanup is owned here because this class controls the server lifecycle —
+ * cleanup starts when the server starts and stops when the server stops.
  */
 class NodeGrpcEndpoint(
     address: Address,
     certificateDataStorage: CertificateDataStorage,
     clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
-    private val cliSessionManager: CliSessionManager,
-) {
+    cliSessionManager: ICliSessionManager,
+) : Closeable {
 
-    private val logger = LoggerFactory.getLogger(NodeGrpcEndpoint::class.java)
-    private val cleanupExecutor = Executors.newSingleThreadScheduledExecutor()
+    private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
     private val server = GrpcEndpoint.Builder(address)
         .tls(
@@ -55,34 +55,11 @@ class NodeGrpcEndpoint(
 
     fun start() {
         server.start()
-        startSessionCleanup()
+        sessionCleanup.start()
     }
 
-    private fun startSessionCleanup() {
-        val timeout = 60_000L
-
-        cleanupExecutor.scheduleAtFixedRate(
-            {
-                runCatching {
-                    val before = cliSessionManager.all().size
-
-                    cliSessionManager.cleanupExpired(timeout)
-
-                    val after = cliSessionManager.all().size
-                    val removed = before - after
-
-                    if (removed > 0) {
-                        logger.debug("Cleaned up $removed expired CLI sessions")
-                    }
-                }.onFailure { ex ->
-                    NodeError.SessionCleanupFailed(
-                        reason = ex.message ?: "unknown"
-                    ).report()
-                }
-            },
-            0,
-            timeout,
-            TimeUnit.MILLISECONDS
-        )
+    override fun close(mode: ShutdownMode) {
+        sessionCleanup.close(mode) //TODO maybe disconnect all current sessions
+        server.close(mode)
     }
 }
