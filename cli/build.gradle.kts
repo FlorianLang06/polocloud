@@ -36,7 +36,3 @@ dependencies {
     compileOnly(projects.common)
     implementation(projects.proto)
 }
-
-tasks.jar {
-    from(project(":proto").sourceSets.main.get().output)
-}

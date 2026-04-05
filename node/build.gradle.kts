@@ -58,7 +58,6 @@ dependencies {
     //system
     polocloudRuntime(libs.oshi)
 
-
     compileOnly(projects.database)
     compileOnly(projects.common)
     implementation(projects.proto)
@@ -67,8 +66,4 @@ dependencies {
 tasks.test {
     systemProperty("PID", ProcessHandle.current().pid().toString())
     useJUnitPlatform()
-}
-
-tasks.jar {
-    from(project(":proto").sourceSets.main.get().output)
 }

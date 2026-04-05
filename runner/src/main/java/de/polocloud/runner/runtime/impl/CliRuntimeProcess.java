@@ -2,7 +2,7 @@ package de.polocloud.runner.runtime.impl;
 
 import de.polocloud.runner.runtime.AbstractRuntimeProcess;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 public final class CliRuntimeProcess extends AbstractRuntimeProcess {
@@ -18,8 +18,9 @@ public final class CliRuntimeProcess extends AbstractRuntimeProcess {
 
     @Override
     protected List<String> getRequiredModules() {
-        return Collections.singletonList(
-                "common"
+        return Arrays.asList(
+                "common",
+                "proto"
         );
     }
 }

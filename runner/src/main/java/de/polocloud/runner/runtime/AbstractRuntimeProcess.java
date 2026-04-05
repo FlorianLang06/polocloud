@@ -26,7 +26,7 @@ public abstract class AbstractRuntimeProcess implements RuntimeProcess {
             return 0;
         } catch (Exception e) {
             System.err.println("Failed to start " + getName());
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
         return 1;
     }

@@ -26,6 +26,12 @@ public final class PolocloudParameters {
     public static final String VERSION_ENV = "version";
 
     /**
+     * Give the own jar path to the thread
+     * We attach the node/cli jar into the classpath and by default we collect the runner path
+     */
+    public static final String RUNTIME_PATH = "polocloud.runtime.path";
+
+    /**
      * Name of the initialization control file used by Polocloud to track the initialization state of the CLI or node.
      *
      * <p>This file is stored in the "local" directory and contains metadata about the initialization process,</p>

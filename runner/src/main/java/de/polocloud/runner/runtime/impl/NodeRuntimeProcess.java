@@ -20,6 +20,7 @@ public final class NodeRuntimeProcess extends AbstractRuntimeProcess {
     protected List<String> getRequiredModules() {
         return Arrays.asList(
                 "common",
+                "proto",
                 "database"
         );
     }

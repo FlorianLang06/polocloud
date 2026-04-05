@@ -5,10 +5,8 @@ plugins {
 
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.protobuf.plugin)
-}
 
-repositories {
-    mavenCentral()
+    id("de.polocloud")
 }
 
 dependencies {

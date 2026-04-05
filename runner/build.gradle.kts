@@ -18,16 +18,17 @@ tasks.named<Jar>("jar") {
     }
 
     val subprojects = listOf(
-        ":database",
-        ":common",
-        ":cli",
-        ":node"
+        "database",
+        "common",
+        "cli",
+        "node",
+        "proto"
     )
 
-    dependsOn(subprojects.map { "$it:jar" })
+    dependsOn(subprojects.map { ":$it:jar" })
 
     subprojects.forEach { path ->
-        val jarTask = project(path).tasks.named<Jar>("jar")
+        val jarTask = project(":$path").tasks.named<Jar>("jar")
 
         from(jarTask.flatMap { it.archiveFile }) {
             into(".cache/dependencies")
