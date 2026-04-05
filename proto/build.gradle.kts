@@ -34,24 +34,6 @@ kotlin {
     jvmToolchain(21)
 }
 
-sourceSets {
-    main {
-        proto {
-            srcDir("src/proto")
-        }
-
-        kotlin {
-            srcDir(layout.buildDirectory.dir("generated/source/proto/main/kotlin"))
-            srcDir(layout.buildDirectory.dir("generated/source/proto/main/grpckt"))
-        }
-
-        java {
-            srcDir(layout.buildDirectory.dir("generated/source/proto/main/java"))
-            srcDir(layout.buildDirectory.dir("generated/source/proto/main/grpc"))
-        }
-    }
-}
-
 protobuf {
     protoc {
         artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.kotlin.get()}"

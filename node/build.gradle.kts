@@ -70,5 +70,5 @@ tasks.test {
 }
 
 tasks.jar {
-    from(project(":proto").sourceSets.main.get().output) //TODO better proto implementation
+    from(project(":proto").sourceSets.main.get().output)
 }
