@@ -7,7 +7,6 @@ import de.polocloud.database.DatabaseCredentials
 import kotlinx.serialization.Serializable
 
 @Serializable
-@ConfigurationFile("local-node.json")
 data class LocalNodeConfiguration(var database: DatabaseCredentials) {
     companion object : DefaultableConfiguration<LocalNodeConfiguration> {
         override fun createDefault(): LocalNodeConfiguration {

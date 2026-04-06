@@ -1,6 +1,8 @@
 package de.polocloud.node.services
 
-data class ServiceHolder(val name: String, val version: String) {
+import java.io.File
+
+data class ServiceHolder(val name: String, val version: String, val file: File) {
 
 
 

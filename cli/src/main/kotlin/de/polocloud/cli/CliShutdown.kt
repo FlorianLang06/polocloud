@@ -23,7 +23,6 @@ fun exitPolocloud(cleanShutdown: Boolean = true) {
     inShutdown = true
     logger.info(TranslationService.tr("cli", "cli.shutdown.initiating"))
 
-    //TODO some shutdown logic between the two translations
     Cli.close(if (cleanShutdown) ShutdownMode.GRACEFUL else ShutdownMode.FORCE)
 
     val key = if (cleanShutdown) {

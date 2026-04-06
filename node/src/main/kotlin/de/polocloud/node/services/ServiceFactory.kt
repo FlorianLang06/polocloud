@@ -30,15 +30,14 @@ object ServiceFactory {
 
                 while (entries.hasMoreElements()) {
                     val entry = entries.nextElement()
-
                     if (!entry.name.endsWith(".class")) continue
-
                     val className = entry.name.replace("/", ".")
                         .removeSuffix(".class")
 
                     try {
                         val clazz = classLoader.loadClass(className)
 
+                        serviceList.add(ServiceHolder("test", "1.0.0", file = jarPath.toFile()))
                     } catch (_: Throwable) { }
                 }
             }

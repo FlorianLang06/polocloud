@@ -8,7 +8,6 @@ import kotlinx.serialization.Serializable
 import java.util.Locale
 
 @Serializable
-@ConfigurationFile("general.json")
 data class GeneralConfiguration(
     @Serializable(with = LocaleSerializer::class) var locale: Locale = Locale.US,
     var bindAddress: Address = LOCALHOST_ADDRESS.withPort(4239),

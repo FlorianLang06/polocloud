@@ -10,7 +10,10 @@ import de.polocloud.node.configuration.NodeConfigurations
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 
-class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeLaunchProperties = NodeLaunchPropertiesParser.parse(args)) {
+class NodeLaunch(
+    args: Array<String> = emptyArray(),
+    val launchProperties: NodeLaunchProperties = NodeLaunchPropertiesParser.parse(args)
+) {
 
     init {
         System.setProperty("PID", ProcessHandle.current().pid().toString())
@@ -32,18 +35,9 @@ class NodeLaunch(args: Array<String> = emptyArray(), val launchProperties: NodeL
     private fun loadConfigurations(launchProperties: NodeLaunchProperties): NodeConfigurations {
         val root = launchProperties.rootDir
 
-        return NodeConfigurations(
-            cluster = ConfigurationManager
-                .load<ClusterConfiguration>()
-                .atPath(root.resolve("cluster.json").toString()),
-
-            general = ConfigurationManager
-                .load<GeneralConfiguration>()
-                .atPath(root.resolve("general.json").toString()),
-
-            localNode = ConfigurationManager
-                .load<LocalNodeConfiguration>()
-                .atPath(root.resolve("local-node.json").toString()),
-        )
+        return ConfigurationManager
+            .load<NodeConfigurations>()
+            .atPath(root.resolve("config.json").toString())
+            .value
     }
 }

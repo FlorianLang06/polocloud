@@ -60,7 +60,7 @@ class NodeInstance(
 
     init {
         TranslationService.init()
-        TranslationService.defaultLanguage(configurations.generalConfig.locale)
+        TranslationService.defaultLanguage(configurations.general.locale)
 
         Runtime.getRuntime().addShutdownHook(Thread { close(ShutdownMode.GRACEFUL) })
 
@@ -68,12 +68,12 @@ class NodeInstance(
         this.nodeRepository = NodeRepository(this.database)
         this.cliSessionManager = CliSessionManager()
         this.cliRegistrationService = CliRegistrationService(
-            configurations.clusterConfig,
+            configurations.cluster,
             certificateDataStorage,
             cliSessionManager
         )
         this.registrationManager = RegistrationManager(
-            configurations.clusterConfig,
+            configurations.cluster,
             nodeRepository,
             certificateDataStorage,
             cliRegistrationService
@@ -81,7 +81,7 @@ class NodeInstance(
         this.nodeGrpcEndpoint = NodeGrpcEndpoint(
             resolveBindAddress(),
             certificateDataStorage,
-            configurations.clusterConfig,
+            configurations.cluster,
             cliRegistrationService,
             cliSessionManager
         ) { localNodeContainer }
@@ -193,11 +193,12 @@ class NodeInstance(
     }
 
     private fun initializeDatabase(): DatabaseConnectionFactory<*> {
-        val database = configurations.nodeConfig.database.factory()
+        val database = configurations.localNode.database.factory()
         database.connect()
 
         if (!database.isValid()) {
-            this.close(ShutdownMode.GRACEFUL)
+            val url = configurations.localNode.database.toString()
+            throw PoloException(NodeError.DatabaseConnectionFailed(url))
         }
         return database
     }
@@ -216,7 +217,7 @@ class NodeInstance(
      */
     private fun resolveBindAddress(): Address {
         val launchAddress = launchProperties.address
-        val defaultAddress = configurations.generalConfig.bindAddress
+        val defaultAddress = configurations.general.bindAddress
 
         if (launchAddress != null) {
             val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname

@@ -60,6 +60,7 @@ dependencies {
 
     compileOnly(projects.database)
     compileOnly(projects.common)
+    compileOnly(projects.serviceSdk)
     implementation(projects.proto)
 }
 
