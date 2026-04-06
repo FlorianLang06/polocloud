@@ -11,6 +11,4 @@ object ServiceHandler {
         this.localServices = ServiceFactory.scanServices()
         logger.info("Loaded local services from cache ${localServices.size}")
     }
-
-
 }
