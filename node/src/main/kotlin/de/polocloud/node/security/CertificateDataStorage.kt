@@ -22,7 +22,7 @@ import java.util.*
 
 class CertificateDataStorage {
 
-    private val basePath = rootDir().resolve(".cache")
+    private val basePath = rootDir().resolve(".cache/identity/local-node")
     private val clusterPath = basePath.resolve("cluster")
     private val cliPath = basePath.resolve("cli")
 
