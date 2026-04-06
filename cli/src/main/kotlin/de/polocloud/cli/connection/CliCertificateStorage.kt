@@ -24,7 +24,7 @@ import java.security.Security
  */
 class CliCertificateStorage {
 
-    private val storagePath = CliPaths.CACHE_DIR.resolve("identity")
+    private val storagePath = CliPaths.CACHE_DIR.resolve("identity/cli")
     private val privateKeyFile = storagePath.resolve("private-key.pem")
     private val publicKeyFile = storagePath.resolve("public-key.pem")
     private val certificateFile = storagePath.resolve("certificate.pem")
