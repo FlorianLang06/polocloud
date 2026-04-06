@@ -4,6 +4,7 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.error.exception.PoloException
+import de.polocloud.common.i18n.trError
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseConnectionFactory
@@ -23,6 +24,8 @@ import de.polocloud.node.registration.RegistrationManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.node.services.ServiceHandler
+import org.apache.logging.log4j.LogManager
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
@@ -169,10 +172,24 @@ class NodeInstance(
             return
         }
 
+        logger.trInfo("node", "node.shutdown.stopping")
+
         this.localNodeContainer.markStopping()
-        this.registrationManager.close(mode)
-        this.localNodeContainer.markStopped()
-        this.database.close(mode)
+
+        safeClose(logger, "registrationManager") {
+            this.registrationManager.close(mode)
+        }
+
+        safeClose(logger, "localNodeContainer") {
+            this.localNodeContainer.markStopped()
+        }
+
+        safeClose(logger, "database") {
+            this.database.close(mode)
+        }
+
+        logger.trInfo("node", "node.shutdown.stopped")
+        LogManager.shutdown()
     }
 
     private fun initializeDatabase(): DatabaseConnectionFactory<*> {
@@ -180,8 +197,7 @@ class NodeInstance(
         database.connect()
 
         if (!database.isValid()) {
-            val url = configurations.nodeConfig.database.toString()
-            throw PoloException(NodeError.DatabaseConnectionFailed(url))
+            this.close(ShutdownMode.GRACEFUL)
         }
         return database
     }
@@ -211,5 +227,21 @@ class NodeInstance(
             return Address(hostname, port)
         }
         return defaultAddress
+    }
+
+    inline fun safeClose(
+        logger: Logger,
+        name: String,
+        block: () -> Unit
+    ) {
+        try {
+            block()
+        } catch (_: Exception) {
+            logger.trError(
+                "node",
+                "node.shutdown.task.error",
+                "task" to name
+            )
+        }
     }
 }

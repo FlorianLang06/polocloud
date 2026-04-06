@@ -29,13 +29,13 @@ class MongoConnectionFactory(credentials: DatabaseCredentials.MongoDB) : Databas
         state = DatabaseState.CONNECTING
         logger.info(TranslationService.tr("database", "database.connection.connecting"))
 
-        try {
+        val connectionString = if (credentials.password != null) {
+            "mongodb://${credentials.username}:${credentials.password}@${credentials.address.asString()}/${credentials.database}"
+        } else {
+            "mongodb://${credentials.address.asString()}/${credentials.database}"
+        }
 
-            val connectionString = if (credentials.password != null) {
-                "mongodb://${credentials.username}:${credentials.password}@${credentials.address.asString()}/${credentials.database}"
-            } else {
-                "mongodb://${credentials.address.asString()}/${credentials.database}"
-            }
+        try {
 
             val settings = MongoClientSettings.builder()
                 .applyConnectionString(ConnectionString(connectionString))
@@ -54,9 +54,9 @@ class MongoConnectionFactory(credentials: DatabaseCredentials.MongoDB) : Databas
                 )
             )
 
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             state = DatabaseState.FAILED
-            logger.error(TranslationService.tr("database", "database.connection.failed"), e)
+            logger.error(TranslationService.tr("database", "database.connection.failed", "url" to connectionString))
         }
     }
 

@@ -73,9 +73,9 @@ class SqlConnectionFactory(credentials: DatabaseCredentials) :
                     "driver" to credentials.javaClass.simpleName.lowercase()
                 )
             )
-        } catch (exception: Exception) {
+        } catch (_: Exception) {
             this.state = DatabaseState.FAILED
-            logger.error(TranslationService.tr("database", "database.connection.failed"), exception)
+            logger.error(TranslationService.tr("database", "database.connection.failed", "url" to jdbcUrl))
         }
     }
 
