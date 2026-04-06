@@ -197,8 +197,7 @@ class NodeInstance(
         database.connect()
 
         if (!database.isValid()) {
-            val url = configurations.localNode.database.toString()
-            throw PoloException(NodeError.DatabaseConnectionFailed(url))
+            this.close(ShutdownMode.GRACEFUL)
         }
         return database
     }
