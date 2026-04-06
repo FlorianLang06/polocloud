@@ -31,13 +31,13 @@ import org.slf4j.LoggerFactory
  */
 class CliRegistrationService(
     config: ClusterConfiguration,
-    private val certificateDataStorage: CertificateDataStorage,
+    certificateDataStorage: CertificateDataStorage,
     private val sessionManager: ICliSessionManager,
 ) : CliRegistrationServiceGrpcKt.CliRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(CliRegistrationService::class.java)
     private val validator = CliRegistrationValidator(config.cliAccess)
-    private val cliCa by lazy { certificateDataStorage.loadCliCertificateAuthority() }
+    private val ca = certificateDataStorage.certificateAuthority()
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {
         val clientIp = GrpcClientContext.CLIENT_IP.get() ?: "unknown"
@@ -56,7 +56,7 @@ class CliRegistrationService(
             return deny("cli.registration.csr.invalid")
         }
 
-        val signedCert = cliCa.signCsr(
+        val signedCert = ca.signCsr(
             csr,
             subjectAltNames = listOf("cli.polocloud.local") // TODO: derive from config
         )
@@ -74,7 +74,7 @@ class CliRegistrationService(
         return RegisterCliResponse.newBuilder()
             .setAccepted(true)
             .setCertificatePem(certToPem(signedCert))
-            .setCaCertificatePem(cliCa.getCaCertificatePem())
+            .setCaCertificatePem(ca.getCaCertificatePem())
             .build()
     }
 
@@ -92,7 +92,6 @@ class CliRegistrationService(
         val logKey = if (existed) "cluster.cli.session.removed" else "cluster.cli.session.removed.missing"
         logger.trInfo("cluster", logKey, "client" to subject)
 
-        //TODO hier kommt nichts an weine
         return DisconnectResponse.newBuilder().build()
     }
 

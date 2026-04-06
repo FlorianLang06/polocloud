@@ -7,7 +7,6 @@ import de.polocloud.common.generator.CertificateSigningRequestGenerator
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.configuration.ClusterConfiguration
-import de.polocloud.node.generator.CSPRNGGenerator
 import de.polocloud.node.registration.token.RegistrationTokenManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
@@ -15,13 +14,12 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
 import java.io.StringWriter
-import java.security.KeyPair
 import java.util.UUID
 
 class RegistrationManager(
     config: ClusterConfiguration,
     repository: NodeRepository,
-    keyPair: KeyPair,
+    certificateDataStorage: CertificateDataStorage,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
@@ -30,11 +28,11 @@ class RegistrationManager(
     val registrationTokenManger = RegistrationTokenManager()
 
     private val registrationServer = RegistrationServer(
-        registrationManager   = this,
-        address               = config.registration,
-        nodeRepository        = repository,
-        keyPair               = keyPair,
-        clusterConfig         = config,
+        registrationManager = this,
+        address = config.registration,
+        nodeRepository = repository,
+        certificateDataStorage = certificateDataStorage,
+        clusterConfig = config,
         cliRegistrationService = cliRegistrationService,
     )
 

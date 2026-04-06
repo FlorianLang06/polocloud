@@ -1,8 +1,7 @@
 package de.polocloud.cli.command
 
-import de.polocloud.cli.Cli
 import de.polocloud.cli.command.impl.ClearCommand
-import de.polocloud.cli.command.impl.ConnectCommand
+import de.polocloud.cli.command.impl.cluster.ConnectCommand
 import de.polocloud.cli.command.impl.HelpCommand
 import de.polocloud.cli.command.impl.ShutdownCommand
 import de.polocloud.cli.connection.CliConnectionManager

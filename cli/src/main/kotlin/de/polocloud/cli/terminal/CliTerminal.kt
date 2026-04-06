@@ -2,6 +2,8 @@ package de.polocloud.cli.terminal
 
 import de.polocloud.cli.command.CommandService
 import de.polocloud.cli.connection.CliConnectionManager
+import de.polocloud.cli.prompt.CliPromptProvider
+import de.polocloud.cli.prompt.DefaultCliPromptProvider
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.LineReaderImpl
@@ -25,6 +27,7 @@ class CliTerminal(
 ) {
 
     val commandService = CommandService(connectionManager)
+    private val promptProvider: CliPromptProvider = DefaultCliPromptProvider()
 
     /**
      * The currently displayed prompt string (ANSI-translated).
@@ -110,14 +113,12 @@ class CliTerminal(
         this.update()
     }
 
-    /**
-     * Resets the prompt to the default CLI prompt.
-     * Should be called once at startup and after setup wizards or screen recordings end.
-     */
-    fun resetPrompt() {
-        //TODO update this prompt on connection with node
-        //this.updatePrompt("&bpolocloud&8@&7" + polocloudVersion() + " &8» &7")
-        this.updatePrompt("&bpolocloud&8@&7cli &8» &7")
+    fun disconnectPrompt() {
+        updatePrompt(promptProvider.disconnected())
+    }
+
+    fun connectedPrompt(nodeName: String) {
+        updatePrompt(promptProvider.connected(nodeName))
     }
 
     /**

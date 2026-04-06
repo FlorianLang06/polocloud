@@ -1,5 +1,7 @@
-package de.polocloud.cli.command.impl
+package de.polocloud.cli.command.impl.cluster
 
+import de.polocloud.cli.Cli
+import de.polocloud.cli.cluster.ClusterClient
 import de.polocloud.cli.command.Command
 import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
@@ -19,6 +21,9 @@ class ConnectCommand(
     private val registrationPortArg = IntArgument("registrationPort", 1, 65535)
     private val tokenArg = TextArgument("token")
 
+    //TODO we need better/simpler command and disconnect needs to be better.
+
+
     init {
         syntax(
             { ctx ->
@@ -32,7 +37,8 @@ class ConnectCommand(
                     return@syntax
                 }
 
-                logger.info(TranslationService.tr(
+                logger.info(
+                    TranslationService.tr(
                     "cli",
                     "cli.connect.connecting",
                     "host" to host,
@@ -48,18 +54,25 @@ class ConnectCommand(
                             token = token
                         )
                     }.onSuccess {
-                        logger.info(TranslationService.tr(
-                            "cli",
-                            "cli.connect.success",
-                            "host" to host,
-                            "port" to clusterPort
-                        ))
+                        logger.info(
+                            TranslationService.tr(
+                                "cli",
+                                "cli.connect.success",
+                                "host" to host,
+                                "port" to clusterPort
+                            )
+                        )
+
+                        val clusterClient = ClusterClient(connectionManager)
+                        Cli.terminal.connectedPrompt(clusterClient.nodeName())
                     }.onFailure { ex ->
-                        logger.info(TranslationService.tr(
-                            "cli",
-                            "cli.connect.failed",
-                            "message" to (ex.message ?: "unknown")
-                        ))
+                        logger.info(
+                            TranslationService.tr(
+                                "cli",
+                                "cli.connect.failed",
+                                "message" to (ex.message ?: "unknown")
+                            )
+                        )
                     }
                 }
             },
@@ -75,6 +88,7 @@ class ConnectCommand(
                 }
 
                 connectionManager.disconnect()
+                Cli.terminal.disconnectPrompt() //TODO remove certificates
             },
             "cli.command.impl.syntax.disconnect.description",
             KeywordArgument("disconnect")

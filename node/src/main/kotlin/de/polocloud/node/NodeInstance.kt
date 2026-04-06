@@ -72,7 +72,7 @@ class NodeInstance(
         this.registrationManager = RegistrationManager(
             configurations.clusterConfig,
             nodeRepository,
-            certificateDataStorage.keyPair,
+            certificateDataStorage,
             cliRegistrationService
         )
         this.nodeGrpcEndpoint = NodeGrpcEndpoint(
@@ -81,7 +81,7 @@ class NodeInstance(
             configurations.clusterConfig,
             cliRegistrationService,
             cliSessionManager
-        )
+        ) { localNodeContainer }
 
         this.initialize()
     }

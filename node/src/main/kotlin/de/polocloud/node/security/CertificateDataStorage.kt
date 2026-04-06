@@ -1,7 +1,13 @@
 package de.polocloud.node.security
 
 import de.polocloud.node.common.rootDir
+import de.polocloud.node.nodes.LocalNodeContainer
 import org.bouncycastle.asn1.x500.X500Name
+import org.bouncycastle.asn1.x509.BasicConstraints
+import org.bouncycastle.asn1.x509.Extension
+import org.bouncycastle.asn1.x509.GeneralName
+import org.bouncycastle.asn1.x509.GeneralNames
+import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -20,47 +26,46 @@ import java.security.*
 import java.security.cert.X509Certificate
 import java.util.*
 
-class CertificateDataStorage {
+class CertificateDataStorage() {
 
-    private val basePath = rootDir().resolve(".cache/identity/local-node")
-    private val clusterPath = basePath.resolve("cluster")
-    private val cliPath = basePath.resolve("cli")
+    private val basePath = rootDir().resolve(".cache/identity")
+    private val nodePath = basePath.resolve("node")
+    private val caPath = basePath.resolve("ca")
 
-    private val privateKeyFile = clusterPath.resolve("private-key.pem").toFile()
-    private val publicKeyFile = clusterPath.resolve("public-key.pem").toFile()
-    private val certificateFile = clusterPath.resolve("certificate.pem").toFile()
-    private val caCertificateFile = clusterPath.resolve("ca.pem").toFile()
+    private val privateKeyFile = nodePath.resolve("private-key.pem").toFile()
+    private val publicKeyFile = nodePath.resolve("public-key.pem").toFile()
 
-    private val cliCaCertificateFile = cliPath.resolve("ca.pem").toFile()
-    private val cliCaPrivateKeyFile = cliPath.resolve("ca-private-key.pem").toFile()
-    private val cliCaPublicKeyFile = cliPath.resolve("ca-public-key.pem").toFile()
+    private val caPrivateKeyFile = caPath.resolve("private-key.pem").toFile()
+    private val caPublicKeyFile = caPath.resolve("public-key.pem").toFile()
+
+    private val certificateFile = nodePath.resolve("certificate.pem").toFile()
+    private val caCertificateFile = caPath.resolve("certificate.pem").toFile()
 
     val keyPair: KeyPair
+    private val caKeyPair: KeyPair
 
     init {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(BouncyCastleProvider())
         }
 
-        Files.createDirectories(clusterPath)
-        Files.createDirectories(cliPath)
+        Files.createDirectories(nodePath)
+        Files.createDirectories(caPath)
 
-        keyPair = loadOrCreateKeyPair()
+        keyPair = loadOrCreateKeyPair(privateKeyFile, publicKeyFile)
+        caKeyPair = loadOrCreateKeyPair(caPrivateKeyFile, caPublicKeyFile)
 
-        // 🔥 Bootstrap Root of Trust
-        if (!isNodeRegistered()) {
-            bootstrapNodeRootOfTrust()
-        }
-
-        if (!isCliCaPresent()) {
-            bootstrapCliCa()
+        if (!isInitialized()) {
+            bootstrap()
         }
     }
 
-    fun isNodeRegistered(): Boolean =
+    fun isInitialized(): Boolean =
         certificateFile.exists() && caCertificateFile.exists()
 
-    fun isCliCaPresent(): Boolean = cliCaCertificateFile.exists()
+    fun certificateFile(): File = certificateFile
+    fun privateKeyFile(): File = privateKeyFile
+    fun caCertificateFile(): File = caCertificateFile
 
     fun saveCertificate(certPem: String) {
         certificateFile.writeText(certPem)
@@ -70,66 +75,46 @@ class CertificateDataStorage {
         caCertificateFile.writeText(caPem)
     }
 
-    fun certificateFile(): File = certificateFile
-    fun privateKeyFile(): File = privateKeyFile
-    fun caCertificateFile(): File = caCertificateFile
-    fun cliCaCertificateFile(): File = cliCaCertificateFile
-
-    fun loadCliCertificateAuthority(): CertificateAuthority {
-        val caKeyPair = if (cliCaPrivateKeyFile.exists() && cliCaPublicKeyFile.exists()) {
-            loadKeyPairFromFiles(cliCaPrivateKeyFile, cliCaPublicKeyFile)
-        } else {
-            val kp = generateKeyPair()
-            writeKeyPair(kp, cliCaPrivateKeyFile, cliCaPublicKeyFile)
-            kp
-        }
-
-        val caCert = loadCertificateFromPem(cliCaCertificateFile)
-        return CertificateAuthority(caKeyPair, caCert)
+    fun loadCaCertificate(): X509Certificate {
+        return loadCertificateFromPem(caCertificateFile)
     }
 
-    private fun bootstrapNodeRootOfTrust() {
-        val caKeyPair = generateKeyPair()
+    fun certificateAuthority(): CertificateAuthority {
+        return CertificateAuthority(
+            caKeyPair,
+            loadCaCertificate()
+        )
+    }
 
+    private fun bootstrap() {
         val caCert = generateCertificate(
             subject = "CN=Polocloud-Root-CA",
             keyPair = caKeyPair,
             issuerKeyPair = caKeyPair,
-            issuer = "CN=Polocloud-Root-CA"
+            issuer = "CN=Polocloud-Root-CA",
+            isCa = true
         )
 
         val nodeCert = generateCertificate(
-            subject = "CN=Node",
+            subject = "CN=Polocloud-Node",
             keyPair = keyPair,
             issuerKeyPair = caKeyPair,
-            issuer = "CN=Polocloud-Root-CA"
+            issuer = "CN=Polocloud-Root-CA",
+            isCa = false
         )
 
         writePem(caCertificateFile, caCert)
         writePem(certificateFile, nodeCert)
     }
 
-    private fun bootstrapCliCa() {
-        val caKeyPair = generateKeyPair()
-        writeKeyPair(caKeyPair, cliCaPrivateKeyFile, cliCaPublicKeyFile)
-
-        val caCert = generateCertificate(
-            subject       = "CN=Polocloud-CLI-CA",
-            keyPair       = caKeyPair,
-            issuerKeyPair = caKeyPair,
-            issuer        = "CN=Polocloud-CLI-CA"
-        )
-
-        writePem(cliCaCertificateFile, caCert)
-    }
-
     private fun generateCertificate(
         subject: String,
         keyPair: KeyPair,
         issuerKeyPair: KeyPair,
-        issuer: String
+        issuer: String,
+        isCa: Boolean
     ): X509Certificate {
-        val now   = Date()
+        val now = Date()
         val until = Date(now.time + 3650L * 24 * 60 * 60 * 1000)
 
         val builder = JcaX509v3CertificateBuilder(
@@ -141,7 +126,56 @@ class CertificateDataStorage {
             keyPair.public
         )
 
-        val signer = JcaContentSignerBuilder("SHA256WithRSA").build(issuerKeyPair.private)
+        if (isCa) {
+            builder.addExtension(
+                Extension.basicConstraints,
+                true,
+                BasicConstraints(true)
+            )
+
+            builder.addExtension(
+                Extension.keyUsage,
+                true,
+                KeyUsage(
+                    KeyUsage.keyCertSign or
+                            KeyUsage.cRLSign
+                )
+            )
+        } else {
+            builder.addExtension(
+                Extension.basicConstraints,
+                true,
+                BasicConstraints(false)
+            )
+
+            builder.addExtension(
+                Extension.keyUsage,
+                true,
+                KeyUsage(
+                    KeyUsage.digitalSignature or
+                            KeyUsage.keyEncipherment
+                )
+            )
+
+            val subjectAltNames = GeneralNames(
+                arrayOf(
+                    GeneralName(GeneralName.dNSName, "localhost"),
+                    GeneralName(GeneralName.dNSName, "*.polocloud.local"), //TODO match SAN later
+                    GeneralName(GeneralName.iPAddress, "127.0.0.1"),
+                    GeneralName(GeneralName.iPAddress, "::1")
+                )
+            )
+
+            builder.addExtension(
+                Extension.subjectAlternativeName,
+                false,
+                subjectAltNames
+            )
+        }
+
+        val signer = JcaContentSignerBuilder("SHA256WithRSA")
+            .build(issuerKeyPair.private)
+
         val holder: X509CertificateHolder = builder.build(signer)
 
         return JcaX509CertificateConverter()
@@ -158,12 +192,12 @@ class CertificateDataStorage {
         }
     }
 
-    private fun loadOrCreateKeyPair(): KeyPair {
-        return if (privateKeyFile.exists() && publicKeyFile.exists()) {
-            loadKeyPairFromFiles(privateKeyFile, publicKeyFile)
+    private fun loadOrCreateKeyPair(private: File, pub: File): KeyPair {
+        return if (private.exists() && pub.exists()) {
+            loadKeyPairFromFiles(private, pub)
         } else {
             val kp = generateKeyPair()
-            writeKeyPair(kp, privateKeyFile, publicKeyFile)
+            writeKeyPair(kp, private, pub)
             kp
         }
     }

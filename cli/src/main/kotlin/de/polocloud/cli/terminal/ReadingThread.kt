@@ -39,7 +39,7 @@ class ReadingThread(
 ) : Thread("reading-thread") {
 
     override fun run() {
-        this.terminal.resetPrompt()
+        this.terminal.disconnectPrompt()
 
         while (!isInterrupted) {
             try {

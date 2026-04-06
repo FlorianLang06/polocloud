@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_package = "de.polocloud.proto";
+option java_outer_classname = "Cluster";
+option java_multiple_files = true;
+
+service ClusterService {
+  rpc GetClusterInfo (ClusterInfoRequest) returns (ClusterInfoResponse);
+}
+
+message ClusterInfoRequest {}
+
+message ClusterInfoResponse {
+  string node_name = 1;
+}

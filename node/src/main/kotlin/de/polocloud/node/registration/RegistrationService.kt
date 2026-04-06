@@ -5,25 +5,20 @@ import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.generator.NodeIndexGenerator
-import de.polocloud.node.generator.SelfSignedCertificateGenerator
 import de.polocloud.node.nodes.NodeData
 import de.polocloud.node.nodes.NodeState
 import de.polocloud.node.repositories.NodeRepository
-import de.polocloud.node.security.CertificateAuthority
+import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.RegisterNodeRequest
 import de.polocloud.proto.RegisterNodeResponse
-import org.bouncycastle.openssl.PEMParser
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
-import java.io.StringReader
-import java.security.KeyPair
 import java.util.UUID
 
 class RegistrationService(
     val registrationManager: RegistrationManager,
     val repository: NodeRepository,
-    val keyPair: KeyPair
+    val certificateDataStorage: CertificateDataStorage,
 ) : NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(RegistrationService::class.java)
@@ -44,8 +39,7 @@ class RegistrationService(
             return this.sendDenyResponse("cluster.registration.node.version.mismatch")
         }
 
-        val caCert = SelfSignedCertificateGenerator(keyPair).generate()
-        val ca = CertificateAuthority(keyPair, caCert)
+        val ca = certificateDataStorage.certificateAuthority()
 
         val csr = parseCsr(request.publicKey)
         val cert = ca.signCsr(csr, subjectAltNames = listOf("node1.polocloud.local", "127.0.0.1"))

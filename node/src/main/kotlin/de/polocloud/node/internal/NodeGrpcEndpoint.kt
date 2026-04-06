@@ -9,7 +9,9 @@ import de.polocloud.node.cli.interceptor.CliSessionInterceptor
 import de.polocloud.node.cli.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.cli.session.CliSessionCleanup
 import de.polocloud.node.cli.session.ICliSessionManager
+import de.polocloud.node.cluster.ClusterServiceImpl
 import de.polocloud.node.configuration.ClusterConfiguration
+import de.polocloud.node.nodes.LocalNodeContainer
 import de.polocloud.node.security.CertificateDataStorage
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 
@@ -32,6 +34,7 @@ class NodeGrpcEndpoint(
     clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
     cliSessionManager: ICliSessionManager,
+    localNodeContainerProvider: () -> LocalNodeContainer
 ) : Closeable {
 
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
@@ -42,12 +45,16 @@ class NodeGrpcEndpoint(
             keyFile = certificateDataStorage.privateKeyFile(),
             clientAuth = ClientAuth.REQUIRE,
             caCertFiles = arrayOf(
-                certificateDataStorage.caCertificateFile(),
-                certificateDataStorage.cliCaCertificateFile()
+                certificateDataStorage.caCertificateFile()
             )
         )
         .interceptedService(
             cliRegistrationService,
+            IpWhitelistInterceptor(clusterConfig.cliAccess),
+            CliSessionInterceptor(cliSessionManager)
+        )
+        .interceptedService(
+            ClusterServiceImpl(localNodeContainerProvider),
             IpWhitelistInterceptor(clusterConfig.cliAccess),
             CliSessionInterceptor(cliSessionManager)
         )
