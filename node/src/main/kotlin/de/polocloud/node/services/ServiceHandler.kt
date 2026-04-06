@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 object ServiceHandler {
 
     private val logger = LoggerFactory.getLogger(ServiceHandler::class.java)
-    private var localServices : List<Service> = emptyList()
+    private var localServices : List<ServiceHolder> = emptyList()
 
     fun initialize() {
         this.localServices = ServiceFactory.scanServices()

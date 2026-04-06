@@ -11,13 +11,13 @@ object ServiceFactory {
 
     private val path = Path("local/services/cache")
 
-    fun scanServices() : List<Service> {
+    fun scanServices() : List<ServiceHolder> {
         if (!path.exists()) {
             Files.createDirectories(path)
             return listOf()
         }
 
-        val serviceList = mutableListOf<Service>()
+        val serviceList = mutableListOf<ServiceHolder>()
         val jars = path.listDirectoryEntries("*.jar")
 
         for (jarPath in jars) {
@@ -38,11 +38,6 @@ object ServiceFactory {
 
                     try {
                         val clazz = classLoader.loadClass(className)
-
-                        if (Service::class.java.isAssignableFrom(clazz) && clazz != Service::class.java) {
-                            println("Gefundener Service: ${clazz.name}")
-                            //todo register service here
-                        }
 
                     } catch (_: Throwable) { }
                 }

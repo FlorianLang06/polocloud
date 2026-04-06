@@ -49,6 +49,9 @@ awaitility              = "4.3.0"
 polocloud-i18n          = "3.0.1"
 gradle-git-properties   = "2.5.7"
 
+# ── Publishing ─────────────────────────────────────────────────────────────────
+nexus-publish = "2.0.0"
+
 
 [libraries]
 
@@ -121,7 +124,7 @@ kotlin-jvm              = { id = "org.jetbrains.kotlin.jvm",                  ve
 kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerializationPlugin" }
 gradle-git-properties   = { id = "com.gorylenko.gradle-git-properties",       version.ref = "gradle-git-properties" }
 protobuf-plugin         = { id = "com.google.protobuf",                       version.ref = "protobuf-plugin" }
-
+nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish" }
 
 [bundles]
 
