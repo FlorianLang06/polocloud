@@ -30,9 +30,9 @@ class ColorConverter private constructor(
         val resolvedColor = color ?: when (event.level) {
             Level.ERROR -> AnsiColor.RED
             Level.WARN -> AnsiColor.YELLOW
-            Level.INFO -> AnsiColor.GREEN
-            Level.DEBUG -> AnsiColor.BLUE
-            Level.TRACE -> AnsiColor.BLACK
+            Level.INFO -> AnsiColor.BRIGHT_WHITE
+            Level.DEBUG -> AnsiColor.CYAN
+            Level.TRACE -> AnsiColor.WHITE
             else -> AnsiColor.WHITE
         }
 

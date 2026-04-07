@@ -9,7 +9,9 @@ enum class AnsiColor(val ansi: String) {
     BLUE("\u001B[34m"),
     PURPLE("\u001B[35m"),
     CYAN("\u001B[36m"),
-    WHITE("\u001B[37m");
+    WHITE("\u001B[37m"),
+    DARK_GRAY("\u001B[90m"),
+    BRIGHT_WHITE("\u001B[97m");
 
     /**
      * Formats a string with the given ansi escape sequence

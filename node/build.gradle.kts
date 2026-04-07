@@ -2,6 +2,7 @@ import de.polocloud.dependency.plugin.polocloudRuntime
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlin.serialization)
 
     id("de.polocloud")
@@ -26,7 +27,7 @@ dependencies {
     polocloudRuntime(libs.kotlin.reflect)
 
     //logging
-    annotationProcessor(libs.log4j.core)
+    kapt(libs.log4j.core)
     polocloudRuntime(libs.slf4j.api)
     polocloudRuntime(libs.log4j.api)
     polocloudRuntime(libs.log4j.core)
