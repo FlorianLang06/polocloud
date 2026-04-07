@@ -69,12 +69,6 @@ class CliConnectionManager(
             logger.info(TranslationService.tr("cli", "cli.connect.registration.skip"))
         }
 
-        logger.info(TranslationService.tr(
-            "cli",
-            "cli.connect.channel.open",
-            "address" to clusterAddress.toString()
-        ))
-
         grpcChannel.connect(clusterAddress)
     }
 
