@@ -51,6 +51,10 @@ class CliTerminal(
         .variable(LineReader.BELL_STYLE, "none")
         .build() as LineReaderImpl
 
+    init {
+        updatePrompt(promptProvider.default())
+    }
+
     /**
      * The background thread that reads and dispatches user input.
      */

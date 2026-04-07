@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
  * ```
  */
 class CliConnectionManager(
-    private val certificateStorage: CliCertificateStorage = CliCertificateStorage(),
+    private val certificateStorage: CliCertificateStorage,
     private val registrationClient: CliRegistrationClient = CliRegistrationClient(certificateStorage),
     private val grpcChannel: CliGrpcChannel = CliGrpcChannel(certificateStorage),
 ) : CliConnection {
@@ -50,14 +50,14 @@ class CliConnectionManager(
     override suspend fun connect(
         clusterAddress: Address,
         registrationAddress: Address,
-        token: String
+        token: String?
     ) {
         if (isConnected) {
             logger.debug("connect() ignored — already connected")
             return
         }
 
-        if (!certificateStorage.isRegistered()) {
+        if (!certificateStorage.isRegistered() && token != null) {
             logger.info(TranslationService.tr(
                 "cli",
                 "cli.connect.registration.start",
@@ -80,6 +80,8 @@ class CliConnectionManager(
 
 
     override fun channel(): ManagedChannel = grpcChannel.channel()
+
+    fun isRegistered(): Boolean = certificateStorage.isRegistered()
 
     override fun disconnect() {
         if (!grpcChannel.isConnected) {

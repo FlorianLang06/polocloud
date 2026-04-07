@@ -4,7 +4,10 @@ import de.polocloud.cli.CliPaths.CONFIG_FILE
 import de.polocloud.cli.CliPaths.INSTALLER_FILE
 import de.polocloud.cli.configuration.CliConfiguration
 import de.polocloud.cli.configuration.InstallerConfig
+import de.polocloud.cli.configuration.connection.ConnectionHistory
+import de.polocloud.cli.connection.CliCertificateStorage
 import de.polocloud.cli.connection.CliConnectionManager
+import de.polocloud.cli.connection.auto.AutoConnectService
 import de.polocloud.cli.logging.CliLogger
 import de.polocloud.cli.terminal.CliTerminal
 import de.polocloud.common.Closeable
@@ -28,7 +31,10 @@ var logger = CliLogger.initLogging(PolocloudVersion.CURRENT.isDebugEnabled)
 object Cli : Closeable {
     val config: CliConfiguration = loadConfiguration()
 
-    val connectionManager = CliConnectionManager()
+    private val certificateStorage = CliCertificateStorage()
+    val connectionManager = CliConnectionManager(certificateStorage)
+    val connectionHistory = ConnectionHistory(certificateStorage.keyPair)
+    val lifecycle: AutoConnectService = AutoConnectService(connectionManager, connectionHistory)
     val terminal: CliTerminal = CliTerminal(connectionManager)
 
     init {
@@ -53,7 +59,7 @@ object Cli : Closeable {
         this.terminal.clearScreen()
 
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
-
+        this.lifecycle.start()
         this.terminal.readingThread.start()
         //TODO if certs exist automaticlly connect, and if they exists we dont need a token!?
 
@@ -64,6 +70,7 @@ object Cli : Closeable {
      * Stops the CLI application and shuts down the terminal.
      */
     override fun close(mode: ShutdownMode) {
+        lifecycle.stop()
         this.terminal.shutdown()
     }
 

@@ -2,8 +2,12 @@ package de.polocloud.cli.prompt
 
 class DefaultCliPromptProvider : CliPromptProvider {
 
-    override fun disconnected(): String {
+    override fun default(): String {
         return "&bpolocloud&8@&7cli &8» &7"
+    }
+
+    override fun disconnected(): String {
+        return default()
     }
 
     override fun connected(nodeName: String): String {

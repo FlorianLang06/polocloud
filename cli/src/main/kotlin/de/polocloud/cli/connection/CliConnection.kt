@@ -22,7 +22,7 @@ interface CliConnection {
      *
      * Calling this when already connected is a no-op.
      */
-    suspend fun connect(clusterAddress: Address, registrationAddress: Address, token: String)
+    suspend fun connect(clusterAddress: Address, registrationAddress: Address, token: String? = null)
 
     /**
      * Returns the active [ManagedChannel] for creating gRPC service stubs.

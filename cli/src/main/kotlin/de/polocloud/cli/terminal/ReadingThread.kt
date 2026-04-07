@@ -39,8 +39,6 @@ class ReadingThread(
 ) : Thread("reading-thread") {
 
     override fun run() {
-        this.terminal.disconnectPrompt()
-
         while (!isInterrupted) {
             try {
                 val line = lineReader.readLine(this.terminal.prompt).trim()

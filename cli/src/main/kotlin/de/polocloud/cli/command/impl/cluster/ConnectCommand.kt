@@ -7,6 +7,7 @@ import de.polocloud.cli.command.Command
 import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
 import de.polocloud.cli.command.arguments.type.string.TextArgument
+import de.polocloud.cli.configuration.connection.ConnectionEntry
 import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.logger
 import de.polocloud.common.Address
@@ -61,6 +62,13 @@ class ConnectCommand(
                                 "cli.connect.success",
                                 "host" to host,
                                 "port" to clusterPort
+                            )
+                        )
+
+                        Cli.connectionHistory.push(
+                            ConnectionEntry(
+                                clusterAddress = Address(host, clusterPort),
+                                registrationAddress = Address(host, registrationPort)
                             )
                         )
 
