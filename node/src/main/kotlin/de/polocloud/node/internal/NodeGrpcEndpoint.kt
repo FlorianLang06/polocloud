@@ -37,6 +37,7 @@ class NodeGrpcEndpoint(
     localNodeContainerProvider: () -> LocalNodeContainer
 ) : Closeable {
 
+    private val clusterService = ClusterServiceImpl(localNodeContainerProvider)
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
     private val server = GrpcEndpoint.Builder(address)
@@ -54,7 +55,7 @@ class NodeGrpcEndpoint(
             CliSessionInterceptor(cliSessionManager)
         )
         .interceptedService(
-            ClusterServiceImpl(localNodeContainerProvider),
+            clusterService,
             IpWhitelistInterceptor(clusterConfig.cliAccess),
             CliSessionInterceptor(cliSessionManager)
         )
@@ -66,7 +67,9 @@ class NodeGrpcEndpoint(
     }
 
     override fun close(mode: ShutdownMode) {
-        sessionCleanup.close(mode) //TODO maybe disconnect all current sessions
+        clusterService.broadcastShutdown()
+
+        sessionCleanup.close(mode)
         server.close(mode)
     }
 }
