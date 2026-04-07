@@ -25,15 +25,18 @@ class AutoConnectService(
 
         logger.trInfo("cli", "cli.connect.auto.connecting", "host" to last.clusterAddress)
 
+        var nodeName = "cli" //this is the default in case the connection not works
         runBlocking {
             runCatching {
                 connectionManager.connect(
                     last.clusterAddress,
                     last.registrationAddress
                 )
+
+                nodeName = NodeClient(connectionManager).nodeName()
             }.onSuccess {
                 attachListener()
-                Cli.terminal.connectedPrompt(NodeClient(connectionManager).nodeName())
+                Cli.terminal.connectedPrompt(nodeName)
             }.onFailure {
                 logger.trWarn("cli", "cli.connect.auto.failed", "message" to it.message)
             }

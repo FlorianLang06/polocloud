@@ -79,7 +79,6 @@ class CliConnectionManager(
 
     override fun disconnect() {
         if (!grpcChannel.isConnected) {
-            grpcChannel.close()
             return
         }
 
@@ -100,7 +99,6 @@ class CliConnectionManager(
 
         }
 
-        grpcChannel.close()
         logger.info(TranslationService.tr("cli", "cli.connect.disconnected"))
     }
 
