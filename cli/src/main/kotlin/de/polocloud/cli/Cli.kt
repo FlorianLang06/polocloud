@@ -61,7 +61,6 @@ object Cli : Closeable {
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
         this.lifecycle.start()
         this.terminal.readingThread.start()
-        //TODO if certs exist automaticlly connect, and if they exists we dont need a token!?
 
         logger.info(TranslationService.tr("cli", "cli.start.success"))
     }
