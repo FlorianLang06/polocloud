@@ -1,5 +1,6 @@
 package de.polocloud.node.configuration.cluster
 
+import de.polocloud.node.generator.CSPRNGGenerator
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,5 +14,5 @@ import kotlinx.serialization.Serializable
 data class CliAccessConfiguration(
     val enabled: Boolean = true,
     val allowedIps: List<String> = listOf("127.0.0.1"),
-    val registrationToken: String = "test" //TODO generate or something like this
+    val registrationToken: String = CSPRNGGenerator.generate()
 )
