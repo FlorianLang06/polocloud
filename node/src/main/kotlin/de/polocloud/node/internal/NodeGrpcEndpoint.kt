@@ -9,7 +9,7 @@ import de.polocloud.node.cli.interceptor.CliSessionInterceptor
 import de.polocloud.node.cli.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.cli.session.CliSessionCleanup
 import de.polocloud.node.cli.session.ICliSessionManager
-import de.polocloud.node.cluster.ClusterServiceImpl
+import de.polocloud.node.node.NodeServiceImpl
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.nodes.LocalNodeContainer
 import de.polocloud.node.security.CertificateDataStorage
@@ -37,7 +37,7 @@ class NodeGrpcEndpoint(
     localNodeContainerProvider: () -> LocalNodeContainer
 ) : Closeable {
 
-    private val clusterService = ClusterServiceImpl(localNodeContainerProvider)
+    private val nodeService = NodeServiceImpl(localNodeContainerProvider)
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
     private val server = GrpcEndpoint.Builder(address)
@@ -55,7 +55,7 @@ class NodeGrpcEndpoint(
             CliSessionInterceptor(cliSessionManager)
         )
         .interceptedService(
-            clusterService,
+            nodeService,
             IpWhitelistInterceptor(clusterConfig.cliAccess),
             CliSessionInterceptor(cliSessionManager)
         )
@@ -67,7 +67,7 @@ class NodeGrpcEndpoint(
     }
 
     override fun close(mode: ShutdownMode) {
-        clusterService.broadcastShutdown()
+        nodeService.broadcastShutdown()
 
         sessionCleanup.close(mode)
         server.close(mode)

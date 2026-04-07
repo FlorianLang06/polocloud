@@ -1,11 +1,11 @@
 package de.polocloud.cli.connection.auto
 
 import de.polocloud.cli.Cli
-import de.polocloud.cli.cluster.ClusterClient
-import de.polocloud.cli.cluster.ClusterEventListener
+import de.polocloud.cli.node.NodeEventListener
 import de.polocloud.cli.configuration.connection.ConnectionHistory
 import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.connection.lifecycle.ConnectionLifecycle
+import de.polocloud.cli.node.NodeClient
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.i18n.trWarn
 import kotlinx.coroutines.runBlocking
@@ -17,7 +17,7 @@ class AutoConnectService(
 ) : ConnectionLifecycle {
 
     private val logger = LoggerFactory.getLogger(CliConnectionManager::class.java)
-    private var eventListener: ClusterEventListener? = null
+    private var eventListener: NodeEventListener? = null
 
     override fun start() {
         val last = history.latest() ?: return
@@ -33,7 +33,7 @@ class AutoConnectService(
                 )
             }.onSuccess {
                 attachListener()
-                Cli.terminal.connectedPrompt(ClusterClient(connectionManager).nodeName())
+                Cli.terminal.connectedPrompt(NodeClient(connectionManager).nodeName())
             }.onFailure {
                 logger.trWarn("cli", "cli.connect.auto.failed", "message" to it.message)
             }
@@ -49,7 +49,7 @@ class AutoConnectService(
     }
 
     fun attachListener() {
-        eventListener = ClusterEventListener(connectionManager).also { listener ->
+        eventListener = NodeEventListener(connectionManager).also { listener ->
             listener.start {
                 connectionManager.disconnect()
                 Cli.terminal.disconnectPrompt()

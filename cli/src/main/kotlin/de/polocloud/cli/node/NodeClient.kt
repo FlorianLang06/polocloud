@@ -1,10 +1,10 @@
-package de.polocloud.cli.cluster
+package de.polocloud.cli.node
 
 import de.polocloud.cli.connection.CliConnectionManager
-import de.polocloud.proto.ClusterEvent
-import de.polocloud.proto.ClusterEventRequest
-import de.polocloud.proto.ClusterInfoRequest
-import de.polocloud.proto.ClusterServiceGrpcKt
+import de.polocloud.proto.NodeEvent
+import de.polocloud.proto.NodeEventRequest
+import de.polocloud.proto.NodeInformationRequest
+import de.polocloud.proto.NodeServiceGrpcKt
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -13,7 +13,7 @@ import kotlinx.coroutines.runBlocking
 /**
  * Client wrapper for cluster-related RPC calls.
  */
-class ClusterClient(
+class NodeClient(
     private val connectionManager: CliConnectionManager
 ) {
 
@@ -22,11 +22,11 @@ class ClusterClient(
             "Not connected to cluster"
         }
 
-        val stub = ClusterServiceGrpcKt
-            .ClusterServiceCoroutineStub(connectionManager.channel())
+        val stub = NodeServiceGrpcKt
+            .NodeServiceCoroutineStub(connectionManager.channel())
 
         val response = runBlocking {
-            stub.getClusterInfo(ClusterInfoRequest.newBuilder().build())
+            stub.getNodeInformation(NodeInformationRequest.newBuilder().build())
         }
 
         return response.nodeName //TODO get hole node information and build wrapper
@@ -34,15 +34,15 @@ class ClusterClient(
 
     @OptIn(DelicateCoroutinesApi::class)
     fun listenForEvents(onShutdown: () -> Unit) {
-        val stub = ClusterServiceGrpcKt
-            .ClusterServiceCoroutineStub(connectionManager.channel())
+        val stub = NodeServiceGrpcKt
+            .NodeServiceCoroutineStub(connectionManager.channel())
 
         GlobalScope.launch {
             try {
-                stub.listenForEvents(ClusterEventRequest.newBuilder().build())
+                stub.listenForEvents(NodeEventRequest.newBuilder().build())
                     .collect { event ->
                         when (event.type) {
-                            ClusterEvent.Type.NODE_SHUTDOWN -> {
+                            NodeEvent.Type.NODE_SHUTDOWN -> {
                                 onShutdown()
                             }
                             else -> {}

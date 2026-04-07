@@ -11,6 +11,11 @@ service NodeRegistrationService {
   rpc RegisterNode (RegisterNodeRequest) returns (RegisterNodeResponse);
 }
 
+service NodeService {
+  rpc GetNodeInformation (NodeInformationRequest) returns (NodeInformationResponse);
+  rpc ListenForEvents (NodeEventRequest) returns (stream NodeEvent);
+}
+
 message RegisterNodeRequest {
   string localId = 1;
   string group = 2;
@@ -24,11 +29,28 @@ message RegisterNodeRequest {
 message RegisterNodeResponse {
   bool accepted = 1;
   string message = 2;
-  optional string certificate = 4;       // Node-Zertifikat (PEM)
-  optional string ca_certificate = 5;    // CA-Zertifikat (PEM)
+  optional string certificate = 4;
+  optional string ca_certificate = 5;
 }
 
 message NodeVersion {
   string version = 1;
   string gitHash = 2;
+}
+
+message NodeInformationRequest {}
+
+message NodeInformationResponse {
+  string node_name = 1;
+}
+
+message NodeEventRequest {}
+
+message NodeEvent {
+  enum Type {
+    UNKNOWN = 0;
+    NODE_SHUTDOWN = 1;
+  }
+
+  Type type = 1;
 }

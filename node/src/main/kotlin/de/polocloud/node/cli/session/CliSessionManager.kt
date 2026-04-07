@@ -21,8 +21,6 @@ class CliSessionManager : ICliSessionManager {
         }!!
     }
 
-    //TODO save sessions into db?!
-    //TODO create session also if cli already registered
     override fun touch(subject: String) {
         val now = now()
         sessions.computeIfPresent(subject) { _, session -> session.copy(lastAccess = now) }

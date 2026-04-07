@@ -1,8 +1,8 @@
 package de.polocloud.cli.command.impl.cluster
 
 import de.polocloud.cli.Cli
-import de.polocloud.cli.cluster.ClusterClient
-import de.polocloud.cli.cluster.ClusterEventListener
+import de.polocloud.cli.node.NodeEventListener
+import de.polocloud.cli.node.NodeClient
 import de.polocloud.cli.command.Command
 import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
@@ -72,15 +72,15 @@ class ConnectCommand(
                             )
                         )
 
-                        val clusterClient = ClusterClient(connectionManager)
-                        val listener = ClusterEventListener(connectionManager)
+                        val nodeClient = NodeClient(connectionManager)
+                        val listener = NodeEventListener(connectionManager)
 
                         listener.start {
                             connectionManager.disconnect()
                             Cli.terminal.disconnectPrompt()
                         }
 
-                        Cli.terminal.connectedPrompt(clusterClient.nodeName())
+                        Cli.terminal.connectedPrompt(nodeClient.nodeName())
                     }.onFailure { ex ->
                         logger.info(
                             TranslationService.tr(

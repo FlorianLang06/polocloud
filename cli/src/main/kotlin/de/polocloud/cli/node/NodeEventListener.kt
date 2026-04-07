@@ -1,13 +1,15 @@
-package de.polocloud.cli.cluster
+package de.polocloud.cli.node
 
 import de.polocloud.cli.connection.CliConnectionManager
-import de.polocloud.proto.ClusterEvent
-import de.polocloud.proto.ClusterEventRequest
-import de.polocloud.proto.ClusterServiceGrpcKt
+import de.polocloud.common.i18n.trInfo
+import de.polocloud.common.i18n.trWarn
+import de.polocloud.proto.NodeEvent
+import de.polocloud.proto.NodeEventRequest
+import de.polocloud.proto.NodeServiceGrpcKt
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 
-class ClusterEventListener(
+class NodeEventListener(
     private val connectionManager: CliConnectionManager
 ) {
 
@@ -20,11 +22,11 @@ class ClusterEventListener(
         if (job != null) return
 
         job = scope.launch {
-            val stub = ClusterServiceGrpcKt
-                .ClusterServiceCoroutineStub(connectionManager.channel())
+            val stub = NodeServiceGrpcKt
+                .NodeServiceCoroutineStub(connectionManager.channel())
 
             try {
-                stub.listenForEvents(ClusterEventRequest.newBuilder().build())
+                stub.listenForEvents(NodeEventRequest.newBuilder().build())
                     .collect { event ->
                         handleEvent(event, onShutdown)
                     }
@@ -32,16 +34,16 @@ class ClusterEventListener(
                 logger.debug("Event stream closed: ${ex.message}")
 
                 if (connectionManager.isConnected) {
-                    logger.info("Connection lost (event stream closed)")
+                    logger.trInfo("cli", "cli.connect.connection.lost")
                     onShutdown()
                 }
             }
         }
     }
 
-    private fun handleEvent(event: ClusterEvent, onShutdown: () -> Unit) {
+    private fun handleEvent(event: NodeEvent, onShutdown: () -> Unit) {
         when (event.type) {
-            ClusterEvent.Type.NODE_SHUTDOWN -> {
+            NodeEvent.Type.NODE_SHUTDOWN -> {
                 onShutdown()
             }
             else -> {}

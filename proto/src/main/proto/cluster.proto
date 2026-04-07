@@ -6,22 +6,10 @@ option java_multiple_files = true;
 
 service ClusterService {
   rpc GetClusterInfo (ClusterInfoRequest) returns (ClusterInfoResponse);
-  rpc ListenForEvents (ClusterEventRequest) returns (stream ClusterEvent);
 }
 
 message ClusterInfoRequest {}
 
 message ClusterInfoResponse {
   string node_name = 1;
-}
-
-message ClusterEventRequest {}
-
-message ClusterEvent {
-  enum Type {
-    UNKNOWN = 0;
-    NODE_SHUTDOWN = 1;
-  }
-
-  Type type = 1;
 }
