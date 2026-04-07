@@ -5,11 +5,40 @@ option java_outer_classname = "Cluster";
 option java_multiple_files = true;
 
 service ClusterService {
-  rpc GetClusterInfo (ClusterInfoRequest) returns (ClusterInfoResponse);
+  rpc ListNodes (ListNodesRequest) returns (ListNodesResponse);
 }
 
-message ClusterInfoRequest {}
+message ListNodesRequest {}
 
-message ClusterInfoResponse {
-  string node_name = 1;
+message ListNodesResponse {
+  repeated Node nodes = 1;
+}
+
+message Node {
+  string id = 1;
+  int32 index = 2;
+  string group_name = 3;
+
+  string hostname = 4;
+  int32 port = 5;
+
+  NodeState state = 6;
+
+  bool head = 7;
+
+  string version = 8;
+  string git_commit_hash = 9;
+
+  int64 first_connection_epoch_ms = 10;
+  int64 last_connection_epoch_ms = 11;
+}
+
+enum NodeState {
+  NODE_STATE_OFFLINE = 0;
+  NODE_STATE_STARTING = 1;
+  NODE_STATE_SYNCING = 2;
+  NODE_STATE_ONLINE = 3;
+  NODE_STATE_STOPPING = 4;
+  NODE_STATE_STOPPED = 5;
+  NODE_STATE_CRASHED = 6;
 }
