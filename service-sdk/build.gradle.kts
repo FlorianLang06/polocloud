@@ -6,5 +6,5 @@ plugins {
 }
 
 dependencies {
-    polocloudRuntime(projects.common)
+    compileOnly(projects.common)
 }
