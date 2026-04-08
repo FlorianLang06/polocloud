@@ -20,7 +20,7 @@ enum class AnsiColor(val ansi: String) {
      * @return the colorized String
      */
     fun colorize(stringToColorize: String): String {
-        return ansi + stringToColorize + AnsiColor.RESET.ansi
+        return ansi + stringToColorize + RESET.ansi
     }
 
     companion object {

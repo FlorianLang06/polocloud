@@ -18,7 +18,6 @@ import java.util.UUID
 class RegistrationService(
     val registrationManager: RegistrationManager,
     val repository: NodeRepository,
-    val certificateDataStorage: CertificateDataStorage,
 ) : NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(RegistrationService::class.java)
@@ -39,7 +38,7 @@ class RegistrationService(
             return this.sendDenyResponse("cluster.registration.node.version.mismatch")
         }
 
-        val ca = certificateDataStorage.certificateAuthority()
+        val ca = CertificateDataStorage.certificateAuthority()
 
         val csr = parseCsr(request.publicKey)
         val cert = ca.signCsr(csr, subjectAltNames = listOf("node1.polocloud.local", "127.0.0.1"))

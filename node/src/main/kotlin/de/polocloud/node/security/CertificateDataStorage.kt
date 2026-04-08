@@ -1,7 +1,6 @@
 package de.polocloud.node.security
 
 import de.polocloud.node.common.rootDir
-import de.polocloud.node.nodes.LocalNodeContainer
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.BasicConstraints
 import org.bouncycastle.asn1.x509.Extension
@@ -26,7 +25,7 @@ import java.security.*
 import java.security.cert.X509Certificate
 import java.util.*
 
-class CertificateDataStorage() {
+object CertificateDataStorage {
 
     private val basePath = rootDir().resolve(".cache/identity")
     private val nodePath = basePath.resolve("node")
@@ -67,11 +66,8 @@ class CertificateDataStorage() {
     fun privateKeyFile(): File = privateKeyFile
     fun caCertificateFile(): File = caCertificateFile
 
-    fun saveCertificate(certPem: String) {
+    fun saveCertificates(certPem: String, caPem: String) {
         certificateFile.writeText(certPem)
-    }
-
-    fun saveCaCertificate(caPem: String) {
         caCertificateFile.writeText(caPem)
     }
 

@@ -4,22 +4,19 @@ import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.error.extensions.getOrReport
 import de.polocloud.common.generator.CertificateSigningRequestGenerator
+import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.registration.token.RegistrationTokenManager
 import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.slf4j.LoggerFactory
-import java.io.StringWriter
 import java.util.UUID
 
 class RegistrationManager(
     config: ClusterConfiguration,
     repository: NodeRepository,
-    certificateDataStorage: CertificateDataStorage,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
@@ -31,16 +28,15 @@ class RegistrationManager(
         registrationManager = this,
         address = config.registration,
         nodeRepository = repository,
-        certificateDataStorage = certificateDataStorage,
         clusterConfig = config,
         cliRegistrationService = cliRegistrationService,
     )
 
     fun allowRequests() = registrationServer.allowRequests()
 
-    fun tryJoinCluster(registrationInfo: RegistrationInfo, localId : UUID, certificateDataStorage : CertificateDataStorage) {
+    fun tryJoinCluster(registrationInfo: RegistrationInfo, localId : UUID) {
         val client = RegistrationClient()
-        val csr = csrToPem(CertificateSigningRequestGenerator(certificateDataStorage.keyPair, localId).generate())
+        val csr = CertificateSigningRequestGenerator(CertificateDataStorage.keyPair, localId).generate().toPem()
 
         val response = client.tryRegister(registrationInfo, localId, csr).getOrReport() ?: return
 
@@ -48,17 +44,7 @@ class RegistrationManager(
             logger.warn(TranslationService.tr("cluster", "cluster.registration.node.denied", "reason" to response.message))
             return
         }
-
-        certificateDataStorage.saveCertificate(response.certificate)
-        certificateDataStorage.saveCaCertificate(response.caCertificate)
-    }
-
-    fun csrToPem(csr: PKCS10CertificationRequest): String {
-        val writer = StringWriter()
-        JcaPEMWriter(writer).use {
-            it.writeObject(csr)
-        }
-        return writer.toString()
+        CertificateDataStorage.saveCertificates(response.certificate,response.caCertificate)
     }
 
     override fun close(mode: ShutdownMode) = registrationServer.close(mode)

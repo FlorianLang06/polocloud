@@ -30,7 +30,6 @@ import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
  */
 class NodeGrpcEndpoint(
     address: Address,
-    certificateDataStorage: CertificateDataStorage,
     clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
     cliSessionManager: ICliSessionManager,
@@ -42,11 +41,11 @@ class NodeGrpcEndpoint(
 
     private val server = GrpcEndpoint.Builder(address)
         .tls(
-            certFile = certificateDataStorage.certificateFile(),
-            keyFile = certificateDataStorage.privateKeyFile(),
+            certFile = CertificateDataStorage.certificateFile(),
+            keyFile = CertificateDataStorage.privateKeyFile(),
             clientAuth = ClientAuth.REQUIRE,
             caCertFiles = arrayOf(
-                certificateDataStorage.caCertificateFile()
+                CertificateDataStorage.caCertificateFile()
             )
         )
         .interceptedService(

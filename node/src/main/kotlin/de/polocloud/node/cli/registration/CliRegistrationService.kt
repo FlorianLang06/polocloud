@@ -31,13 +31,12 @@ import org.slf4j.LoggerFactory
  */
 class CliRegistrationService(
     config: ClusterConfiguration,
-    certificateDataStorage: CertificateDataStorage,
     private val sessionManager: ICliSessionManager,
 ) : CliRegistrationServiceGrpcKt.CliRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(CliRegistrationService::class.java)
     private val validator = CliRegistrationValidator(config.cliAccess)
-    private val ca = certificateDataStorage.certificateAuthority()
+    private val ca = CertificateDataStorage.certificateAuthority()
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {
         val clientIp = GrpcClientContext.CLIENT_IP.get() ?: "unknown"

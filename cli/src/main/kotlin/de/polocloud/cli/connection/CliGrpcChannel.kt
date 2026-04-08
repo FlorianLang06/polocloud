@@ -2,7 +2,6 @@ package de.polocloud.cli.connection
 
 import de.polocloud.common.Address
 import de.polocloud.i18n.api.TranslationService
-import io.grpc.ConnectivityState
 import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder

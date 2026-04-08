@@ -48,7 +48,6 @@ class NodeInstance(
 
     lateinit var localNodeContainer: LocalNodeContainer
 
-    val certificateDataStorage = CertificateDataStorage()
     val nodeRepository: NodeRepository
     val registrationManager: RegistrationManager
 
@@ -56,6 +55,8 @@ class NodeInstance(
     val cliSessionManager: ICliSessionManager
 
     val nodeGrpcEndpoint: NodeGrpcEndpoint
+    val serviceHandler: ServiceHandler
+
     lateinit var headNodeConnection: NodeGrpcClient
 
     init {
@@ -69,23 +70,21 @@ class NodeInstance(
         this.cliSessionManager = CliSessionManager()
         this.cliRegistrationService = CliRegistrationService(
             configurations.cluster,
-            certificateDataStorage,
             cliSessionManager
         )
         this.registrationManager = RegistrationManager(
             configurations.cluster,
             nodeRepository,
-            certificateDataStorage,
             cliRegistrationService
         )
         this.nodeGrpcEndpoint = NodeGrpcEndpoint(
             resolveBindAddress(),
-            certificateDataStorage,
             configurations.cluster,
             cliRegistrationService,
             cliSessionManager
         ) { localNodeContainer }
 
+        this.serviceHandler = ServiceHandler(database)
         this.initialize()
     }
 
@@ -134,11 +133,11 @@ class NodeInstance(
             throw PoloException(NodeError.NotRegisteredInCluster(localId.toString()))
         }
 
-        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, certificateDataStorage)
+        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId)
 
         this.nodeGrpcEndpoint.start()
 
-        headNodeConnection = NodeGrpcClient(certificateDataStorage)
+        headNodeConnection = NodeGrpcClient()
         headNodeConnection.connect(launchProperties.clusterRegistration.address)
 
         val nodeData = nodeRepository.find(localId)
@@ -157,7 +156,7 @@ class NodeInstance(
         registrationManager.allowRequests()
 
         // scan local services
-        ServiceHandler.initialize()
+        serviceHandler.initialize()
 
         this.localNodeContainer.markOnline()
 

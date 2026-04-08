@@ -8,19 +8,17 @@ import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.cli.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.repositories.NodeRepository
-import de.polocloud.node.security.CertificateDataStorage
 
 class RegistrationServer(
     registrationManager: RegistrationManager,
     address: Address,
     nodeRepository: NodeRepository,
-    certificateDataStorage : CertificateDataStorage,
     clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
     private val grpcServer = GrpcEndpoint.Builder(address)
-        .service(RegistrationService(registrationManager, nodeRepository, certificateDataStorage))
+        .service(RegistrationService(registrationManager, nodeRepository))
         .interceptedService(
             cliRegistrationService,
             IpWhitelistInterceptor(clusterConfig.cliAccess)

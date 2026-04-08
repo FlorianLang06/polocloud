@@ -6,7 +6,7 @@ import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 
-class NodeGrpcClient(val certificateDataStorage: CertificateDataStorage) {
+class NodeGrpcClient {
 
     private var channel : ManagedChannel? = null
 
@@ -17,11 +17,11 @@ class NodeGrpcClient(val certificateDataStorage: CertificateDataStorage) {
     private fun createChannel(address: Address): ManagedChannel {
         val sslContext = GrpcSslContexts.forClient()
             .keyManager(
-                certificateDataStorage.certificateFile(),
-                certificateDataStorage.privateKeyFile()
+                CertificateDataStorage.certificateFile(),
+                CertificateDataStorage.privateKeyFile()
             )
             .trustManager(
-                certificateDataStorage.caCertificateFile()
+                CertificateDataStorage.caCertificateFile()
             )
             .build()
 
