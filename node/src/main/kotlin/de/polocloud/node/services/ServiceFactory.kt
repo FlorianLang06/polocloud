@@ -1,5 +1,6 @@
 package de.polocloud.node.services
 
+import de.polocloud.node.LOCAL_ID
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
 import org.slf4j.LoggerFactory
@@ -52,14 +53,14 @@ object ServiceFactory {
     }
 
     fun bootService(plan : ServiceControlPlan) {
-        val serviceProcess = ServiceProcess(UUID.randomUUID(), -1, -1, ServiceState.LOADING)
+        val serviceProcess = ServiceProcess(UUID.randomUUID(), plan.name, LOCAL_ID,-1, -1, ServiceState.LOADING)
         val container = ServiceContainer(1, serviceProcess)
         val processBuilder = ProcessBuilder()
 
         logger.info("Starting service " + container.name() + " with plan " + plan.name + "...")
 
-        serviceProcess.state = ServiceState.BOOTING
-        val process = processBuilder.start()
-        serviceProcess.pid = process.pid().toInt()
+        serviceProcess.changeState(ServiceState.BOOTING)
+        val process = processBuilder.command("java", "-jar", ).directory(container.path().toFile()).start()
+        serviceProcess.withRuntime(process)
     }
 }

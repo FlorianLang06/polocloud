@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
 
+val LOCAL_ID = LocalIdGenerator.generate()
+
 class NodeInstance(
     /**
      * Bootstrap information created during application startup.
@@ -60,7 +62,7 @@ class NodeInstance(
 
         DatabaseAccess.initialize(configurations.localNode.database)
 
-        if(!DatabaseAccess.connect()) {
+        if (!DatabaseAccess.connect()) {
             // todo log message
             this.close(ShutdownMode.GRACEFUL)
         }
@@ -86,15 +88,12 @@ class NodeInstance(
     }
 
     fun initialize() {
-        val localId = LocalIdGenerator.generate()
-
         if (NodeRepository.count() == 0L) {
             // we are the only and new head
             logger.trInfo("cluster", "cluster.node.identity.created")
 
             this.localNodeContainer = LocalNodeContainer(
                 NodeFactory.createInitial(
-                    localId,
                     resolveBindAddress(),
                     launchProperties.group
                 )
@@ -117,7 +116,7 @@ class NodeInstance(
             return
         }
 
-        val possibleNode = NodeRepository.find(localId)
+        val possibleNode = NodeRepository.find(LOCAL_ID)
         if (possibleNode != null) {
             logger.trInfo("cluster", "cluster.node.identity.detected")
 
@@ -131,17 +130,17 @@ class NodeInstance(
         if (launchProperties.clusterRegistration == null) {
             this.logger.trInfo("cluster", "cluster.validation.failed")
             this.close(ShutdownMode.GRACEFUL)
-            throw PoloException(NodeError.NotRegisteredInCluster(localId.toString()))
+            throw PoloException(NodeError.NotRegisteredInCluster(LOCAL_ID.toString()))
         }
 
-        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId)
+        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, LOCAL_ID)
 
         this.nodeGrpcEndpoint.start()
 
         headNodeConnection = NodeGrpcClient()
         headNodeConnection.connect(launchProperties.clusterRegistration.address)
 
-        val nodeData = NodeRepository.find(localId)
+        val nodeData = NodeRepository.find(LOCAL_ID)
         this.localNodeContainer = LocalNodeContainer(nodeData!!)
     }
 

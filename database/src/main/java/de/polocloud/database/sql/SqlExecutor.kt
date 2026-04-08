@@ -270,7 +270,7 @@ class SqlExecutor(
 
         val constructor = clazz.declaredConstructors.first().apply { isAccessible = true }
 
-        return EntityMeta<T>(fields, identifier, constructor)
+        return EntityMeta(fields, identifier, constructor)
     }
 
 
@@ -365,7 +365,7 @@ class SqlExecutor(
      */
     private fun <T : Any> ensureTableExists(key: DatabaseKey<T>) {
 
-        if(!factory.isValid()) {
+        if (!factory.isValid()) {
             throw FactoryNotPresentException()
         }
 
@@ -388,7 +388,7 @@ class SqlExecutor(
                         val fk = if (fkAnnotation != null) {
                             val fkKey = DatabaseKey(fkAnnotation.clazz)
                             ensureTableExists(fkKey)
-                            "REFERENCES ${fkKey.id()}(${metaInfo.identifier.name})"
+                            "REFERENCES ${fkKey.id()}(${resolveMeta(fkKey).identifier.name})"
                         } else ""
 
                         "${field.name} $type $pk $fk".trim()

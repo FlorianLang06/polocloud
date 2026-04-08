@@ -5,6 +5,7 @@ import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseKey
 import de.polocloud.database.filtering.Eq
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.node.LOCAL_ID
 import de.polocloud.node.error.NodeError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,11 +29,9 @@ import kotlin.time.Duration.Companion.seconds
  * This service collects system metrics like CPU and memory usage, calculates TPS (Ticks per Second),
  * and stores this information periodically in the database. Additionally, old heartbeats are cleaned up.
  *
- * @property localId The unique ID of the local node.
  * @property factory The database connection used for saving heartbeats.
  */
 class NodeHeartBeatService(
-    val localId: UUID,
     val factory: DatabaseConnectionFactory<*>
 ) {
 
@@ -61,7 +60,7 @@ class NodeHeartBeatService(
                 } .onFailure { ex ->
                     ErrorReporter.report(
                         NodeError.HeartbeatSaveFailed(
-                            nodeId = localId.toString(),
+                            nodeId = LOCAL_ID.toString(),
                             reason = ex.message ?: "unknown"
                         )
                     )
@@ -86,7 +85,7 @@ class NodeHeartBeatService(
      * in older data.
      */
     fun cleanUp() {
-        val beats = factory.executor().find(databaseKey, Eq("nodeId", localId))
+        val beats = factory.executor().find(databaseKey, Eq("nodeId", LOCAL_ID))
             .sortedBy { it.heartBeatAt }
 
         if (beats.isEmpty()) return
@@ -144,7 +143,7 @@ class NodeHeartBeatService(
 
         return NodeHeartBeat(
             id = UUID.randomUUID().toString(),
-            nodeId = localId,
+            nodeId = LOCAL_ID,
             heartBeatAt = Clock.System.now(),
             cpuUsage = cpuLoad,
             memoryUsage = memoryUsage,

@@ -24,6 +24,13 @@ class ServiceHandler {
 
     fun bootLocal() {
         ServiceControlPlanRepository.localPlans().forEach {
+
+            if(localServices.stream().noneMatch { s -> s.name == it.name }) {
+                logger.warn("Cannot find file cached file for service plan ${it.name}. Skipping...")
+                return@forEach
+            }
+
+
             for (i in 0 until it.minimum) {
                 logger.info("Start a new service: ${it.name}....")
                 ServiceFactory.bootService(it)
