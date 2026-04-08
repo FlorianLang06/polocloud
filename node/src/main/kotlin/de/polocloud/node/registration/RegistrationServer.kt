@@ -12,13 +12,12 @@ import de.polocloud.node.repositories.NodeRepository
 class RegistrationServer(
     registrationManager: RegistrationManager,
     address: Address,
-    nodeRepository: NodeRepository,
     clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
     private val grpcServer = GrpcEndpoint.Builder(address)
-        .service(RegistrationService(registrationManager, nodeRepository))
+        .service(RegistrationService(registrationManager))
         .interceptedService(
             cliRegistrationService,
             IpWhitelistInterceptor(clusterConfig.cliAccess)

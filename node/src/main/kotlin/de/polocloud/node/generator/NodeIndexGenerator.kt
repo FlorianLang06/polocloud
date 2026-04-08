@@ -3,10 +3,10 @@ package de.polocloud.node.generator
 import de.polocloud.common.generator.Generator
 import de.polocloud.node.repositories.NodeRepository
 
-class NodeIndexGenerator(val nodeRepository: NodeRepository) : Generator<Int> {
+object NodeIndexGenerator : Generator<Int> {
 
     override fun generate(): Int {
-        val usedIndexes = nodeRepository.findAll()
+        val usedIndexes = NodeRepository.findAll()
             .map { it.index }
             .toSet()
 

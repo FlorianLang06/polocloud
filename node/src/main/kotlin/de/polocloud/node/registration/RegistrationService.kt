@@ -17,7 +17,6 @@ import java.util.UUID
 
 class RegistrationService(
     val registrationManager: RegistrationManager,
-    val repository: NodeRepository,
 ) : NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(RegistrationService::class.java)
@@ -26,7 +25,7 @@ class RegistrationService(
 
         logger.trInfo("cluster", "cluster.registration.node.starting")
 
-        if (repository.find(UUID.fromString(request.localId)) != null) {
+        if (NodeRepository.find(UUID.fromString(request.localId)) != null) {
             return this.sendDenyResponse("cluster.registration.node.alreadyRegistered")
         }
 
@@ -44,10 +43,10 @@ class RegistrationService(
         val cert = ca.signCsr(csr, subjectAltNames = listOf("node1.polocloud.local", "127.0.0.1"))
         val certPem = certToPem(cert)
 
-        repository.save(
+        NodeRepository.save(
             NodeData(
                 UUID.fromString(request.localId),
-                NodeIndexGenerator(repository).generate(),
+                NodeIndexGenerator.generate(),
                         request.group,
                 request.hostname,
                 request.port,

@@ -16,7 +16,6 @@ import java.util.UUID
 
 class RegistrationManager(
     config: ClusterConfiguration,
-    repository: NodeRepository,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
@@ -27,7 +26,6 @@ class RegistrationManager(
     private val registrationServer = RegistrationServer(
         registrationManager = this,
         address = config.registration,
-        nodeRepository = repository,
         clusterConfig = config,
         cliRegistrationService = cliRegistrationService,
     )

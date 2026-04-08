@@ -3,7 +3,7 @@ package de.polocloud.node.nodes
 import de.polocloud.node.repositories.NodeRepository
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-class LocalNodeContainer(val stateRepository : NodeRepository, val data: NodeData) : NodeContainer(data) {
+class LocalNodeContainer(val data: NodeData) : NodeContainer(data) {
 
     fun markOnline() =
         changeState(NodeState.ONLINE) {
@@ -36,6 +36,6 @@ class LocalNodeContainer(val stateRepository : NodeRepository, val data: NodeDat
         }
 
         data.state = newState
-        stateRepository.save(this.data)
+        NodeRepository.save(this.data)
     }
 }

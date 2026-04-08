@@ -1,24 +1,25 @@
 package de.polocloud.node.services.control
 
+import de.polocloud.database.DatabaseAccess
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseKey
 import de.polocloud.node.services.ServiceHolder
 import java.util.UUID
 
-class ServiceControlPlanRepository(private val connection : DatabaseConnectionFactory<*>) {
+object ServiceControlPlanRepository {
 
     private val databaseKey = DatabaseKey(ServiceControlPlan::class)
 
     fun findAll() : List<ServiceControlPlan> {
-        return this.connection.executor().findAll(this.databaseKey)
+        return DatabaseAccess.executor().findAll(this.databaseKey)
     }
 
     fun findById(name : String) : ServiceControlPlan? {
-        return this.connection.executor().findById(this.databaseKey, name)
+        return DatabaseAccess.executor().findById(this.databaseKey, name)
     }
 
     fun generateDefault(holder: ServiceHolder) {
-        return this.connection.executor().save(this.databaseKey, ServiceControlPlan(holder.name, holder.version,
+        return DatabaseAccess.executor().save(this.databaseKey, ServiceControlPlan(holder.name, holder.version,
             uniqueUse = false,
             requiredOnNode = true,
             minimum = 1,

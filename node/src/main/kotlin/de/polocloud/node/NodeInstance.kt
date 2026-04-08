@@ -7,6 +7,7 @@ import de.polocloud.common.error.exception.PoloException
 import de.polocloud.common.i18n.trError
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
+import de.polocloud.database.DatabaseAccess
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.cli.registration.CliRegistrationService
@@ -41,19 +42,11 @@ class NodeInstance(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    /**
-     * Database connection factory resolved from launch parameters or persisted configuration.
-     */
-    val database: DatabaseConnectionFactory<*>
-
     lateinit var localNodeContainer: LocalNodeContainer
 
-    val nodeRepository: NodeRepository
     val registrationManager: RegistrationManager
-
     val cliRegistrationService: CliRegistrationService
     val cliSessionManager: ICliSessionManager
-
     val nodeGrpcEndpoint: NodeGrpcEndpoint
     val serviceHandler: ServiceHandler
 
@@ -65,8 +58,13 @@ class NodeInstance(
 
         Runtime.getRuntime().addShutdownHook(Thread { close(ShutdownMode.GRACEFUL) })
 
-        this.database = this.initializeDatabase()
-        this.nodeRepository = NodeRepository(this.database)
+        DatabaseAccess.initialize(configurations.localNode.database)
+
+        if(!DatabaseAccess.connect()) {
+            // todo log message
+            this.close(ShutdownMode.GRACEFUL)
+        }
+
         this.cliSessionManager = CliSessionManager()
         this.cliRegistrationService = CliRegistrationService(
             configurations.cluster,
@@ -74,7 +72,6 @@ class NodeInstance(
         )
         this.registrationManager = RegistrationManager(
             configurations.cluster,
-            nodeRepository,
             cliRegistrationService
         )
         this.nodeGrpcEndpoint = NodeGrpcEndpoint(
@@ -84,44 +81,48 @@ class NodeInstance(
             cliSessionManager
         ) { localNodeContainer }
 
-        this.serviceHandler = ServiceHandler(database)
+        this.serviceHandler = ServiceHandler()
         this.initialize()
     }
 
     fun initialize() {
         val localId = LocalIdGenerator.generate()
 
-        if (nodeRepository.count() == 0L) {
+        if (NodeRepository.count() == 0L) {
             // we are the only and new head
             logger.trInfo("cluster", "cluster.node.identity.created")
 
             this.localNodeContainer = LocalNodeContainer(
-                nodeRepository,
                 NodeFactory.createInitial(
                     localId,
                     resolveBindAddress(),
                     launchProperties.group
                 )
             )
-            this.nodeRepository.save(this.localNodeContainer.data)
+            NodeRepository.save(this.localNodeContainer.data)
 
             val clusterToken = this.registrationManager.registrationTokenManger.createInitialCliToken()
             val expire = Instant.ofEpochMilli(clusterToken.expiresAt)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime()
 
-            logger.trInfo("cluster", "cluster.node.identity.alert.token", "clusterToken" to clusterToken.token, "expire" to expire)
+            logger.trInfo(
+                "cluster",
+                "cluster.node.identity.alert.token",
+                "clusterToken" to clusterToken.token,
+                "expire" to expire
+            )
 
             this.nodeGrpcEndpoint.start()
             return
         }
 
-        val possibleNode = nodeRepository.find(localId)
+        val possibleNode = NodeRepository.find(localId)
         if (possibleNode != null) {
             logger.trInfo("cluster", "cluster.node.identity.detected")
 
             this.nodeGrpcEndpoint.start()
-            this.localNodeContainer = LocalNodeContainer(nodeRepository, possibleNode)
+            this.localNodeContainer = LocalNodeContainer(possibleNode)
             this.localNodeContainer.markStarting()
             return
         }
@@ -140,8 +141,8 @@ class NodeInstance(
         headNodeConnection = NodeGrpcClient()
         headNodeConnection.connect(launchProperties.clusterRegistration.address)
 
-        val nodeData = nodeRepository.find(localId)
-        this.localNodeContainer = LocalNodeContainer(nodeRepository, nodeData!!)
+        val nodeData = NodeRepository.find(localId)
+        this.localNodeContainer = LocalNodeContainer(nodeData!!)
     }
 
     @Synchronized
@@ -184,23 +185,12 @@ class NodeInstance(
         }
 
         safeClose(logger, "database") {
-            this.database.close(mode)
+            DatabaseAccess.close(mode)
         }
 
         logger.trInfo("node", "node.shutdown.stopped")
         LogManager.shutdown()
     }
-
-    private fun initializeDatabase(): DatabaseConnectionFactory<*> {
-        val database = configurations.localNode.database.factory()
-        database.connect()
-
-        if (!database.isValid()) {
-            this.close(ShutdownMode.GRACEFUL)
-        }
-        return database
-    }
-
 
     /**
      * Resolves the effective bind address of this node.
