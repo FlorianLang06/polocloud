@@ -23,7 +23,7 @@ object ConfigurationManager {
 
     private val configs = mutableMapOf<KClass<*>, ConfigurationHolder<*>>()
 
-    val json = Json {
+    val json: Json = Json {
         prettyPrint = true
         ignoreUnknownKeys = true
         encodeDefaults = true
