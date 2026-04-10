@@ -5,6 +5,7 @@ import de.polocloud.common.dependency.insert.ClasspathInsert
 import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.common.system.PolocloudSystemProperties
 import java.nio.file.Path
+import kotlin.io.path.Path
 
 fun main(args: Array<String>) {
     val dependencyRegistry = DependencyRegistry(ClasspathInsert())
@@ -12,6 +13,7 @@ fun main(args: Array<String>) {
     val cliJar = Path.of(System.getProperty(PolocloudSystemProperties.RUNTIME_PATH)).toFile()
 
     dependencyRegistry.scan(OwnBlobScanner(cliJar))
+    dependencyRegistry.scan(OwnBlobScanner(Path(".cache\\dependencies\\de\\polocloud\\database\\3.0.0-snapshot.local\\database-3.0.0-snapshot.local.jar").toFile()))
     dependencyRegistry.downloadAndRegister()
 
     // try to clean the screen before starting the node
