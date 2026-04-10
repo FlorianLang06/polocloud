@@ -160,7 +160,7 @@ class NodeInstance(
 
         this.localNodeContainer.markOnline()
 
-        logger.trInfo("cluster", "cluster.node.started", "version" to PolocloudVersion.CURRENT.toDisplayString())
+        logger.trInfo("cluster", "cluster.node.started", "version" to PolocloudVersion.CURRENT.toDisplayString(), "time" to StartupTimer.formatted)
     }
 
     @Synchronized

@@ -27,10 +27,37 @@ public final class PolocloudParameters {
     public static final String VERSION_ENV = "version";
 
     /**
+     * System property that defines the startup time of polocloud.
+     */
+    public static final String STARTUP_TIME = "polocloud.startup";
+
+    /**
      * Give the own jar path to the thread
      * We attach the node/cli jar into the classpath and by default we collect the runner path
      */
     public static final String RUNTIME_PATH = "polocloud.runtime.path";
+
+    /**
+     * System property that defines the join token, to join in a cluster.
+     */
+    public static final String JOIN_TOKEN = "polocloud.join.token";
+
+    /**
+     * System property that defines the join host, to join in a cluster.
+     */
+    public static final String JOIN_HOST  = "polocloud.join.host";
+
+    /**
+     * System property that defines the join port, to join in a cluster.
+     */
+    public static final String JOIN_PORT  = "polocloud.join.port";
+
+    /**
+     * System property that defines the group name.
+     *
+     * <p>Example value: {@code node-eu}</p>
+     */
+    public static final String NODE_GROUP = "polocloud.node.group";
 
     /**
      * Name of the initialization control file used by Polocloud to track the initialization state of the CLI or node.
