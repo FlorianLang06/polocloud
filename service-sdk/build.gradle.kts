@@ -1,8 +1,6 @@
-import de.polocloud.dependency.plugin.polocloudRuntime
-
 plugins {
     kotlin("jvm") version "2.3.10"
-    id("de.polocloud")
+    alias(libs.plugins.polocloud.gradle.plugin)
 }
 
 dependencies {

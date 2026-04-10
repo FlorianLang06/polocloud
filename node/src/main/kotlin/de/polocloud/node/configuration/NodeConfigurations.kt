@@ -8,5 +8,5 @@ import kotlinx.serialization.Serializable
 data class NodeConfigurations(
     val cluster: ClusterConfiguration = ClusterConfiguration(),
     val general: GeneralConfiguration = GeneralConfiguration(),
-    val localNode: LocalNodeConfiguration = LocalNodeConfiguration.createDefault()
+    val localNode: LocalNodeConfiguration = LocalNodeConfiguration()
 )

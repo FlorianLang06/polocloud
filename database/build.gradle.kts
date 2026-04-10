@@ -1,22 +1,19 @@
+import de.polocloud.gradle.plugin.polocloudRuntime
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
 
-    id("de.polocloud")
+    alias(libs.plugins.polocloud.gradle.plugin)
 }
 
 polocloud {
-
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
 }
 
 dependencies {
+    polocloudRuntime(libs.h2)
+
     compileOnly(projects.common)
     compileOnly(libs.bundles.logging)
     compileOnly(libs.bundles.database)

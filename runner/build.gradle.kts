@@ -1,7 +1,6 @@
 plugins {
     java
-
-    id("de.polocloud")
+    alias(libs.plugins.polocloud.gradle.plugin)
 }
 
 polocloud {

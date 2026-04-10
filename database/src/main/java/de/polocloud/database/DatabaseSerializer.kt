@@ -30,7 +30,7 @@ object DatabaseSerializer {
      */
     @OptIn(InternalSerializationApi::class)
     fun <T : Any> serialize(value: T, clazz: KClass<T>): String {
-        val serializer = clazz.serializer() as KSerializer<T>
+        val serializer = clazz.serializer()
         return json.encodeToString(serializer, value)
     }
 

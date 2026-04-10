@@ -1,10 +1,10 @@
-import de.polocloud.dependency.plugin.polocloudRuntime
+import de.polocloud.gradle.plugin.polocloudRuntime
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
 
-    id("de.polocloud")
+    alias(libs.plugins.polocloud.gradle.plugin)
 }
 
 polocloud {

@@ -20,10 +20,6 @@ import org.apache.logging.log4j.Logger
 class SqlConnectionFactory(credentials: DatabaseCredentials) :
     DatabaseConnectionFactory<DatabaseCredentials>(credentials) {
 
-    companion object {
-        private val logger: Logger = LogManager.getLogger(SqlConnectionFactory::class.java)
-    }
-
     private val executor = SqlExecutor(this)
     var dataSource: HikariDataSource? = null
 
@@ -153,9 +149,7 @@ class SqlConnectionFactory(credentials: DatabaseCredentials) :
                 logger.trWarn("database", "database.pool.shutdown.force", "pool" to ds.poolName)
 
                 // Optional: Falls HikariDataSource
-                if (ds is com.zaxxer.hikari.HikariDataSource) {
-                    ds.hikariPoolMXBean?.softEvictConnections()
-                }
+                ds.hikariPoolMXBean?.softEvictConnections()
             }
 
             ds.close()

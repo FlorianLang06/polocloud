@@ -47,6 +47,7 @@ awaitility              = "4.3.0"
 
 # ── PoloCloud ─────────────────────────────────────────────────────────────────
 polocloud-i18n          = "3.0.1"
+polocloud-gradle-plugin = "0.13.0-SNAPSHOT"
 gradle-git-properties   = "2.5.7"
 
 # ── Publishing ─────────────────────────────────────────────────────────────────
@@ -92,7 +93,7 @@ jline                       = { group = "org.jline",        name = "jline",     
 jansi                       = { group = "org.jline",        name = "jansi",               version.ref = "jline" }
 oshi                        = { group = "com.github.oshi",  name = "oshi-core",           version.ref = "oshi" }
 
-# ── Security ──────────────────────────────────────────────────────────────────
+# ── Security ───── ─────────────────────────────────────────────────────────────
 bcprov                      = { group = "org.bouncycastle", name = "bcprov-jdk18on",      version.ref = "bcprov" }
 bcpkix                      = { group = "org.bouncycastle", name = "bcpkix-jdk18on",      version.ref = "bcprov" }
 argon2                      = { group = "de.mkammerer",     name = "argon2-jvm",          version.ref = "argon2" }
@@ -125,7 +126,7 @@ kotlin-kapt             = { id = "org.jetbrains.kotlin.kapt",                 ve
 kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerializationPlugin" }
 gradle-git-properties   = { id = "com.gorylenko.gradle-git-properties",       version.ref = "gradle-git-properties" }
 protobuf-plugin         = { id = "com.google.protobuf",                       version.ref = "protobuf-plugin" }
-nexus-publish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexus-publish" }
+polocloud-gradle-plugin = { id = "de.polocloud.gradle.plugin", version.ref = "polocloud-gradle-plugin" }
 
 [bundles]
 

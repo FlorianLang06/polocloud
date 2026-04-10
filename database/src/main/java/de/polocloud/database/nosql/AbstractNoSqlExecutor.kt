@@ -43,7 +43,7 @@ abstract class AbstractNoSqlExecutor : DatabaseExecutor {
 
     override fun <T : Any> findAll(key: DatabaseKey<T>): List<T> {
         return readAll(key.id()).map {
-            DatabaseSerializer.deserialize(it, key.clazz) as T
+            DatabaseSerializer.deserialize(it, key.clazz)
         }
     }
 

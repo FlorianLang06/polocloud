@@ -7,6 +7,7 @@ import de.polocloud.common.i18n.trWarn
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
+import redis.clients.jedis.RedisClient
 import redis.clients.jedis.UnifiedJedis
 
 class RedisConnectionFactory(credentials: DatabaseCredentials.Redis) : DatabaseConnectionFactory<DatabaseCredentials.Redis>(credentials) {
@@ -18,13 +19,13 @@ class RedisConnectionFactory(credentials: DatabaseCredentials.Redis) : DatabaseC
 
         state = DatabaseState.CONNECTING
 
-        val uri = if (credentials.password != null && credentials.password!!.isNotBlank()) {
+        val uri = if (!credentials.password.isNullOrBlank()) {
             "redis://:${credentials.password}@" + credentials.address.asString()
         } else {
             "redis://${credentials.address.asString()}"
         }
 
-        jedis = UnifiedJedis(uri)
+        jedis = RedisClient.create(uri)
 
         executor = RedisExecutor(jedis)
 

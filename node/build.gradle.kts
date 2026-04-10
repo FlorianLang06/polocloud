@@ -1,23 +1,15 @@
-import de.polocloud.dependency.plugin.polocloudRuntime
+import de.polocloud.gradle.plugin.polocloudRuntime
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlin.serialization)
 
-    id("de.polocloud")
+    alias(libs.plugins.polocloud.gradle.plugin)
 }
 
 polocloud {
     mainClass = "de.polocloud.node.launch.NodeLaunchBootstrapKt"
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven("https://central.sonatype.com/repository/maven-snapshots/") {
-        name = "polocloud-snapshots"
-    }
 }
 
 dependencies {

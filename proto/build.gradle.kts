@@ -1,12 +1,9 @@
 import com.google.protobuf.gradle.*
 
 plugins {
-    id("java-library")
-
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.protobuf.plugin)
-
-    id("de.polocloud")
+    alias(libs.plugins.polocloud.gradle.plugin)
 }
 
 dependencies {
