@@ -20,7 +20,7 @@ class NodeLaunch(
         System.setProperty("PID", ProcessHandle.current().pid().toString())
 
         if (PolocloudVersion.CURRENT.isDebugEnabled) {
-            Configurator.setRootLevel(Level.DEBUG);
+            System.setProperty("org.apache.logging.log4j.level", "DEBUG")
         }
     }
 
