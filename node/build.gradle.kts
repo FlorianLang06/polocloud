@@ -9,7 +9,7 @@ plugins {
 }
 
 polocloud {
-    mainClass = "de.polocloud.node.launch.NodeLaunchBootstrapKt"
+    mainClass = "de.polocloud.node.bootstrap.NodeLaunchBootstrapKt"
 }
 
 dependencies {

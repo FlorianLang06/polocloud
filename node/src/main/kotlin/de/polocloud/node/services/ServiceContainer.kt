@@ -1,6 +1,6 @@
 package de.polocloud.node.services
 
-import de.polocloud.node.common.rootDir
+import de.polocloud.node.utils.rootDir
 import de.polocloud.node.services.process.ServiceProcess
 import java.nio.file.Path
 

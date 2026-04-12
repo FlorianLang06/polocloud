@@ -1,8 +1,7 @@
 package de.polocloud.common.configuration
 
-import de.polocloud.common.configuration.error.ConfigurationError
-import de.polocloud.common.error.exception.PoloResult
-import de.polocloud.common.error.extensions.*
+import de.polocloud.common.configuration.ConfigurationManager.load
+import de.polocloud.common.configuration.ConfigurationManager.loadResult
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
@@ -35,7 +34,7 @@ object ConfigurationManager {
      * Does NOT throw — returns a [PoloResult] instead.
      *
      * Possible failures:
-     * - Missing [ConfigurationFile] annotation → [ConfigurationError.MissingAnnotation]
+     * - Missing [ConfigurationFile] annotation
      *
      * Usage:
      * ```
@@ -43,20 +42,18 @@ object ConfigurationManager {
      *     .getOrReport() ?: return
      * ```
      */
-    fun <T : Any> loadResult(clazz: KClass<T>): PoloResult<ConfigurationHolder<T>> {
+    fun <T : Any> loadResult(clazz: KClass<T>): ConfigurationHolder<T> {
         val annotation = clazz.annotations
             .filterIsInstance<ConfigurationFile>()
             .firstOrNull()
-            ?: return ConfigurationError.MissingAnnotation(
-                clazz.simpleName ?: "unknown"
-            ).asFailure()
+            ?: throw IllegalStateException(
+                "Missing @ConfigurationFile annotation on ${clazz.simpleName}"
+            )
 
         @Suppress("UNCHECKED_CAST")
-        val holder = configs.getOrPut(clazz) {
+        return configs.getOrPut(clazz) {
             ConfigurationHolder(clazz, annotation.path, json).also { it.init() }
         } as ConfigurationHolder<T>
-
-        return holder.asSuccess()
     }
 
     /**
@@ -74,7 +71,7 @@ object ConfigurationManager {
      * ```
      */
     fun <T : Any> load(clazz: KClass<T>): ConfigurationHolder<T> {
-        return loadResult(clazz).getOrReportAndThrow()
+        return loadResult(clazz)
     }
 
     /**
@@ -103,7 +100,7 @@ object ConfigurationManager {
     /**
      * Inline variant of [loadResult].
      */
-    inline fun <reified T : Any> loadResult(): PoloResult<ConfigurationHolder<T>> = loadResult(T::class)
+    inline fun <reified T : Any> loadResult(): ConfigurationHolder<T> = loadResult(T::class)
 
     /**
      * Stops all file watchers. Call on application shutdown.

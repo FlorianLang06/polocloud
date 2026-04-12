@@ -1,12 +1,11 @@
 package de.polocloud.common.configuration
 
-import de.polocloud.common.configuration.error.ConfigurationError
 import de.polocloud.common.configuration.watcher.FileWatcher
-import de.polocloud.common.error.exception.PoloException
-import de.polocloud.common.error.extensions.report
+import de.polocloud.common.i18n.trError
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializerOrNull
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import kotlin.reflect.KClass
 
@@ -32,6 +31,8 @@ class ConfigurationHolder<T : Any>(
     private val filePath: String,
     private val json: Json,
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private var file: Path = Path.of(filePath)
     private val listeners = mutableListOf<(T) -> Unit>()
     private var watcher: FileWatcher? = null
@@ -108,11 +109,8 @@ class ConfigurationHolder<T : Any>(
                 _value = new
                 listeners.forEach { it(new) }
             }
-            .onFailure { ex ->
-                ConfigurationError.ParseFailed(
-                    file = file.toString(),
-                    reason = ex.message ?: "unknown"
-                ).report()
+            .onFailure { exception ->
+                logger.trError("common", "configuration.parse_failed", exception)
             }
     }
 
@@ -158,13 +156,8 @@ class ConfigurationHolder<T : Any>(
 
         return runCatching {
             json.decodeFromString(serializer, file.toFile().readText())
-        }.getOrElse { ex ->
-            throw PoloException(
-                ConfigurationError.ParseFailed(
-                    file = file.toString(),
-                    reason = ex.message ?: "unknown"
-                )
-            )
+        }.getOrElse { exception ->
+            throw IllegalStateException("Failed to parse configuration file $file", exception)
         }
     }
 
@@ -210,20 +203,14 @@ class ConfigurationHolder<T : Any>(
             return ctor.callBy(emptyMap())
         }
 
-        throw PoloException(
-            ConfigurationError.ValidationFailed(
-                file = file.toString(),
-                field = clazz.simpleName ?: "unknown",
-                reason = "No default instance strategy found"
-            )
-        )
+        throw IllegalStateException("No default instance strategy found for ${clazz.simpleName} (file=$file)")
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun resolveSerializer(): KSerializer<T> {
         return serializerOrNull(clazz.java) as? KSerializer<T>
-            ?: throw PoloException(
-                ConfigurationError.NotSerializable(clazz.simpleName ?: "unknown")
+            ?: throw IllegalStateException(
+                "Class ${clazz.simpleName} is not serializable"
             )
     }
 }
