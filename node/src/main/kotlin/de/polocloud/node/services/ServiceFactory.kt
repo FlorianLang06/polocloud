@@ -1,6 +1,6 @@
 package de.polocloud.node.services
 
-import de.polocloud.node.LOCAL_ID
+import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
 import org.slf4j.LoggerFactory
@@ -8,7 +8,6 @@ import java.net.URLClassLoader
 import java.nio.file.Files
 import java.util.UUID
 import java.util.jar.JarFile
-import java.util.logging.Logger
 import kotlin.io.path.Path
 import kotlin.io.path.exists
 import kotlin.io.path.listDirectoryEntries
@@ -53,7 +52,7 @@ object ServiceFactory {
     }
 
     fun bootService(plan : ServiceControlPlan) {
-        val serviceProcess = ServiceProcess(UUID.randomUUID(), plan.name, LOCAL_ID,-1, -1, ServiceState.LOADING)
+        val serviceProcess = ServiceProcess(UUID.randomUUID(), plan.name, NodeEnvironment.runtime.nodeId.get(),-1, -1, ServiceState.LOADING)
         val container = ServiceContainer(1, serviceProcess)
         val processBuilder = ProcessBuilder()
 

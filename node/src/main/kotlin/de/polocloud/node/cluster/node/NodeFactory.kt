@@ -2,13 +2,13 @@ package de.polocloud.node.cluster.node
 
 import de.polocloud.common.Address
 import de.polocloud.common.version.PolocloudVersion
-import de.polocloud.node.LOCAL_ID
+import de.polocloud.node.core.environment.NodeEnvironment
 import java.util.UUID
 
 object NodeFactory {
 
     fun createInitial(address: Address, group: String): NodeData =
-        create(LOCAL_ID, 1, group, address, true)
+        create(NodeEnvironment.runtime.nodeId.get(), 1, group, address, true)
 
     fun create(
         id: UUID,

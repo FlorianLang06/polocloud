@@ -1,6 +1,6 @@
 package de.polocloud.node.communication.interceptor
 
-import de.polocloud.node.cli.session.ICliSessionManager
+import de.polocloud.node.communication.cli.session.ICliSessionManager
 import io.grpc.*
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle

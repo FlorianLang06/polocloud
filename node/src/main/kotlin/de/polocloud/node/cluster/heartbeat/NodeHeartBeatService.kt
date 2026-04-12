@@ -5,8 +5,8 @@ import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseKey
 import de.polocloud.database.filtering.Eq
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.LOCAL_ID
 import de.polocloud.node.error.NodeError
+import de.polocloud.node.core.environment.NodeEnvironment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -60,7 +60,7 @@ class NodeHeartBeatService(
                 } .onFailure { ex ->
                     ErrorReporter.report(
                         NodeError.HeartbeatSaveFailed(
-                            nodeId = LOCAL_ID.toString(),
+                            nodeId = NodeEnvironment.runtime.nodeId.get().toString(),
                             reason = ex.message ?: "unknown"
                         )
                     )
@@ -85,7 +85,7 @@ class NodeHeartBeatService(
      * in older data.
      */
     fun cleanUp() {
-        val beats = factory.executor().find(databaseKey, Eq("nodeId", LOCAL_ID))
+        val beats = factory.executor().find(databaseKey, Eq("nodeId", NodeEnvironment.runtime.nodeId.get()))
             .sortedBy { it.heartBeatAt }
 
         if (beats.isEmpty()) return
@@ -143,7 +143,7 @@ class NodeHeartBeatService(
 
         return NodeHeartBeat(
             id = UUID.randomUUID().toString(),
-            nodeId = LOCAL_ID,
+            nodeId = NodeEnvironment.runtime.nodeId.get(),
             heartBeatAt = Clock.System.now(),
             cpuUsage = cpuLoad,
             memoryUsage = memoryUsage,

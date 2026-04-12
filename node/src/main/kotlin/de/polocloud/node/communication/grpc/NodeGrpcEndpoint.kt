@@ -4,13 +4,13 @@ import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.grpc.GrpcEndpoint
-import de.polocloud.node.cli.registration.CliRegistrationService
+import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
-import de.polocloud.node.cli.session.CliSessionCleanup
-import de.polocloud.node.cli.session.ICliSessionManager
+import de.polocloud.node.communication.cli.session.CliSessionCleanup
+import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.request.node.NodeServiceImpl
-import de.polocloud.node.configuration.ClusterConfiguration
+import de.polocloud.node.core.configuration.ClusterConfiguration
 import de.polocloud.node.cluster.node.LocalNodeContainer
 import de.polocloud.node.security.CertificateDataStorage
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth

@@ -1,234 +1,26 @@
 package de.polocloud.node
 
-import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.error.exception.PoloException
-import de.polocloud.common.i18n.trError
-import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.version.PolocloudVersion
-import de.polocloud.database.DatabaseAccess
-import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.cli.registration.CliRegistrationService
-import de.polocloud.node.cli.session.CliSessionManager
-import de.polocloud.node.cli.session.ICliSessionManager
-import de.polocloud.node.configuration.NodeConfigurations
-import de.polocloud.node.error.NodeError
-import de.polocloud.node.bootstrap.LocalIdGenerator
-import de.polocloud.node.communication.grpc.NodeGrpcClient
-import de.polocloud.node.communication.grpc.NodeGrpcEndpoint
-import de.polocloud.node.bootstrap.NodeLaunchProperties
-import de.polocloud.node.bootstrap.StartupTimer
-import de.polocloud.node.cluster.node.LocalNodeContainer
-import de.polocloud.node.cluster.node.NodeFactory
-import de.polocloud.node.registration.RegistrationManager
-import de.polocloud.node.cluster.node.NodeRepository
-import de.polocloud.node.services.ServiceHandler
-import org.apache.logging.log4j.LogManager
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.time.Instant
-import java.time.ZoneId
-
-val LOCAL_ID = LocalIdGenerator.generate()
+import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.core.NodeRuntime
 
 class NodeInstance(
-    /**
-     * Bootstrap information created during application startup.
-     * Contains resolved filesystem paths and runtime launch parameters.
-     */
-    val launchProperties: NodeLaunchProperties,
-    val configurations: NodeConfigurations,
+    val runtime: NodeRuntime
 ) : Closeable {
 
-    private val logger = LoggerFactory.getLogger(javaClass)
-
-    lateinit var localNodeContainer: LocalNodeContainer
-
-    val registrationManager: RegistrationManager
-    val cliRegistrationService: CliRegistrationService
-    val cliSessionManager: ICliSessionManager
-    val nodeGrpcEndpoint: NodeGrpcEndpoint
-    val serviceHandler: ServiceHandler
-
-    lateinit var headNodeConnection: NodeGrpcClient
-
-    init {
-        TranslationService.init()
-        TranslationService.defaultLanguage(configurations.general.locale)
-
-        Runtime.getRuntime().addShutdownHook(Thread { close(ShutdownMode.GRACEFUL) })
-
-        DatabaseAccess.initialize(configurations.localNode.database)
-
-        if (!DatabaseAccess.connect()) {
-            // todo log message
-            this.close(ShutdownMode.GRACEFUL)
-        }
-
-        this.cliSessionManager = CliSessionManager()
-        this.cliRegistrationService = CliRegistrationService(
-            configurations.cluster,
-            cliSessionManager
-        )
-        this.registrationManager = RegistrationManager(
-            configurations.cluster,
-            cliRegistrationService
-        )
-        this.nodeGrpcEndpoint = NodeGrpcEndpoint(
-            resolveBindAddress(),
-            configurations.cluster,
-            cliRegistrationService,
-            cliSessionManager
-        ) { localNodeContainer }
-
-        this.serviceHandler = ServiceHandler()
-        this.initialize()
-    }
+    val context: NodeRuntimeContext
+        get() = this.runtime.lifecycle.context
 
     fun initialize() {
-        if (NodeRepository.count() == 0L) {
-            // we are the only and new head
-            logger.trInfo("cluster", "cluster.node.identity.created")
-
-            this.localNodeContainer = LocalNodeContainer(
-                NodeFactory.createInitial(
-                    resolveBindAddress(),
-                    launchProperties.group
-                )
-            )
-            NodeRepository.save(this.localNodeContainer.data)
-
-            val clusterToken = this.registrationManager.registrationTokenManger.createInitialCliToken()
-            val expire = Instant.ofEpochMilli(clusterToken.expiresAt)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime()
-
-            logger.trInfo(
-                "cluster",
-                "cluster.node.identity.alert.token",
-                "clusterToken" to clusterToken.token,
-                "expire" to expire
-            )
-
-            this.nodeGrpcEndpoint.start()
-            return
-        }
-
-        val possibleNode = NodeRepository.find(LOCAL_ID)
-        if (possibleNode != null) {
-            logger.trInfo("cluster", "cluster.node.identity.detected")
-
-            this.nodeGrpcEndpoint.start()
-            this.localNodeContainer = LocalNodeContainer(possibleNode)
-            this.localNodeContainer.markStarting()
-            return
-        }
-
-        // only cluster join chance
-        if (launchProperties.clusterRegistration == null) {
-            this.logger.trInfo("cluster", "cluster.validation.failed")
-            this.close(ShutdownMode.GRACEFUL)
-            throw PoloException(NodeError.NotRegisteredInCluster(LOCAL_ID.toString()))
-        }
-
-        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, LOCAL_ID)
-
-        this.nodeGrpcEndpoint.start()
-
-        headNodeConnection = NodeGrpcClient()
-        headNodeConnection.connect(launchProperties.clusterRegistration.address)
-
-        val nodeData = NodeRepository.find(LOCAL_ID)
-        this.localNodeContainer = LocalNodeContainer(nodeData!!)
+        this.runtime.lifecycle.initialize()
     }
 
-    @Synchronized
     fun start() {
-        if (!localNodeContainer.isStarting()) {
-            // Node is already started or in the process of starting, ignore subsequent start calls
-            throw IllegalStateException("Node is already starting or started. Current state: ${localNodeContainer.state()}")
-        }
-        this.localNodeContainer.markStarting()
-
-        // allow other nodes to connect
-        registrationManager.allowRequests()
-
-        // scan local services
-        serviceHandler.initialize()
-
-        this.localNodeContainer.markOnline()
-
-        logger.trInfo("cluster", "cluster.node.started", "version" to PolocloudVersion.CURRENT.toDisplayString(), "time" to StartupTimer.formatted)
+       this.runtime.lifecycle.start()
     }
 
-    @Synchronized
     override fun close(mode: ShutdownMode) {
-        if (localNodeContainer.isOffline() || localNodeContainer.inShutdownProcess()) {
-            // Node was never started, nothing to do
-            // or already stopped
-            return
-        }
-
-        logger.trInfo("node", "node.shutdown.stopping")
-
-        this.localNodeContainer.markStopping()
-
-        safeClose(logger, "registrationManager") {
-            this.registrationManager.close(mode)
-        }
-
-        safeClose(logger, "localNodeContainer") {
-            this.localNodeContainer.markStopped()
-        }
-
-        safeClose(logger, "database") {
-            DatabaseAccess.close(mode)
-        }
-
-        logger.trInfo("node", "node.shutdown.stopped")
-        LogManager.shutdown()
-    }
-
-    /**
-     * Resolves the effective bind address of this node.
-     *
-     * <p>Resolution priority:</p>
-     * <ol>
-     *     <li>Address provided via {@link NodeLaunchConfig}</li>
-     *     <li>Bind address from persisted configuration</li>
-     * </ol>
-     *
-     * @return the resolved {@link Address} used for the gRPC endpoint
-     */
-    private fun resolveBindAddress(): Address {
-        val launchAddress = launchProperties.address
-        val defaultAddress = configurations.general.bindAddress
-
-        if (launchAddress != null) {
-            val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname
-            val port = launchAddress.port.takeIf { it > 0 } ?: defaultAddress.port
-
-            require(port in 1..65535) { "Port must be between 1 and 65535 but was $port" }
-
-            return Address(hostname, port)
-        }
-        return defaultAddress
-    }
-
-    inline fun safeClose(
-        logger: Logger,
-        name: String,
-        block: () -> Unit
-    ) {
-        try {
-            block()
-        } catch (_: Exception) {
-            logger.trError(
-                "node",
-                "node.shutdown.task.error",
-                "task" to name
-            )
-        }
+        this.runtime.lifecycle.shutdown(mode)
     }
 }

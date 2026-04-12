@@ -3,7 +3,7 @@ package de.polocloud.node.communication.interceptor
 import de.polocloud.common.grpc.GrpcClientContext
 import de.polocloud.common.i18n.trWarn
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.configuration.cluster.CliAccessConfiguration
+import de.polocloud.node.core.configuration.cluster.CliAccessConfiguration
 import io.grpc.Context
 import io.grpc.Contexts
 import io.grpc.Grpc
