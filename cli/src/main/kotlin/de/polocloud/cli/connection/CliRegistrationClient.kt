@@ -1,9 +1,8 @@
 package de.polocloud.cli.connection
 
-import de.polocloud.cli.error.CliError
 import de.polocloud.common.Address
-import de.polocloud.common.error.extensions.report
 import de.polocloud.common.generator.CertificateSigningRequestGenerator
+import de.polocloud.common.i18n.trError
 import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.proto.CliRegistrationServiceGrpcKt
@@ -11,7 +10,7 @@ import de.polocloud.proto.RegisterCliRequest
 import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 
 /**
  * Performs the one-time CLI registration handshake with the cluster.
@@ -50,23 +49,20 @@ class CliRegistrationClient(
                 UUID.randomUUID()
             ).generate()
 
-            val response = runCatching {
+            val response = try {
                 stub.registerCli(
                     RegisterCliRequest.newBuilder()
                         .setToken(token)
                         .setCsrPem(csr.toPem())
                         .build()
                 )
-            }.getOrElse { ex ->
-                CliError.RegistrationFailed(
-                    address = address.toString(),
-                    causeMsg = ex.message ?: "unknown"
-                ).report()
+            } catch (exception: Exception) {
+                logger.trError("cli", "cli.registration.failed", exception, "address" to address)
                 return
             }
 
             if (!response.accepted) {
-                CliError.RegistrationDenied(response.message).report()
+                logger.trError("cli", "cli.registration.denied","reason" to response.message)
                 return
             }
 

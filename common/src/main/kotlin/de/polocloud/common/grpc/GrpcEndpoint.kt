@@ -3,17 +3,11 @@ package de.polocloud.common.grpc
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.error.context.ErrorContext
-import de.polocloud.common.error.extensions.report
-import de.polocloud.common.grpc.error.GrpcError
 import de.polocloud.common.i18n.trDebug
+import de.polocloud.common.i18n.trError
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.i18n.trWarn
-import io.grpc.BindableService
-import io.grpc.Server
-import io.grpc.ServerInterceptor
-import io.grpc.ServerInterceptors
-import io.grpc.ServerServiceDefinition
+import io.grpc.*
 import io.grpc.health.v1.HealthCheckResponse
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
@@ -90,11 +84,8 @@ class GrpcEndpoint private constructor(
                     }
                     .clientAuth(clientAuth)
                     .build()
-            }.getOrElse { e ->
-                GrpcError.TlsSetupFailed(e.message ?: "unknown")
-                    .report()
-                    .throwIfFatal()
-                return
+            }.getOrElse { exception ->
+                throw IllegalStateException("Failed to initialize TLS for gRPC server", exception)
             }
 
             builder.sslContext(sslContext)
@@ -113,12 +104,9 @@ class GrpcEndpoint private constructor(
 
                 logger.trInfo("grpc", "grpc.start.success", "servingStatus" to servingStatus)
             }
-        }.getOrElse { _ ->
-            GrpcError.BindFailed(address.toString())
-                .also { ErrorContext.from("GrpcEndpoint.start") }
-                .report()
-                .throwIfFatal()
-            return
+        }.getOrElse { exception ->
+            logger.trError("grpc", "grpc.bind_failed", "address" to address)
+            throw IllegalStateException("Failed to start gRPC server at $address", exception)
         }
 
         serverRef.set(server)
@@ -153,7 +141,6 @@ class GrpcEndpoint private constructor(
         server.shutdown()
         try {
             if (!server.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS)) {
-                GrpcError.ShutdownTimeout(shutdownTimeoutSeconds).report()
                 logger.trWarn("grpc", "grpc.shutdown.timeout", "timeout" to shutdownTimeoutSeconds)
                 server.shutdownNow()
             } else {
