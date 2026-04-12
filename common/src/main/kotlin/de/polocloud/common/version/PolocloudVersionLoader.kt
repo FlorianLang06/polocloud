@@ -1,8 +1,6 @@
 package de.polocloud.common.version
 
-import de.polocloud.common.error.exception.PoloResult
-import de.polocloud.common.version.error.PolocloudVersionError
-import java.util.Properties
+import java.util.*
 
 /**
  * Loads the current [PolocloudVersion] from the `version.properties` file
@@ -23,42 +21,34 @@ internal object PolocloudVersionLoader {
 
     private const val RESOURCE_PATH = "version.properties"
 
-    fun load(): PoloResult<PolocloudVersion> {
-        // fallback version
-//        val systemVersion = System.getProperty("version")
-//        if (systemVersion != null) {
-//            return PolocloudVersionParser.parseOrNull(systemVersion)
-//                ?: error("Invalid version in system property: $systemVersion")
-//        }
-
+    fun load(): PolocloudVersion {
         val props = Properties()
+
         val stream = PolocloudVersionLoader::class.java
             .getResourceAsStream("/$RESOURCE_PATH")
-            ?: return PolocloudVersionError.ResourceNotFound(RESOURCE_PATH).asFailure()
+            ?: throw IllegalStateException("Version resource '$RESOURCE_PATH' was not found on the classpath. Ensure version.properties is generated at build time.")
 
         stream.use { props.load(it) }
 
-        val major = props.require("major") ?: return PolocloudVersionError.MissingProperty("major").asFailure()
-        val minor = props.require("minor") ?: return PolocloudVersionError.MissingProperty("minor").asFailure()
-        val patch = props.require("patch") ?: return PolocloudVersionError.MissingProperty("patch").asFailure()
-        val channel = props.require("channel") ?: return PolocloudVersionError.MissingProperty("channel").asFailure()
-        val build = props.require("build") ?: return PolocloudVersionError.MissingProperty("build").asFailure()
-        val commitId = props.require("commitId") ?: return PolocloudVersionError.MissingProperty("commitId").asFailure()
-        val commitIdAbbrev = props.require("commitIdAbbrev") ?: return PolocloudVersionError.MissingProperty("commitIdAbbrev").asFailure()
-
-        return Result.success(
-            PolocloudVersion(
-                major = major.toInt(),
-                minor = minor.toInt(),
-                patch = patch.toInt(),
-                channel = PolocloudReleaseChannel.fromString(channel),
-                build = build,
-                buildTime = props.getProperty("buildTime")?.toLongOrNull() ?: -1L,
-                commitId = commitId,
-                commitIdAbbrev = commitIdAbbrev,
-            )
+        return PolocloudVersion(
+            major = props.requireInt("major"),
+            minor = props.requireInt("minor"),
+            patch = props.requireInt("patch"),
+            channel = PolocloudReleaseChannel.fromString(props.require("channel")),
+            build = props.require("build"),
+            buildTime = props.getProperty("buildTime")?.toLongOrNull() ?: -1L,
+            commitId = props.require("commitId"),
+            commitIdAbbrev = props.require("commitIdAbbrev"),
         )
     }
 
-    private fun Properties.require(key: String): String? = getProperty(key)?.takeIf { it.isNotBlank() }
+    private fun Properties.require(key: String): String {
+        return getProperty(key)?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("Required property '$key' is missing or blank in $RESOURCE_PATH.")
+    }
+
+    private fun Properties.requireInt(key: String): Int {
+        return require(key).toIntOrNull()
+            ?: throw IllegalStateException("Property '$key' must be an integer")
+    }
 }
