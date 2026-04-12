@@ -3,10 +3,10 @@ package de.polocloud.common.grpc
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.i18n.trDebug
-import de.polocloud.common.i18n.trError
-import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.i18n.trWarn
+import de.polocloud.i18n.api.trDebug
+import de.polocloud.i18n.api.trError
+import de.polocloud.i18n.api.trInfo
+import de.polocloud.i18n.api.trWarn
 import io.grpc.*
 import io.grpc.health.v1.HealthCheckResponse
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts

@@ -1,8 +1,7 @@
 package de.polocloud.cli.node
 
 import de.polocloud.cli.connection.CliConnectionManager
-import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.i18n.trWarn
+import de.polocloud.i18n.api.trInfo
 import de.polocloud.proto.NodeEvent
 import de.polocloud.proto.NodeEventRequest
 import de.polocloud.proto.NodeServiceGrpcKt

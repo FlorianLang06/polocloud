@@ -1,7 +1,7 @@
 package de.polocloud.common.configuration
 
 import de.polocloud.common.configuration.watcher.FileWatcher
-import de.polocloud.common.i18n.trError
+import de.polocloud.i18n.api.trError
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializerOrNull

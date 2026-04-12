@@ -2,7 +2,7 @@ package de.polocloud.node.communication.cli.session
 
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.i18n.trError
+import de.polocloud.i18n.api.trError
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit

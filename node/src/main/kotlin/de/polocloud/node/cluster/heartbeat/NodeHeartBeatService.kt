@@ -1,22 +1,17 @@
 package de.polocloud.node.cluster.heartbeat
 
-import de.polocloud.common.i18n.trError
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseKey
 import de.polocloud.database.filtering.Eq
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.trError
 import de.polocloud.node.core.environment.NodeEnvironment
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import oshi.SystemInfo
 import oshi.hardware.CentralProcessor
 import oshi.hardware.GlobalMemory
-import java.util.UUID
+import java.util.*
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours

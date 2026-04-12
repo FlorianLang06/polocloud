@@ -1,19 +1,19 @@
 package de.polocloud.node.identity
 
 import de.polocloud.common.Address
-import de.polocloud.common.i18n.trInfo
+import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.bootstrap.properties.NodeProperties
-import de.polocloud.node.communication.registration.cli.CliRegistrationService
-import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.cluster.node.LocalNodeContainer
 import de.polocloud.node.cluster.node.NodeFactory
 import de.polocloud.node.cluster.node.NodeRepository
+import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.grpc.NodeGrpcClient
 import de.polocloud.node.communication.grpc.NodeGrpcEndpoint
-import de.polocloud.node.core.configuration.NodeConfigurations
-import de.polocloud.node.identity.provider.NodeIdProvider
-import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.registration.node.RegistrationManager
+import de.polocloud.node.core.configuration.NodeConfigurations
+import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.identity.provider.NodeIdProvider
 import de.polocloud.node.services.ServiceHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant

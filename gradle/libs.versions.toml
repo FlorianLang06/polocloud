@@ -46,8 +46,8 @@ testcontainers          = "2.0.3"
 awaitility              = "4.3.0"
 
 # ── PoloCloud ─────────────────────────────────────────────────────────────────
-polocloud-i18n          = "3.0.1"
-polocloud-gradle-plugin = "0.13.0-SNAPSHOT"
+polocloud-i18n          = "3.0.2"
+polocloud-gradle-plugin = "3.0.0"
 gradle-git-properties   = "2.5.7"
 
 # ── Publishing ─────────────────────────────────────────────────────────────────

@@ -3,13 +3,11 @@ package de.polocloud.database.sql
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.i18n.trWarn
-import de.polocloud.i18n.api.TranslationService
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
+import de.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.trWarn
 
 /**
  * Abstract SQL connection factory using HikariCP as the connection pool.

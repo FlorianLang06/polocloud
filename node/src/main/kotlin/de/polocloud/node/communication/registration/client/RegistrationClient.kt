@@ -1,8 +1,8 @@
 package de.polocloud.node.communication.registration.client
 
 import de.polocloud.common.Address
-import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
+import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.communication.registration.node.RegistrationInfo
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeVersion
