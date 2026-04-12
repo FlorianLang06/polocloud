@@ -2,7 +2,6 @@ package de.polocloud.node.communication.registration.node
 
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.error.extensions.getOrReport
 import de.polocloud.common.generator.CertificateSigningRequestGenerator
 import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
@@ -37,7 +36,7 @@ class RegistrationManager(
         val client = RegistrationClient()
         val csr = CertificateSigningRequestGenerator(CertificateDataStorage.keyPair, localId).generate().toPem()
 
-        val response = client.tryRegister(registrationInfo, localId, csr).getOrReport() ?: return
+        val response = client.tryRegister(registrationInfo, localId, csr)
 
         if (!response.accepted) {
             logger.warn(TranslationService.tr("cluster", "cluster.registration.node.denied", "reason" to response.message))

@@ -1,10 +1,8 @@
 package de.polocloud.node.communication.registration.client
 
 import de.polocloud.common.Address
-import de.polocloud.common.error.exception.PoloResult
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
-import de.polocloud.node.error.NodeError
 import de.polocloud.node.communication.registration.node.RegistrationInfo
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeVersion
@@ -14,7 +12,7 @@ import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -40,11 +38,11 @@ class RegistrationClient {
      * @param publicKey The node's public key for secure communication.
      * @return The response from the cluster node registration service.
      */
-    fun tryRegister(info: RegistrationInfo, localId: UUID, publicKey: String): PoloResult<RegisterNodeResponse> {
+    fun tryRegister(info: RegistrationInfo, localId: UUID, publicKey: String): RegisterNodeResponse {
         val address = "${info.address.hostname}:${info.address.port}"
         val channel = createChannel(info.address)
 
-        return runCatching {
+        try {
             val stub = NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineStub(channel)
 
             val request = RegisterNodeRequest.newBuilder()
@@ -63,17 +61,12 @@ class RegistrationClient {
 
             logger.trInfo("cluster", "cluster.registration.sendingRequest", "address" to address)
 
-            runBlocking { stub.registerNode(request) }
+            return runBlocking { stub.registerNode(request) }
 
-        }.also {
+        } catch (exception: Exception) {
+            throw IllegalStateException("Failed to register with cluster node at '$address'", exception)
+        } finally {
             shutdown(channel)
-        }.getOrElse { ex ->
-            return NodeError.RegistrationFailed(
-                address = address,
-                reason = ex.message ?: "unknown"
-            ).asFailure()
-        }.let {
-            Result.success(it)
         }
     }
 

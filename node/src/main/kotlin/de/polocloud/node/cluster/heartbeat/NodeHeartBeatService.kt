@@ -1,11 +1,10 @@
 package de.polocloud.node.cluster.heartbeat
 
-import de.polocloud.common.error.reporting.ErrorReporter
+import de.polocloud.common.i18n.trError
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseKey
 import de.polocloud.database.filtering.Eq
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.error.NodeError
 import de.polocloud.node.core.environment.NodeEnvironment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,17 +52,14 @@ class NodeHeartBeatService(
     fun startScheduler(interval: Duration = 1.seconds) {
         cleanUp() // Clean old heartbeats before starting
 
+        val nodeId = NodeEnvironment.runtime.nodeId.get()
+
         schedulerJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
                 runCatching {
                     factory.executor().save(databaseKey, generate())
-                } .onFailure { ex ->
-                    ErrorReporter.report(
-                        NodeError.HeartbeatSaveFailed(
-                            nodeId = NodeEnvironment.runtime.nodeId.get().toString(),
-                            reason = ex.message ?: "unknown"
-                        )
-                    )
+                }.onFailure { exception ->
+                    logger.trError("cluster", "cluster.heartbeat.save_failed", exception, "nodeId" to nodeId)
                 }
                 delay(interval)
             }

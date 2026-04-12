@@ -2,8 +2,7 @@ package de.polocloud.node.communication.cli.session
 
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.error.reporting.ErrorReporter
-import de.polocloud.node.error.NodeError
+import de.polocloud.common.i18n.trError
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -56,10 +55,8 @@ class CliSessionCleanup(
             if (removed > 0) {
                 logger.debug("Cleaned up $removed expired CLI session(s)")
             }
-        }.onFailure { ex ->
-            ErrorReporter.report(
-                NodeError.SessionCleanupFailed(reason = ex.message ?: "unknown")
-            )
+        }.onFailure { exception ->
+            logger.trError("node", "node.session.cleanup_failed", exception)
         }
     }
 }

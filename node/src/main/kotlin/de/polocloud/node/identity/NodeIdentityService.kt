@@ -1,7 +1,6 @@
 package de.polocloud.node.identity
 
 import de.polocloud.common.Address
-import de.polocloud.common.error.exception.PoloException
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.node.bootstrap.properties.NodeProperties
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
@@ -12,7 +11,6 @@ import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.grpc.NodeGrpcClient
 import de.polocloud.node.communication.grpc.NodeGrpcEndpoint
 import de.polocloud.node.core.configuration.NodeConfigurations
-import de.polocloud.node.error.NodeError
 import de.polocloud.node.identity.provider.NodeIdProvider
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.communication.registration.node.RegistrationManager
@@ -85,7 +83,7 @@ class NodeIdentityService(
 
         if (launchProperties.clusterRegistration == null) {
             logger.trInfo("cluster", "cluster.validation.failed")
-            throw PoloException(NodeError.NotRegisteredInCluster(localId.toString()))
+            throw IllegalStateException("This node '$localId' is not registered in the cluster and no registration token was provided.")
         }
 
 
