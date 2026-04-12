@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Periodically removes expired CLI sessions from the [ICliSessionManager].
  *
- * Extracted from [de.polocloud.node.internal.NodeGrpcEndpoint] to follow the single-responsibility principle.
+ * Extracted from [de.polocloud.node.communication.grpc.NodeGrpcEndpoint] to follow the single-responsibility principle.
  * The cleanup interval defaults to the same value as the session timeout.
  *
  * @param sessionManager  The session store to clean up

@@ -1,6 +1,6 @@
 package de.polocloud.node.configuration.cluster
 
-import de.polocloud.node.generator.CSPRNGGenerator
+import de.polocloud.node.security.CSPRNGGenerator
 import kotlinx.serialization.Serializable
 
 /**

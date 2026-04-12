@@ -5,7 +5,7 @@ import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.grpc.GrpcClientContext
 import de.polocloud.common.i18n.trInfo
 import de.polocloud.i18n.api.TranslationService
-import de.polocloud.node.cli.interceptor.CliSessionInterceptor
+import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.cli.session.ICliSessionManager
 import de.polocloud.node.configuration.ClusterConfiguration
 import de.polocloud.node.security.CertificateDataStorage

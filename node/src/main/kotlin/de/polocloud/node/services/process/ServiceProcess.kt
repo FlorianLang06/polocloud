@@ -2,7 +2,7 @@ package de.polocloud.node.services.process
 
 import de.polocloud.database.EntryIdentifier
 import de.polocloud.database.EntryRef
-import de.polocloud.node.nodes.NodeData
+import de.polocloud.node.cluster.node.NodeData
 import de.polocloud.node.services.ServiceState
 import de.polocloud.node.services.control.ServiceControlPlan
 import java.util.UUID

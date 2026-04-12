@@ -1,6 +1,6 @@
 package de.polocloud.node.registration.token
 
-import de.polocloud.node.generator.CSPRNGGenerator
+import de.polocloud.node.security.CSPRNGGenerator
 import java.util.concurrent.ConcurrentHashMap
 
 class RegistrationTokenManager {

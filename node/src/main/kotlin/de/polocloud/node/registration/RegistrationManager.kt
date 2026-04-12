@@ -8,8 +8,9 @@ import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.cli.registration.CliRegistrationService
 import de.polocloud.node.configuration.ClusterConfiguration
+import de.polocloud.node.registration.client.RegistrationClient
+import de.polocloud.node.registration.server.RegistrationServer
 import de.polocloud.node.registration.token.RegistrationTokenManager
-import de.polocloud.node.repositories.NodeRepository
 import de.polocloud.node.security.CertificateDataStorage
 import org.slf4j.LoggerFactory
 import java.util.UUID
