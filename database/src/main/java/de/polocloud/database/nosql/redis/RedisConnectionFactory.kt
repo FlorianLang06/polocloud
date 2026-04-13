@@ -1,12 +1,12 @@
 package de.polocloud.database.nosql.redis
 
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.i18n.trError
-import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.i18n.trWarn
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
+import de.polocloud.i18n.api.trError
+import de.polocloud.i18n.api.trInfo
+import de.polocloud.i18n.api.trWarn
 import redis.clients.jedis.RedisClient
 import redis.clients.jedis.UnifiedJedis
 

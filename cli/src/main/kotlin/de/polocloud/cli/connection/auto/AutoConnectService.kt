@@ -1,13 +1,13 @@
 package de.polocloud.cli.connection.auto
 
 import de.polocloud.cli.Cli
-import de.polocloud.cli.node.NodeEventListener
 import de.polocloud.cli.configuration.connection.ConnectionHistory
 import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.connection.lifecycle.ConnectionLifecycle
 import de.polocloud.cli.node.NodeClient
-import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.i18n.trWarn
+import de.polocloud.cli.node.NodeEventListener
+import de.polocloud.i18n.api.trInfo
+import de.polocloud.i18n.api.trWarn
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 

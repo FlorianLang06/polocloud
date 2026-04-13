@@ -25,7 +25,7 @@ class ClasspathInsert : DependencyInsert<URL>() {
      * @return the URL representing the dependency
      */
     override fun renderDependency(dependency: Dependency): URL {
-        return URI(dependency.url).toURL()
+        return dependency.localPath().toUri().toURL()
     }
 
     /**

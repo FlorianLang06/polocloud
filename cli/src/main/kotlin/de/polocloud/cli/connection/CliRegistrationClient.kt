@@ -2,9 +2,9 @@ package de.polocloud.cli.connection
 
 import de.polocloud.common.Address
 import de.polocloud.common.generator.CertificateSigningRequestGenerator
-import de.polocloud.common.i18n.trError
 import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.trError
 import de.polocloud.proto.CliRegistrationServiceGrpcKt
 import de.polocloud.proto.RegisterCliRequest
 import io.grpc.ManagedChannel

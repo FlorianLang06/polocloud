@@ -5,13 +5,13 @@ import com.mongodb.MongoClientSettings
 import com.mongodb.client.MongoClient
 import com.mongodb.client.MongoClients
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.i18n.trError
-import de.polocloud.common.i18n.trInfo
-import de.polocloud.common.i18n.trWarn
 import de.polocloud.database.DatabaseConnectionFactory
 import de.polocloud.database.DatabaseCredentials
 import de.polocloud.database.DatabaseState
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.trError
+import de.polocloud.i18n.api.trInfo
+import de.polocloud.i18n.api.trWarn
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 

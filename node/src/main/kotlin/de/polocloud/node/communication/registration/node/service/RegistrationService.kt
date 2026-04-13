@@ -2,8 +2,8 @@ package de.polocloud.node.communication.registration.node.service
 
 import de.polocloud.common.certificate.certToPem
 import de.polocloud.common.certificate.parseCsr
-import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
+import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.cluster.node.NodeData
 import de.polocloud.node.cluster.node.NodeIndexGenerator
 import de.polocloud.node.cluster.node.NodeRepository
@@ -14,7 +14,7 @@ import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.RegisterNodeRequest
 import de.polocloud.proto.RegisterNodeResponse
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 
 class RegistrationService(
     val registrationManager: RegistrationManager,

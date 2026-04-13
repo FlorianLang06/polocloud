@@ -94,7 +94,6 @@ object Cli : Closeable {
 
         val holder = ConfigurationManager
             .load<CliConfiguration>()
-            .atPath(path.toString())
 
         return if (path.toFile().exists()) {
             holder.value

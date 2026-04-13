@@ -8,24 +8,26 @@ import de.polocloud.node.bootstrap.properties.NodePropertiesParser
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.core.NodeRuntime
-import org.apache.logging.log4j.Level
-import org.apache.logging.log4j.core.config.Configurator
+import org.slf4j.LoggerFactory
 
 class NodeLaunch(
     args: Array<String> = emptyArray(),
     val launchProperties: NodeProperties = NodePropertiesParser.parse(args)
 ) {
 
+    //load the logger here for faster startup
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     init {
         System.setProperty("PID", ProcessHandle.current().pid().toString())
 
         if (PolocloudVersion.CURRENT.isDebugEnabled) {
-            Configurator.setRootLevel(Level.DEBUG);
+            System.setProperty("org.apache.logging.log4j.level", "DEBUG")
         }
     }
 
     fun run(): NodeInstance {
-        val configurations = loadConfigurations(launchProperties)
+        val configurations = loadConfigurations()
 
         val runtime = NodeRuntime(launchProperties, configurations)
         val instance = NodeInstance(runtime)
@@ -43,12 +45,9 @@ class NodeLaunch(
      * If no configuration file exists, a default configuration
      * will be created and persisted automatically.
      */
-    private fun loadConfigurations(launchProperties: NodeProperties): NodeConfigurations {
-        val root = launchProperties.rootDir
-
+    private fun loadConfigurations(): NodeConfigurations {
         return ConfigurationManager
             .load<NodeConfigurations>()
-            .atPath(root.resolve("config.json").toString())
             .value
     }
 }

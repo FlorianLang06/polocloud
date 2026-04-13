@@ -1,11 +1,11 @@
 package de.polocloud.node.core.lifecycle
 
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.i18n.trError
-import de.polocloud.common.i18n.trInfo
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseAccess
 import de.polocloud.i18n.api.TranslationService
+import de.polocloud.i18n.api.trError
+import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.bootstrap.time.StartupTimer
 import de.polocloud.node.core.NodeRuntime
 import de.polocloud.node.core.context.NodeRuntimeContext

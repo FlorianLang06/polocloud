@@ -1,10 +1,9 @@
 package de.polocloud.common.configuration
 
 import de.polocloud.common.configuration.watcher.FileWatcher
-import de.polocloud.common.i18n.trError
+import de.polocloud.i18n.api.trError
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.serializerOrNull
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import kotlin.reflect.KClass
@@ -30,6 +29,7 @@ class ConfigurationHolder<T : Any>(
     private val clazz: KClass<T>,
     private val filePath: String,
     private val json: Json,
+    private val serializer: KSerializer<T>
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -37,11 +37,8 @@ class ConfigurationHolder<T : Any>(
     private val listeners = mutableListOf<(T) -> Unit>()
     private var watcher: FileWatcher? = null
 
-    // Resolved once at construction — gives a clear error if @Serializable is missing
-    private val serializer: KSerializer<T> = resolveSerializer()
-
     @Volatile
-    private var _value: T = loadFromDisk()
+    private var _value: T? = null
 
     /**
      * Current config value.
@@ -49,7 +46,11 @@ class ConfigurationHolder<T : Any>(
      * Setting this will automatically persist + notify listeners.
      */
     var value: T
-        get() = _value
+        get() {
+            return _value ?: synchronized(this) {
+                _value ?: loadFromDisk().also { _value = it }
+            }
+        }
         set(newValue) {
             _value = newValue
             persist(newValue)
@@ -81,17 +82,9 @@ class ConfigurationHolder<T : Any>(
         value = current
     }
 
-    /**
-     * Returns a new holder using a different file path.
-     * Useful for tests or multiple instances.
-     */
-    fun atPath(path: String): ConfigurationHolder<T> {
-        return ConfigurationHolder(clazz, path, json).also { it.init() }
-    }
-
-    internal fun init() {
-        watcher = FileWatcher(file) {
-            reload()
+    fun init(enableWatcher: Boolean = false) {
+        if (enableWatcher) {
+            watcher = FileWatcher(file) { reload() }
         }
     }
 
@@ -144,7 +137,7 @@ class ConfigurationHolder<T : Any>(
 
     private fun loadFromDisk(): T {
         if (!file.toFile().exists()) {
-            val default = createDefaultInstance()
+            val default = json.decodeFromString(serializer, "{}")
 
             file.toFile().apply {
                 parentFile?.mkdirs()
@@ -159,58 +152,5 @@ class ConfigurationHolder<T : Any>(
         }.getOrElse { exception ->
             throw IllegalStateException("Failed to parse configuration file $file", exception)
         }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun createDefaultInstance(): T {
-        if (DefaultableConfiguration::class.java.isAssignableFrom(clazz.java)) {
-            val instance = clazz.constructors
-                .firstOrNull { it.parameters.isEmpty() }
-                ?.call()
-
-            if (instance is DefaultableConfiguration<*>) {
-                return (instance as DefaultableConfiguration<T>).createDefault()
-            }
-        }
-
-        val staticMethod = clazz.java.methods.firstOrNull {
-            it.name == "default" &&
-                    it.parameterCount == 0 &&
-                    java.lang.reflect.Modifier.isStatic(it.modifiers)
-        }
-
-        if (staticMethod != null) {
-            return staticMethod.invoke(null) as T
-        }
-
-        val companionField = runCatching {
-            clazz.java.getDeclaredField("Companion")
-        }.getOrNull()
-
-        if (companionField != null) {
-            val companion = companionField.get(null)
-
-            if (companion is DefaultableConfiguration<*>) {
-                return (companion as DefaultableConfiguration<T>).createDefault()
-            }
-        }
-
-        val ctor = clazz.constructors.firstOrNull { c ->
-            c.parameters.all { it.isOptional }
-        }
-
-        if (ctor != null) {
-            return ctor.callBy(emptyMap())
-        }
-
-        throw IllegalStateException("No default instance strategy found for ${clazz.simpleName} (file=$file)")
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    private fun resolveSerializer(): KSerializer<T> {
-        return serializerOrNull(clazz.java) as? KSerializer<T>
-            ?: throw IllegalStateException(
-                "Class ${clazz.simpleName} is not serializable"
-            )
     }
 }
