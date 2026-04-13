@@ -1,4 +1,4 @@
-package de.polocloud.common.grpc
+package de.polocloud.common.communication
 
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable

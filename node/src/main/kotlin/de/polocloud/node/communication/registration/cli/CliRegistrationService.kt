@@ -3,7 +3,7 @@ package de.polocloud.node.communication.registration.cli
 import de.polocloud.common.certificate.certToPem
 import de.polocloud.common.certificate.parseCsr
 import de.polocloud.common.configuration.ConfigurationHolder
-import de.polocloud.common.grpc.GrpcClientContext
+import de.polocloud.common.communication.GrpcClientContext
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.communication.cli.session.ICliSessionManager

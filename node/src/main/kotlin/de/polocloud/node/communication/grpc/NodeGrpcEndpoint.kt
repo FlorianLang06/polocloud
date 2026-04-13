@@ -3,15 +3,14 @@ package de.polocloud.node.communication.grpc
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.grpc.GrpcEndpoint
-import de.polocloud.node.cluster.node.LocalNodeContainer
+import de.polocloud.common.communication.GrpcEndpoint
 import de.polocloud.node.communication.cli.session.CliSessionCleanup
 import de.polocloud.node.communication.cli.session.ICliSessionManager
+import de.polocloud.node.communication.impl.cluster.ClusterServiceImpl
+import de.polocloud.node.communication.impl.node.NodeServiceImpl
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
-import de.polocloud.node.communication.response.cluster.ClusterServiceImpl
-import de.polocloud.node.communication.response.node.NodeServiceImpl
 import de.polocloud.node.security.CertificateDataStorage
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 
@@ -31,12 +30,15 @@ import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 class NodeGrpcEndpoint(
     address: Address,
     cliRegistrationService: CliRegistrationService,
-    cliSessionManager: ICliSessionManager,
-    localNodeContainerProvider: () -> LocalNodeContainer
+    cliSessionManager: ICliSessionManager
 ) : Closeable {
 
-    private val nodeService = NodeServiceImpl(localNodeContainerProvider)
-    private val clusterService = ClusterServiceImpl()
+    private val executor = GrpcModule.createExecutor()
+
+    private val nodeService = NodeServiceImpl(executor)
+    private val clusterService = ClusterServiceImpl(executor)
+
+
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
     private val server = GrpcEndpoint.Builder(address)

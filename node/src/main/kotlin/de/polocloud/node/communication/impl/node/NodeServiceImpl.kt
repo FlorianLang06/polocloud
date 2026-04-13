@@ -1,6 +1,7 @@
-package de.polocloud.node.communication.response.node
+package de.polocloud.node.communication.impl.node
 
-import de.polocloud.node.cluster.node.LocalNodeContainer
+import de.polocloud.common.communication.executer.GrpcExecutor
+import de.polocloud.node.communication.grpc.GrpcContextFactory
 import de.polocloud.proto.NodeEvent
 import de.polocloud.proto.NodeEventRequest
 import de.polocloud.proto.NodeInformationRequest
@@ -11,32 +12,20 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-/**
- * Provides cluster-related information to CLI clients.
- */
 class NodeServiceImpl(
-    private val localNodeContainerProvider: () -> LocalNodeContainer
+    private val executor: GrpcExecutor,
 ) : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     private val listeners = mutableSetOf<SendChannel<NodeEvent>>()
 
     override suspend fun getNodeInformation(request: NodeInformationRequest): NodeInformationResponse {
-        val node = localNodeContainerProvider().data
-
-        return NodeInformationResponse.newBuilder()
-            .setNodeName(node.name())
-            .build()
+        return executor.execute(request, GrpcContextFactory.fromGrpc())
     }
 
-    override fun listenForEvents(
-        request: NodeEventRequest
-    ): Flow<NodeEvent> = callbackFlow {
-
+    override fun listenForEvents(request: NodeEventRequest): Flow<NodeEvent> = callbackFlow {
         listeners += channel
 
-        awaitClose {
-            listeners -= channel
-        }
+        awaitClose { listeners -= channel }
     }
 
     fun broadcastShutdown() {
@@ -44,8 +33,6 @@ class NodeServiceImpl(
             .setType(NodeEvent.Type.NODE_SHUTDOWN)
             .build()
 
-        listeners.forEach {
-            it.trySend(event)
-        }
+        listeners.forEach { it.trySend(event) }
     }
 }

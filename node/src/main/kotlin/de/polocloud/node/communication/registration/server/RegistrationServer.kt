@@ -3,13 +3,11 @@ package de.polocloud.node.communication.registration.server
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
-import de.polocloud.common.grpc.GrpcEndpoint
+import de.polocloud.common.communication.GrpcEndpoint
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
-import de.polocloud.node.core.configuration.ClusterConfiguration
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.communication.registration.node.service.RegistrationService
-import de.polocloud.node.core.environment.NodeEnvironment
 
 class RegistrationServer(
     registrationManager: RegistrationManager,

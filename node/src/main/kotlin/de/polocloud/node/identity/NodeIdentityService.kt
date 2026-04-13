@@ -30,17 +30,17 @@ class NodeIdentityService(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    lateinit var container: LocalNodeContainer
+
     fun resolve(launchProperties: NodeProperties): NodeRuntimeContext {
         val localId = nodeId.get()
         val bindAddress = resolveBindAddress(launchProperties)
-
-        lateinit var container: LocalNodeContainer
 
         val grpc = NodeGrpcEndpoint(
             bindAddress,
             cliRegistrationService,
             cliSessionManager
-        ) { container }
+        )
 
         val serviceHandler = ServiceHandler()
 

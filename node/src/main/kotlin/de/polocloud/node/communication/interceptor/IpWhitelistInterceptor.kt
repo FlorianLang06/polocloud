@@ -1,6 +1,6 @@
 package de.polocloud.node.communication.interceptor
 
-import de.polocloud.common.grpc.GrpcClientContext
+import de.polocloud.common.communication.GrpcClientContext
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.api.trWarn
 import de.polocloud.node.core.environment.NodeEnvironment
