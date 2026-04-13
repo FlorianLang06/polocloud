@@ -82,7 +82,7 @@ class ConfigurationHolder<T : Any>(
         value = current
     }
 
-    fun init(enableWatcher: Boolean = false) {
+    fun init(enableWatcher: Boolean = true) {
         if (enableWatcher) {
             watcher = FileWatcher(file) { reload() }
         }
@@ -103,7 +103,7 @@ class ConfigurationHolder<T : Any>(
                 listeners.forEach { it(new) }
             }
             .onFailure { exception ->
-                logger.trError("common", "configuration.parse_failed", exception)
+                logger.trError("common", "configuration.parse_failed", exception, "file" to file.toString())
             }
     }
 

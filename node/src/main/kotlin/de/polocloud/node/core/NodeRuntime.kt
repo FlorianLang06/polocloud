@@ -1,5 +1,6 @@
 package de.polocloud.node.core
 
+import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.node.bootstrap.properties.NodeProperties
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.cli.session.CliSessionManager
@@ -12,27 +13,28 @@ import de.polocloud.node.communication.registration.node.RegistrationManager
 
 class NodeRuntime(
     val launchProperties: NodeProperties,
-    val configurations: NodeConfigurations
+    holder: ConfigurationHolder<NodeConfigurations>
 ) {
     val nodeId: NodeIdProvider = FileBasedNodeIdProvider()
 
     val cliSessionManager = CliSessionManager()
     val cliRegistrationService = CliRegistrationService(
-        configurations.cluster,
+        holder,
         cliSessionManager
     )
 
     val registrationManager = RegistrationManager(
-        configurations.cluster,
+        holder,
         cliRegistrationService
     )
 
     val identityService = NodeIdentityService(
         nodeId,
+        holder,
         registrationManager,
         cliRegistrationService,
         cliSessionManager
     )
 
-    val lifecycle = NodeLifecycle(this)
+    val lifecycle = NodeLifecycle(holder, this)
 }

@@ -9,11 +9,11 @@ import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.core.configuration.ClusterConfiguration
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.communication.registration.node.service.RegistrationService
+import de.polocloud.node.core.environment.NodeEnvironment
 
 class RegistrationServer(
     registrationManager: RegistrationManager,
     address: Address,
-    clusterConfig: ClusterConfiguration,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
@@ -21,7 +21,7 @@ class RegistrationServer(
         .service(RegistrationService(registrationManager))
         .interceptedService(
             cliRegistrationService,
-            IpWhitelistInterceptor(clusterConfig.cliAccess)
+            IpWhitelistInterceptor()
         )
         .build()
 

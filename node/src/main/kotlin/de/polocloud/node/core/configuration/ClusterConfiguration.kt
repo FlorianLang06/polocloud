@@ -8,5 +8,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ClusterConfiguration(
     var registration: Address = LOCALHOST_ADDRESS.withPort(4240),
-    val cliAccess: CliAccessConfiguration = CliAccessConfiguration()
+    var cliAccess: CliAccessConfiguration = CliAccessConfiguration()
 )

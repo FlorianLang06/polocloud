@@ -2,13 +2,14 @@ package de.polocloud.node.communication.registration.cli
 
 import de.polocloud.common.certificate.certToPem
 import de.polocloud.common.certificate.parseCsr
+import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.common.grpc.GrpcClientContext
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.registration.client.CliRegistrationValidator
-import de.polocloud.node.core.configuration.ClusterConfiguration
+import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.proto.*
 import org.bouncycastle.asn1.x500.style.BCStyle
@@ -27,12 +28,12 @@ import org.slf4j.LoggerFactory
  * The CLI CA is loaded lazily once from disk — never regenerated per request.
  */
 class CliRegistrationService(
-    config: ClusterConfiguration,
+    holder: ConfigurationHolder<NodeConfigurations>,
     private val sessionManager: ICliSessionManager,
 ) : CliRegistrationServiceGrpcKt.CliRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(CliRegistrationService::class.java)
-    private val validator = CliRegistrationValidator(config.cliAccess)
+    private var validator = CliRegistrationValidator(holder.value.cluster.cliAccess)
     private val ca = CertificateDataStorage.certificateAuthority()
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {

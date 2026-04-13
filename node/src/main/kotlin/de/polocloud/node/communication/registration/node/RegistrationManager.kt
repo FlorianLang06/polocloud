@@ -2,20 +2,21 @@ package de.polocloud.node.communication.registration.node
 
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.common.generator.CertificateSigningRequestGenerator
 import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
-import de.polocloud.node.core.configuration.ClusterConfiguration
 import de.polocloud.node.communication.registration.client.RegistrationClient
-import de.polocloud.node.communication.registration.server.RegistrationServer
 import de.polocloud.node.communication.registration.node.token.RegistrationTokenManager
+import de.polocloud.node.communication.registration.server.RegistrationServer
+import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.security.CertificateDataStorage
 import org.slf4j.LoggerFactory
-import java.util.UUID
+import java.util.*
 
 class RegistrationManager(
-    config: ClusterConfiguration,
+    holder: ConfigurationHolder<NodeConfigurations>,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
@@ -25,8 +26,7 @@ class RegistrationManager(
 
     private val registrationServer = RegistrationServer(
         registrationManager = this,
-        address = config.registration,
-        clusterConfig = config,
+        address = holder.value.cluster.registration,
         cliRegistrationService = cliRegistrationService,
     )
 

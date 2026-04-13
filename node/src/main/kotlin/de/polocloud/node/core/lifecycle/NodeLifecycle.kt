@@ -1,6 +1,7 @@
 package de.polocloud.node.core.lifecycle
 
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.database.DatabaseAccess
 import de.polocloud.i18n.api.TranslationService
@@ -8,11 +9,13 @@ import de.polocloud.i18n.api.trError
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.bootstrap.time.StartupTimer
 import de.polocloud.node.core.NodeRuntime
+import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
 import org.apache.logging.log4j.LogManager
 import org.slf4j.LoggerFactory
 
 class NodeLifecycle(
+    val holder: ConfigurationHolder<NodeConfigurations>,
     private val runtime: NodeRuntime
 ) {
 
@@ -22,19 +25,18 @@ class NodeLifecycle(
         private set
 
     fun initialize() {
-        val config = runtime.configurations
         val props = runtime.launchProperties
 
         TranslationService.init()
-        TranslationService.defaultLanguage(config.general.locale)
+        TranslationService.defaultLanguage(holder.value.general.locale)
 
-        DatabaseAccess.initialize(config.localNode.database)
+        DatabaseAccess.initialize(holder.value.localNode.database)
 
         if (!DatabaseAccess.connect()) {
             throw IllegalStateException("Database connection failed")
         }
 
-        context = runtime.identityService.resolve(props, config)
+        context = runtime.identityService.resolve(props)
 
         Runtime.getRuntime().addShutdownHook(Thread {
             shutdown(ShutdownMode.GRACEFUL)

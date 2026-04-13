@@ -5,9 +5,9 @@ import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.NodeInstance
 import de.polocloud.node.bootstrap.properties.NodeProperties
 import de.polocloud.node.bootstrap.properties.NodePropertiesParser
+import de.polocloud.node.core.NodeRuntime
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.environment.NodeEnvironment
-import de.polocloud.node.core.NodeRuntime
 import org.slf4j.LoggerFactory
 
 class NodeLaunch(
@@ -27,27 +27,14 @@ class NodeLaunch(
     }
 
     fun run(): NodeInstance {
-        val configurations = loadConfigurations()
+        val holder = ConfigurationManager.load<NodeConfigurations>()
 
-        val runtime = NodeRuntime(launchProperties, configurations)
+        val runtime = NodeRuntime(launchProperties, holder)
         val instance = NodeInstance(runtime)
 
         NodeEnvironment.init(instance)
 
         instance.initialize()
         return instance
-    }
-
-
-    /**
-     * Loads the node configuration from disk.
-     *
-     * If no configuration file exists, a default configuration
-     * will be created and persisted automatically.
-     */
-    private fun loadConfigurations(): NodeConfigurations {
-        return ConfigurationManager
-            .load<NodeConfigurations>()
-            .value
     }
 }

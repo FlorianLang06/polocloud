@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @ConfigurationFile("config.json")
 data class NodeConfigurations(
-    val cluster: ClusterConfiguration = ClusterConfiguration(),
-    val general: GeneralConfiguration = GeneralConfiguration(),
-    val localNode: LocalNodeConfiguration = LocalNodeConfiguration()
+    var cluster: ClusterConfiguration = ClusterConfiguration(),
+    var general: GeneralConfiguration = GeneralConfiguration(),
+    var localNode: LocalNodeConfiguration = LocalNodeConfiguration()
 )

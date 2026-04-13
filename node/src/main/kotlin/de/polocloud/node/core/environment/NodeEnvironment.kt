@@ -13,4 +13,6 @@ object NodeEnvironment {
 
     val runtime get() = instance.runtime
 
+    val configurations get() = instance.context.holder.value
+
 }

@@ -1,6 +1,7 @@
 package de.polocloud.node.identity
 
 import de.polocloud.common.Address
+import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.bootstrap.properties.NodeProperties
 import de.polocloud.node.cluster.node.LocalNodeContainer
@@ -21,6 +22,7 @@ import java.time.ZoneId
 
 class NodeIdentityService(
     private val nodeId: NodeIdProvider,
+    private val holder: ConfigurationHolder<NodeConfigurations>,
     private val registrationManager: RegistrationManager,
     private val cliRegistrationService: CliRegistrationService,
     private val cliSessionManager: ICliSessionManager,
@@ -28,15 +30,14 @@ class NodeIdentityService(
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    fun resolve(launchProperties: NodeProperties, configurations: NodeConfigurations): NodeRuntimeContext {
+    fun resolve(launchProperties: NodeProperties): NodeRuntimeContext {
         val localId = nodeId.get()
-        val bindAddress = resolveBindAddress(launchProperties, configurations)
+        val bindAddress = resolveBindAddress(launchProperties)
 
         lateinit var container: LocalNodeContainer
 
         val grpc = NodeGrpcEndpoint(
             bindAddress,
-            configurations.cluster,
             cliRegistrationService,
             cliSessionManager
         ) { container }
@@ -66,7 +67,7 @@ class NodeIdentityService(
 
             grpc.start()
 
-            return NodeRuntimeContext(container, registrationManager, serviceHandler, grpc, null)
+            return NodeRuntimeContext(holder,container, registrationManager, serviceHandler, grpc, null)
         }
 
         val possibleNode = NodeRepository.find(localId)
@@ -78,7 +79,7 @@ class NodeIdentityService(
 
             grpc.start()
 
-            return NodeRuntimeContext(container, registrationManager, serviceHandler, grpc, null)
+            return NodeRuntimeContext(holder, container, registrationManager, serviceHandler, grpc, null)
         }
 
         if (launchProperties.clusterRegistration == null) {
@@ -97,7 +98,7 @@ class NodeIdentityService(
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
 
-        return NodeRuntimeContext(container, registrationManager, serviceHandler, grpc, headConnection)
+        return NodeRuntimeContext(holder, container, registrationManager, serviceHandler, grpc, headConnection)
     }
 
     /**
@@ -111,9 +112,9 @@ class NodeIdentityService(
      *
      * @return the resolved {@link Address} used for the gRPC endpoint
      */
-    private fun resolveBindAddress(launchProperties: NodeProperties, configurations: NodeConfigurations): Address {
+    private fun resolveBindAddress(launchProperties: NodeProperties): Address {
         val launchAddress = launchProperties.address
-        val defaultAddress = configurations.general.bindAddress
+        val defaultAddress = holder.value.general.bindAddress
 
         if (launchAddress != null) {
             val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname

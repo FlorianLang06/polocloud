@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class CliAccessConfiguration(
-    val enabled: Boolean = true,
-    val allowedIps: List<String> = listOf("127.0.0.1"),
-    val registrationToken: String = CSPRNGGenerator.generate()
+    var enabled: Boolean = true,
+    var allowedIps: List<String> = listOf("127.0.0.1"),
+    var registrationToken: String = CSPRNGGenerator.generate()
 )
