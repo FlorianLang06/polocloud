@@ -20,19 +20,10 @@ dependencies {
 
     //logging
     kapt(libs.log4j.core)
-    polocloudRuntime(libs.slf4j.api)
-    polocloudRuntime(libs.log4j.api)
-    polocloudRuntime(libs.log4j.core)
-    polocloudRuntime(libs.log4j.slf4j)
+    polocloudRuntime(libs.bundles.logging.full)
 
     // grpc
-    polocloudRuntime(libs.grpc.api)
-    polocloudRuntime(libs.grpc.stub)
-    polocloudRuntime(libs.grpc.kotlin.stub)
-    polocloudRuntime(libs.grpc.services)
-    polocloudRuntime(libs.protobuf.kotlin)
-    polocloudRuntime(libs.grpc.netty.shaded)
-    //"grpc-api", "grpc-stub", "grpc-services", "protobuf-java", "grpc-netty-shaded" old, maybe missing
+    polocloudRuntime(libs.bundles.grpc.node)
 
     // database
     polocloudRuntime(libs.hikariCp)
@@ -45,8 +36,7 @@ dependencies {
     polocloudRuntime(libs.argon2)
 
     //security
-    polocloudRuntime(libs.bcprov)
-    polocloudRuntime(libs.bcpkix)
+    polocloudRuntime(libs.bundles.tls)
 
     //system
     polocloudRuntime(libs.oshi)
