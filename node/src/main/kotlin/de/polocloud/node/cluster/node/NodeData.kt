@@ -2,6 +2,8 @@ package de.polocloud.node.cluster.node
 
 import de.polocloud.database.EntryIdentifier
 import de.polocloud.database.RepositoryName
+import de.polocloud.proto.NodeState
+import de.polocloud.proto.ProtoNodeData
 import java.util.UUID
 import kotlin.time.Clock
 import kotlin.time.Instant
@@ -24,4 +26,20 @@ data class NodeData(
     fun name(): String {
         return "$groupName-$index"
     }
+}
+
+fun NodeData.toProto(): ProtoNodeData {
+    return ProtoNodeData.newBuilder()
+        .setId(this.id.toString())
+        .setIndex(this.index)
+        .setGroupName(this.groupName)
+        .setHostname(this.hostname)
+        .setPort(this.port)
+        .setState(this.state)
+        .setHead(this.head)
+        .setVersion(this.version)
+        .setGitCommitHash(this.gitCommitHash)
+        .setFirstConnection(this.firstConnection.toEpochMilliseconds())
+        .setLastConnection(this.lastConnection.toEpochMilliseconds())
+        .build()
 }

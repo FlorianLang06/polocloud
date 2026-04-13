@@ -10,7 +10,8 @@ import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
-import de.polocloud.node.communication.request.node.NodeServiceImpl
+import de.polocloud.node.communication.response.cluster.ClusterServiceImpl
+import de.polocloud.node.communication.response.node.NodeServiceImpl
 import de.polocloud.node.security.CertificateDataStorage
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 
@@ -35,6 +36,7 @@ class NodeGrpcEndpoint(
 ) : Closeable {
 
     private val nodeService = NodeServiceImpl(localNodeContainerProvider)
+    private val clusterService = ClusterServiceImpl()
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
     private val server = GrpcEndpoint.Builder(address)
@@ -53,6 +55,11 @@ class NodeGrpcEndpoint(
         )
         .interceptedService(
             nodeService,
+            IpWhitelistInterceptor(),
+            CliSessionInterceptor(cliSessionManager)
+        )
+        .interceptedService(
+            clusterService,
             IpWhitelistInterceptor(),
             CliSessionInterceptor(cliSessionManager)
         )

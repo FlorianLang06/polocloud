@@ -1,6 +1,6 @@
 package de.polocloud.node.cluster.node
 
-import de.polocloud.node.cluster.node.NodeRepository
+import de.polocloud.proto.NodeState
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class LocalNodeContainer(val data: NodeData) : NodeContainer(data) {

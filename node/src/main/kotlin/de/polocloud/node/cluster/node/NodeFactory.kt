@@ -3,7 +3,8 @@ package de.polocloud.node.cluster.node
 import de.polocloud.common.Address
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.core.environment.NodeEnvironment
-import java.util.UUID
+import de.polocloud.proto.NodeState
+import java.util.*
 
 object NodeFactory {
 

@@ -40,7 +40,6 @@ object Cli : Closeable {
     init {
         TranslationService.init()
         TranslationService.defaultLanguage(config.locale)
-        TranslationService.preloadAsync("errors")
         TranslationService.preloadAsync("cli")
 
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->

@@ -1,5 +1,7 @@
 package de.polocloud.node.cluster.node
 
+import de.polocloud.proto.NodeState
+
 open class NodeContainer(private val data: NodeData) {
 
     fun state() : NodeState = this.data.state

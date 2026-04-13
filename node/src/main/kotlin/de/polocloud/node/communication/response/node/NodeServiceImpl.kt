@@ -1,4 +1,4 @@
-package de.polocloud.node.communication.request.node
+package de.polocloud.node.communication.response.node
 
 import de.polocloud.node.cluster.node.LocalNodeContainer
 import de.polocloud.proto.NodeEvent

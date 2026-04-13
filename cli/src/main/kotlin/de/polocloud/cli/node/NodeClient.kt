@@ -29,7 +29,7 @@ class NodeClient(
             stub.getNodeInformation(NodeInformationRequest.newBuilder().build())
         }
 
-        return response.nodeName //TODO get hole node information and build wrapper
+        return response.nodeName
     }
 
     @OptIn(DelicateCoroutinesApi::class)

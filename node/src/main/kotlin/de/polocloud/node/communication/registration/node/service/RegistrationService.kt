@@ -7,10 +7,10 @@ import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.cluster.node.NodeData
 import de.polocloud.node.cluster.node.NodeIndexGenerator
 import de.polocloud.node.cluster.node.NodeRepository
-import de.polocloud.node.cluster.node.NodeState
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
+import de.polocloud.proto.NodeState
 import de.polocloud.proto.RegisterNodeRequest
 import de.polocloud.proto.RegisterNodeResponse
 import org.slf4j.LoggerFactory

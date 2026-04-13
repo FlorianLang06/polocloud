@@ -4,6 +4,7 @@ import de.polocloud.cli.command.impl.ClearCommand
 import de.polocloud.cli.command.impl.cluster.ConnectCommand
 import de.polocloud.cli.command.impl.HelpCommand
 import de.polocloud.cli.command.impl.ShutdownCommand
+import de.polocloud.cli.command.impl.cluster.NodesCommand
 import de.polocloud.cli.connection.CliConnectionManager
 
 /**
@@ -26,6 +27,7 @@ class CommandService(
         registerCommand(ShutdownCommand())
         registerCommand(ClearCommand())
         registerCommand(ConnectCommand(connectionManager))
+        registerCommand(NodesCommand(connectionManager))
     }
 
     /**
