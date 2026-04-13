@@ -2,7 +2,6 @@ package de.polocloud.cli.configuration
 
 import de.polocloud.common.configuration.serialization.LocaleSerializer
 import de.polocloud.common.configuration.ConfigurationFile
-import de.polocloud.common.configuration.DefaultableConfiguration
 import de.polocloud.i18n.model.Language
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -12,11 +11,4 @@ import java.util.Locale
 data class CliConfiguration(
     @Serializable(with = LocaleSerializer::class)
     val locale: Locale = Language.of("en_US")
-) {
-    companion object : DefaultableConfiguration<CliConfiguration> {
-        override fun createDefault(): CliConfiguration {
-            return CliConfiguration()
-        }
-
-    }
-}
+)

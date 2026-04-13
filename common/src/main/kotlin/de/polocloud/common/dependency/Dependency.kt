@@ -35,11 +35,7 @@ data class Dependency(
      * @throws IllegalStateException if the checksum verification fails after download
      */
     fun download() {
-        val target = Path.of(".cache/dependencies")
-            .resolve(convertedPathGroupId())
-            .resolve(artifactId)
-            .resolve(version)
-            .resolve(fileName())
+        val target = localPath()
 
         if (target.exists()) {
             if (verifyChecksum(target)) return
@@ -67,6 +63,14 @@ data class Dependency(
             StandardCopyOption.REPLACE_EXISTING,
             StandardCopyOption.ATOMIC_MOVE
         )
+    }
+
+    fun localPath(): Path {
+        return Path.of(".cache/dependencies")
+            .resolve(convertedPathGroupId())
+            .resolve(artifactId)
+            .resolve(version)
+            .resolve(fileName())
     }
 
     /**

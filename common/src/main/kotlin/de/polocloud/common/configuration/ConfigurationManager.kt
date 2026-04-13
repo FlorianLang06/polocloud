@@ -1,9 +1,9 @@
 package de.polocloud.common.configuration
 
 import de.polocloud.common.configuration.ConfigurationManager.load
-import de.polocloud.common.configuration.ConfigurationManager.loadResult
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -20,58 +20,12 @@ import kotlin.reflect.KClass
  */
 object ConfigurationManager {
 
-    private val configs = mutableMapOf<KClass<*>, ConfigurationHolder<*>>()
+    val configs = mutableMapOf<KClass<*>, ConfigurationHolder<*>>()
 
     val json: Json = Json {
         prettyPrint = true
         ignoreUnknownKeys = true
         encodeDefaults = true
-    }
-
-    /**
-     * Loads and registers a config in a result-based manner.
-     *
-     * Does NOT throw — returns a [PoloResult] instead.
-     *
-     * Possible failures:
-     * - Missing [ConfigurationFile] annotation
-     *
-     * Usage:
-     * ```
-     * val config = ConfigManager.loadResult<MyConfig>()
-     *     .getOrReport() ?: return
-     * ```
-     */
-    fun <T : Any> loadResult(clazz: KClass<T>): ConfigurationHolder<T> {
-        val annotation = clazz.annotations
-            .filterIsInstance<ConfigurationFile>()
-            .firstOrNull()
-            ?: throw IllegalStateException(
-                "Missing @ConfigurationFile annotation on ${clazz.simpleName}"
-            )
-
-        @Suppress("UNCHECKED_CAST")
-        return configs.getOrPut(clazz) {
-            ConfigurationHolder(clazz, annotation.path, json).also { it.init() }
-        } as ConfigurationHolder<T>
-    }
-
-    /**
-     * Loads and registers a config.
-     *
-     * This is a convenience wrapper around [loadResult] that:
-     * - reports errors via [ErrorReporter]
-     * - throws only if the error is fatal
-     *
-     * Use this for simple startup scenarios.
-     *
-     * Usage:
-     * ```
-     * val config = ConfigManager.load<MyConfig>()
-     * ```
-     */
-    fun <T : Any> load(clazz: KClass<T>): ConfigurationHolder<T> {
-        return loadResult(clazz)
     }
 
     /**
@@ -89,18 +43,18 @@ object ConfigurationManager {
         }
     }
 
-    /**
-     * Inline convenience wrapper:
-     * ```kotlin
-     * val serverConfig = ConfigManager.load<ServerConfig>()
-     * ```
-     */
-    inline fun <reified T : Any> load(): ConfigurationHolder<T> = load(T::class)
+    inline fun <reified T : Any> load(): ConfigurationHolder<T> {
+        val annotation = T::class.java.getAnnotation(ConfigurationFile::class.java)
+            ?: throw IllegalStateException("Missing @ConfigurationFile on ${T::class.simpleName}")
 
-    /**
-     * Inline variant of [loadResult].
-     */
-    inline fun <reified T : Any> loadResult(): ConfigurationHolder<T> = loadResult(T::class)
+        val ser = serializer<T>()
+        val holder = ConfigurationHolder(T::class, annotation.path, json, ser)
+
+        holder.init()
+
+        configs[T::class] = holder
+        return holder
+    }
 
     /**
      * Stops all file watchers. Call on application shutdown.
