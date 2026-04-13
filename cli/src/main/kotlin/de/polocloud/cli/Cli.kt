@@ -2,6 +2,7 @@ package de.polocloud.cli
 
 import de.polocloud.cli.CliPaths.CONFIG_FILE
 import de.polocloud.cli.CliPaths.INSTALLER_FILE
+import de.polocloud.cli.communication.CliSession
 import de.polocloud.cli.configuration.CliConfiguration
 import de.polocloud.cli.configuration.InstallerConfig
 import de.polocloud.cli.configuration.connection.ConnectionHistory
@@ -30,6 +31,7 @@ var logger = CliLogger.initLogging(PolocloudVersion.CURRENT.isDebugEnabled)
  */
 object Cli : Closeable {
     val config: CliConfiguration = loadConfiguration()
+    lateinit var session: CliSession
 
     private val certificateStorage = CliCertificateStorage()
     val connectionManager = CliConnectionManager(certificateStorage)

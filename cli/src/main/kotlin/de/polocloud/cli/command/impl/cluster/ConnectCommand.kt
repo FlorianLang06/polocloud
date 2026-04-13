@@ -2,11 +2,13 @@ package de.polocloud.cli.command.impl.cluster
 
 import de.polocloud.cli.Cli
 import de.polocloud.cli.node.NodeEventListener
-import de.polocloud.cli.node.NodeClient
+import de.polocloud.cli.communication.client.impl.node.NodeClientImpl
 import de.polocloud.cli.command.Command
 import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
 import de.polocloud.cli.command.arguments.type.string.TextArgument
+import de.polocloud.cli.communication.CliSession
+import de.polocloud.cli.communication.client.CliGrpcClientModule
 import de.polocloud.cli.configuration.connection.ConnectionEntry
 import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.logger
@@ -72,7 +74,7 @@ class ConnectCommand(
                             )
                         )
 
-                        val nodeClient = NodeClient(connectionManager)
+                        Cli.session = CliSession(connectionManager)
                         val listener = NodeEventListener(connectionManager)
 
                         listener.start {
@@ -80,7 +82,7 @@ class ConnectCommand(
                             Cli.terminal.disconnectPrompt()
                         }
 
-                        Cli.terminal.connectedPrompt(nodeClient.nodeName())
+                        Cli.terminal.connectedPrompt(Cli.session.nodeClient.nodeName())
                     }.onFailure { ex ->
                         logger.info(
                             TranslationService.tr(

@@ -1,10 +1,11 @@
 package de.polocloud.cli.connection.auto
 
 import de.polocloud.cli.Cli
+import de.polocloud.cli.communication.CliSession
 import de.polocloud.cli.configuration.connection.ConnectionHistory
 import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.cli.connection.lifecycle.ConnectionLifecycle
-import de.polocloud.cli.node.NodeClient
+import de.polocloud.cli.communication.client.impl.node.NodeClientImpl
 import de.polocloud.cli.node.NodeEventListener
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.i18n.api.trWarn
@@ -33,7 +34,8 @@ class AutoConnectService(
                     last.registrationAddress
                 )
 
-                nodeName = NodeClient(connectionManager).nodeName()
+                Cli.session = CliSession(connectionManager)
+                nodeName = Cli.session.nodeClient.nodeName()
             }.onSuccess {
                 attachListener()
                 Cli.terminal.connectedPrompt(nodeName)
