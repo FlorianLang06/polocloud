@@ -6,6 +6,7 @@ import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
 
@@ -26,6 +27,8 @@ data class Dependency(
     val checksum: String
 ) {
 
+    private val locks = ConcurrentHashMap<String, Any>()
+
     /**
      * Downloads the dependency JAR to the local cache if it does not exist or if the checksum is invalid.
      *
@@ -35,34 +38,39 @@ data class Dependency(
      * @throws IllegalStateException if the checksum verification fails after download
      */
     fun download() {
-        val target = localPath()
+        val key = "$groupId:$artifactId:$version"
+        val lock = locks.computeIfAbsent(key) { Any() }
 
-        if (target.exists()) {
-            if (verifyChecksum(target)) return
-            target.deleteIfExists()
+        synchronized(lock) {
+            val target = localPath()
+
+            if (target.exists()) {
+                if (verifyChecksum(target)) return
+                target.deleteIfExists()
+            }
+
+            Files.createDirectories(target.parent)
+            val tempFile = Files.createTempFile(target.parent, "$artifactId-$version", ".tmp")
+
+            URI(url).toURL().openStream().use { input ->
+                Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            println("Downloaded $artifactId:$version to ${tempFile.toAbsolutePath()}")
+
+            // Verify checksum after download
+            if (!verifyChecksum(tempFile)) {
+                tempFile.deleteIfExists()
+                error("Checksum verification failed for $artifactId:$version")
+            }
+
+            Files.move(
+                tempFile,
+                target,
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE
+            )
         }
-
-        Files.createDirectories(target.parent)
-        val tempFile = Files.createTempFile(target.parent, "$artifactId-$version", ".tmp")
-
-        URI(url).toURL().openStream().use { input ->
-            Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING)
-        }
-
-        println("Downloaded $artifactId:$version to ${tempFile.toAbsolutePath()}")
-
-        // Verify checksum after download
-        if (!verifyChecksum(tempFile)) {
-            tempFile.deleteIfExists()
-            error("Checksum verification failed for $artifactId:$version")
-        }
-
-        Files.move(
-            tempFile,
-            target,
-            StandardCopyOption.REPLACE_EXISTING,
-            StandardCopyOption.ATOMIC_MOVE
-        )
     }
 
     fun localPath(): Path {
