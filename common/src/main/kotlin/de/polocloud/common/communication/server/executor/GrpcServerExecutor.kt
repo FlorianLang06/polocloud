@@ -1,4 +1,4 @@
-package de.polocloud.common.communication.server.executer
+package de.polocloud.common.communication.server.executor
 
 import de.polocloud.common.communication.server.context.GrpcServerContext
 import de.polocloud.common.communication.server.handler.GrpcServerHandler

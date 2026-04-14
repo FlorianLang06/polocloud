@@ -1,6 +1,6 @@
 package de.polocloud.node.communication.grpc
 
-import de.polocloud.common.communication.server.executer.GrpcServerExecutor
+import de.polocloud.common.communication.server.executor.GrpcServerExecutor
 import de.polocloud.common.communication.server.registery.GrpcServerHandlerRegistry
 import de.polocloud.node.communication.grpc.middleware.ErrorServerMiddleware
 import de.polocloud.node.communication.grpc.middleware.LoggingServerMiddleware

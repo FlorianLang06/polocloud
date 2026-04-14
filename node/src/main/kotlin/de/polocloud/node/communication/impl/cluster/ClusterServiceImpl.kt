@@ -1,6 +1,6 @@
 package de.polocloud.node.communication.impl.cluster
 
-import de.polocloud.common.communication.server.executer.GrpcServerExecutor
+import de.polocloud.common.communication.server.executor.GrpcServerExecutor
 import de.polocloud.node.communication.grpc.GrpcContextFactory
 import de.polocloud.proto.ClusterServiceGrpcKt
 import de.polocloud.proto.ListNodesRequest
