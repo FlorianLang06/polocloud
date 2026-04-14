@@ -1,6 +1,6 @@
 package de.polocloud.node.cluster.node
 
-import de.polocloud.common.generator.Generator
+import de.polocloud.common.communication.generator.Generator
 
 object NodeIndexGenerator : Generator<Int> {
 

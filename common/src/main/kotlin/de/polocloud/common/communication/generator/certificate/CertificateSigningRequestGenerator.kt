@@ -1,5 +1,6 @@
-package de.polocloud.common.generator
+package de.polocloud.common.communication.generator.certificate
 
+import de.polocloud.common.communication.generator.Generator
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder

@@ -1,4 +1,4 @@
-package de.polocloud.common.generator
+package de.polocloud.common.communication.generator
 
 interface Generator<T> {
 

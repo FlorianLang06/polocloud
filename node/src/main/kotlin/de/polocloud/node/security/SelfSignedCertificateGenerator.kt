@@ -1,6 +1,6 @@
 package de.polocloud.node.security
 
-import de.polocloud.common.generator.Generator
+import de.polocloud.common.communication.generator.Generator
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder

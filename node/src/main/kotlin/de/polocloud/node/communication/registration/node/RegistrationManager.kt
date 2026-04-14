@@ -3,7 +3,7 @@ package de.polocloud.node.communication.registration.node
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.configuration.ConfigurationHolder
-import de.polocloud.common.generator.CertificateSigningRequestGenerator
+import de.polocloud.common.communication.generator.certificate.CertificateSigningRequestGenerator
 import de.polocloud.common.security.toPem
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.communication.registration.cli.CliRegistrationService

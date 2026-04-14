@@ -1,6 +1,6 @@
 package de.polocloud.node.security
 
-import de.polocloud.common.generator.Generator
+import de.polocloud.common.communication.generator.Generator
 import java.security.SecureRandom
 import java.util.Base64
 
