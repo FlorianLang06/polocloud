@@ -71,7 +71,7 @@ object NodePropertiesParser {
         }
 
         if (port == null) {
-            port = 4240
+            port = 4239
         }
 
         return RegistrationInfo(

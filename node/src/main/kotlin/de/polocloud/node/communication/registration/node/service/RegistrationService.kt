@@ -34,7 +34,7 @@ class RegistrationService(
             return this.sendDenyResponse("cluster.registration.node.token.invalid")
         }
 
-        if (request.details.version != PolocloudVersion.Companion.CURRENT.toString()) {
+        if (request.details.version != PolocloudVersion.CURRENT.toString()) {
             return this.sendDenyResponse("cluster.registration.node.version.mismatch")
         }
 

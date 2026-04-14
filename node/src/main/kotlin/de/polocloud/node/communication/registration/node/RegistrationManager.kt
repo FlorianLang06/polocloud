@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 
 class RegistrationManager(
-    holder: ConfigurationHolder<NodeConfigurations>,
+    val holder: ConfigurationHolder<NodeConfigurations>,
     cliRegistrationService: CliRegistrationService,
 ) : Closeable {
 
@@ -32,11 +32,11 @@ class RegistrationManager(
 
     fun allowRequests() = registrationServer.allowRequests()
 
-    fun tryJoinCluster(registrationInfo: RegistrationInfo, localId : UUID) {
+    fun tryJoinCluster(registrationInfo: RegistrationInfo, localId : UUID, group: String) {
         val client = RegistrationClient()
         val csr = CertificateSigningRequestGenerator(CertificateDataStorage.keyPair, localId).generate().toPem()
 
-        val response = client.tryRegister(registrationInfo, localId, csr)
+        val response = client.tryRegister(registrationInfo, localId, group, holder.value.general.bindAddress.port, csr)
 
         if (!response.accepted) {
             logger.warn(TranslationService.tr("cluster", "cluster.registration.node.denied", "reason" to response.message))

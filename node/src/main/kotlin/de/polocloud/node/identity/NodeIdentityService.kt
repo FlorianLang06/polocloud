@@ -2,6 +2,7 @@ package de.polocloud.node.identity
 
 import de.polocloud.common.Address
 import de.polocloud.common.configuration.ConfigurationHolder
+import de.polocloud.common.utils.localIpAddress
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.bootstrap.properties.NodeProperties
 import de.polocloud.node.cluster.node.LocalNodeContainer
@@ -88,7 +89,7 @@ class NodeIdentityService(
         }
 
 
-        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId)
+        registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, launchProperties.group)
 
         grpc.start()
 
@@ -114,7 +115,7 @@ class NodeIdentityService(
      */
     private fun resolveBindAddress(launchProperties: NodeProperties): Address {
         val launchAddress = launchProperties.address
-        val defaultAddress = holder.value.general.bindAddress
+        val defaultAddress = Address(localIpAddress(), holder.value.general.bindAddress.port)
 
         if (launchAddress != null) {
             val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname

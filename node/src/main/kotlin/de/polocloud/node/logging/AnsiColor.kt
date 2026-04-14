@@ -10,6 +10,7 @@ enum class AnsiColor(val ansi: String) {
     PURPLE("\u001B[35m"),
     CYAN("\u001B[36m"),
     WHITE("\u001B[37m"),
+    LIGHT_GRAY("\u001B[38;5;250m"),
     DARK_GRAY("\u001B[90m"),
     BRIGHT_WHITE("\u001B[97m");
 
