@@ -11,7 +11,7 @@ import java.util.concurrent.Executors
  *
  * @property insert the [DependencyInsert] responsible for rendering or injecting dependencies
  */
-class DependencyRegistry(val insert: DependencyInsert<*>) {
+class DependencyRegistry<T>(val insert: DependencyInsert<T>) {
 
     /** Internal list of registered dependencies */
     private val registeredDependencies = mutableListOf<Dependency>()
@@ -50,9 +50,24 @@ class DependencyRegistry(val insert: DependencyInsert<*>) {
         }
     }
 
+    fun collect(): List<T> {
+        return registeredDependencies.map { insert.renderDependency(it) }
+    }
+
     /**
-     * Binds or renders the dependencies using the configured [DependencyInsert].
-     *
-     * Currently private; can be used internally after scanning or downloading dependencies.
+     * Downloads all registered dependencies in parallel without injecting them into the
+     * current runtime. Use this when the rendered representations (e.g., classpath strings)
+     * are collected separately via [collect] and passed to an external process.
      */
+    fun downloadAll() {
+        val executor = Executors.newFixedThreadPool(4)
+        try {
+            val futures = registeredDependencies.map { dependency ->
+                executor.submit { dependency.download() }
+            }
+            futures.forEach { it.get() }
+        } finally {
+            executor.shutdown()
+        }
+    }
 }

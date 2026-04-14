@@ -1,5 +1,8 @@
 package de.polocloud.node.services
 
+import de.polocloud.common.dependency.DependencyRegistry
+import de.polocloud.common.dependency.insert.StringArgumentInsert
+import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
@@ -50,6 +53,7 @@ object ServiceFactory {
 
                     val artifactId = attributes?.getValue("artifactId")
                     val version = attributes?.getValue("version")
+                    val mainClass = attributes?.getValue("Main-Class")
 
                     if (artifactId == null || version == null) {
                         logger.warn(
@@ -59,7 +63,7 @@ object ServiceFactory {
                         return@mapNotNull null
                     }
 
-                    ServiceHolder(artifactId, version, jarPath.toFile())
+                    ServiceHolder(artifactId, version, jarPath.toFile(), mainClass)
                 }
             } catch (ex: Exception) {
                 logger.error("Failed to read JAR '{}'", jarPath.fileName, ex)
@@ -69,13 +73,34 @@ object ServiceFactory {
     }
 
     /**
+     * Resolves and downloads all dependencies declared in the [holder]'s JAR.
+     *
+     * The JAR is expected to contain a `dependencies.index` file listing each
+     * dependency in the format used by [OwnBlobScanner]. If no index is present,
+     * an empty list is returned and the service is started without additional classpath entries.
+     *
+     * @param holder the service whose embedded dependency index should be resolved
+     * @return absolute filesystem paths of the downloaded dependency JARs
+     */
+    private fun loadDependencies(holder: ServiceHolder): List<String> {
+        val hasIndex = JarFile(holder.file).use { it.getJarEntry("dependencies.index") != null }
+        if (!hasIndex) return emptyList()
+
+        val registry = DependencyRegistry(StringArgumentInsert())
+        registry.scan(OwnBlobScanner(holder.file))
+        registry.downloadAll()
+        return registry.collect()
+    }
+
+    /**
      * Boots a new service instance based on the given plan and service definition.
      *
      * Steps:
      * 1. Create a [ServiceProcess] representation
      * 2. Prepare a container directory
      * 3. Copy the service JAR into the container
-     * 4. Start a new JVM process running the service
+     * 4. Resolve and download embedded dependencies
+     * 5. Start a new JVM process with a full classpath
      *
      * @param plan the control plan defining how the service should run
      * @param holder the service definition containing artifact metadata and file reference
@@ -112,11 +137,29 @@ object ServiceFactory {
                 StandardCopyOption.REPLACE_EXISTING
             )
 
-            val processBuilder = ProcessBuilder(
-                "java",
-                "-jar",
-                targetJar.fileName.toString()
-            ).directory(workingDir.toFile()).inheritIO()
+            val dependencyPaths = loadDependencies(holder)
+
+            val mainClass = holder.mainClass
+            val processBuilder = if (mainClass != null) {
+                val classpath = buildList {
+                    add(targetJar.toAbsolutePath().toString())
+                    System.out.println(targetJar.toAbsolutePath().toString())
+                    addAll(dependencyPaths)
+                    System.out.println(dependencyPaths)
+                }.joinToString(java.io.File.pathSeparator)
+
+                ProcessBuilder("java", "-cp", classpath, mainClass)
+            } else {
+                if (dependencyPaths.isNotEmpty()) {
+                    logger.warn(
+                        "Service '{}' has dependencies but no Main-Class in manifest — dependencies will not be loaded",
+                        holder.name
+                    )
+                }
+                ProcessBuilder("java", "-jar", targetJar.fileName.toString())
+            }
+
+            processBuilder.directory(workingDir.toFile()).inheritIO()
 
             serviceProcess.changeState(ServiceState.BOOTING)
 
