@@ -4,7 +4,6 @@ import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
 import org.slf4j.LoggerFactory
-import java.net.URLClassLoader
 import java.nio.file.Files
 import java.util.UUID
 import java.util.jar.JarFile
@@ -28,25 +27,18 @@ object ServiceFactory {
 
         for (jarPath in jars) {
             val jarFile = JarFile(jarPath.toFile())
-            val urls = arrayOf(jarPath.toUri().toURL())
+            val manifest = jarFile.manifest
+            val attributes = manifest?.mainAttributes
 
-            URLClassLoader(urls, this::class.java.classLoader).use { classLoader ->
+            val artifactId = attributes?.getValue("artifactId")
+            val version = attributes?.getValue("version")
 
-                val entries = jarFile.entries()
-
-                while (entries.hasMoreElements()) {
-                    val entry = entries.nextElement()
-                    if (!entry.name.endsWith(".class")) continue
-                    val className = entry.name.replace("/", ".")
-                        .removeSuffix(".class")
-
-                    try {
-                        val clazz = classLoader.loadClass(className)
-
-                        serviceList.add(ServiceHolder("test", "1.0.0", file = jarPath.toFile()))
-                    } catch (_: Throwable) { }
-                }
+            if (artifactId == null || version == null) {
+                logger.warn("Skipping ${jarPath.fileName}: manifest is missing 'artifactId' or 'version'")
+                continue
             }
+
+            serviceList.add(ServiceHolder(artifactId, version, file = jarPath.toFile()))
         }
         return serviceList
     }
