@@ -1,4 +1,4 @@
-package de.polocloud.common.security
+package de.polocloud.common.communication.security
 
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
