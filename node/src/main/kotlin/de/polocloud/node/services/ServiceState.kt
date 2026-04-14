@@ -6,6 +6,7 @@ enum class ServiceState {
     BOOTING,
     RUNNING,
     UNCONTROLLED,
+    FAILED
 
 
 }
