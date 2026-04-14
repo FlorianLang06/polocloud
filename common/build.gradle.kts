@@ -1,3 +1,5 @@
+import de.polocloud.gradle.plugin.polocloudRuntime
+
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -14,6 +16,10 @@ dependencies {
 
     compileOnly(libs.bundles.tls)
     runtimeOnly(libs.bundles.tls)
+
+
+    //database
+    polocloudRuntime(libs.polocloud.database)
 }
 
 gitProperties {

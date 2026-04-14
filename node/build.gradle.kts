@@ -25,10 +25,6 @@ dependencies {
     // grpc
     polocloudRuntime(libs.bundles.grpc.node)
 
-    // database
-    polocloudRuntime(libs.hikariCp)
-    polocloudRuntime(libs.postgreSql)
-
     //polocloud
     polocloudRuntime(libs.polocloud.i18n)
 
@@ -41,7 +37,9 @@ dependencies {
     //system
     polocloudRuntime(libs.oshi)
 
-    compileOnly(projects.database)
+    //database
+    polocloudRuntime(libs.polocloud.database)
+
     compileOnly(projects.common)
     compileOnly(projects.serviceSdk)
     implementation(projects.proto)

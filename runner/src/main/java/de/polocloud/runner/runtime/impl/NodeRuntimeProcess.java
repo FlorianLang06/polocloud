@@ -21,7 +21,6 @@ public final class NodeRuntimeProcess extends AbstractRuntimeProcess {
         return Arrays.asList(
                 "common",
                 "proto",
-                "database",
                 "service-sdk"
         );
     }

@@ -85,7 +85,7 @@ class NodeLifecycle(
         }
 
         safe("database") {
-            DatabaseAccess.close(mode)
+            DatabaseAccess.close()
         }
 
         logger.trInfo("node", "node.shutdown.stopped")
