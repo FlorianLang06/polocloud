@@ -59,11 +59,19 @@ object NodePropertiesParser {
 
     private fun resolveRegistration(): RegistrationInfo? {
         val token = System.getProperty(PolocloudSystemProperties.JOIN_TOKEN)
-        val host = System.getProperty(PolocloudSystemProperties.JOIN_HOST)
-        val port = System.getProperty(PolocloudSystemProperties.JOIN_PORT)?.toIntOrNull()
+        var host = System.getProperty(PolocloudSystemProperties.JOIN_HOST)
+        var port = System.getProperty(PolocloudSystemProperties.JOIN_PORT)?.toIntOrNull()
 
-        if (token == null || host == null || port == null) {
+        if (token == null) {
             return null
+        }
+
+        if (host == null) {
+            host = "127.0.0.1"
+        }
+
+        if (port == null) {
+            port = 4240
         }
 
         return RegistrationInfo(
