@@ -1,6 +1,6 @@
 package de.polocloud.node.communication.impl.node
 
-import de.polocloud.common.communication.executer.GrpcExecutor
+import de.polocloud.common.communication.server.executer.GrpcServerExecutor
 import de.polocloud.node.communication.grpc.GrpcContextFactory
 import de.polocloud.proto.NodeEvent
 import de.polocloud.proto.NodeEventRequest
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 class NodeServiceImpl(
-    private val executor: GrpcExecutor,
+    private val executor: GrpcServerExecutor,
 ) : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     private val listeners = mutableSetOf<SendChannel<NodeEvent>>()

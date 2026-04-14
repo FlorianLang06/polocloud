@@ -1,17 +1,17 @@
 package de.polocloud.node.communication.handler.cluster
 
-import de.polocloud.common.communication.context.GrpcContext
-import de.polocloud.common.communication.handler.GrpcHandler
+import de.polocloud.common.communication.server.context.GrpcServerContext
+import de.polocloud.common.communication.server.handler.GrpcServerHandler
 import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.cluster.node.toProto
 import de.polocloud.proto.ListNodesRequest
 import de.polocloud.proto.ListNodesResponse
 
-class ListNodesHandler : GrpcHandler<ListNodesRequest, ListNodesResponse> {
+class ListNodesServerHandler : GrpcServerHandler<ListNodesRequest, ListNodesResponse> {
 
     override suspend fun handle(
         request: ListNodesRequest,
-        context: GrpcContext
+        context: GrpcServerContext
     ): ListNodesResponse {
         val nodes = NodeRepository.findAll().map { it.toProto() }
 

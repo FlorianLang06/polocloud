@@ -1,14 +1,14 @@
 package de.polocloud.node.communication.grpc.middleware
 
-import de.polocloud.common.communication.context.GrpcContext
-import de.polocloud.common.communication.middleware.GrpcMiddleware
+import de.polocloud.common.communication.server.context.GrpcServerContext
+import de.polocloud.common.communication.server.middleware.GrpcServerMiddleware
 import io.grpc.Status
 
-class ErrorMiddleware : GrpcMiddleware {
+class ErrorServerMiddleware : GrpcServerMiddleware {
 
     override suspend fun <Request : Any, Response : Any> intercept(
         request: Request,
-        context: GrpcContext,
+        context: GrpcServerContext,
         next: suspend () -> Response
     ): Response {
         try {

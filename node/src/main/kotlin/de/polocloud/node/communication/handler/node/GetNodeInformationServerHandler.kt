@@ -1,16 +1,16 @@
 package de.polocloud.node.communication.handler.node
 
-import de.polocloud.common.communication.context.GrpcContext
-import de.polocloud.common.communication.handler.GrpcHandler
+import de.polocloud.common.communication.server.context.GrpcServerContext
+import de.polocloud.common.communication.server.handler.GrpcServerHandler
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.proto.NodeInformationRequest
 import de.polocloud.proto.NodeInformationResponse
 
-class GetNodeInformationHandler : GrpcHandler<NodeInformationRequest, NodeInformationResponse> {
+class GetNodeInformationServerHandler : GrpcServerHandler<NodeInformationRequest, NodeInformationResponse> {
 
     override suspend fun handle(
         request: NodeInformationRequest,
-        context: GrpcContext
+        context: GrpcServerContext
     ): NodeInformationResponse {
         val node = NodeEnvironment.runtime.identityService.container.data
 

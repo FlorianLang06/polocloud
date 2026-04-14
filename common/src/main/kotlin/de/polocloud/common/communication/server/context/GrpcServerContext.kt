@@ -1,4 +1,4 @@
-package de.polocloud.common.communication.context
+package de.polocloud.common.communication.server.context
 
 /**
  * Generic request context passed through the entire gRPC pipeline.
@@ -6,7 +6,7 @@ package de.polocloud.common.communication.context
  * This class is intentionally transport-agnostic and can be populated
  * from gRPC, HTTP, CLI, or any other transport layer.
  */
-data class GrpcContext(
+data class GrpcServerContext(
     val metadata: Map<String, Any?> = emptyMap()
 ) {
 
@@ -15,7 +15,7 @@ data class GrpcContext(
         return metadata[key] as? T
     }
 
-    fun with(key: String, value: Any?): GrpcContext {
+    fun with(key: String, value: Any?): GrpcServerContext {
         return copy(metadata = metadata + (key to value))
     }
 }

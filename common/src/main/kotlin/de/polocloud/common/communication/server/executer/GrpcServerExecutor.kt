@@ -1,9 +1,9 @@
-package de.polocloud.common.communication.executer
+package de.polocloud.common.communication.server.executer
 
-import de.polocloud.common.communication.context.GrpcContext
-import de.polocloud.common.communication.handler.GrpcHandler
-import de.polocloud.common.communication.middleware.GrpcMiddleware
-import de.polocloud.common.communication.registery.GrpcHandlerRegistry
+import de.polocloud.common.communication.server.context.GrpcServerContext
+import de.polocloud.common.communication.server.handler.GrpcServerHandler
+import de.polocloud.common.communication.server.middleware.GrpcServerMiddleware
+import de.polocloud.common.communication.server.registery.GrpcServerHandlerRegistry
 
 /**
  * Central execution engine for all requests.
@@ -13,9 +13,9 @@ import de.polocloud.common.communication.registery.GrpcHandlerRegistry
  * - executing middleware pipeline
  * - invoking handler
  */
-class GrpcExecutor(
-    private val registry: GrpcHandlerRegistry,
-    private val middlewares: List<GrpcMiddleware> = emptyList()
+class GrpcServerExecutor(
+    private val registry: GrpcServerHandlerRegistry,
+    private val middlewares: List<GrpcServerMiddleware> = emptyList()
 ) {
 
     /**
@@ -23,7 +23,7 @@ class GrpcExecutor(
      */
     suspend fun <Request : Any, Response : Any> execute(
         request: Request,
-        context: GrpcContext = GrpcContext()
+        context: GrpcServerContext = GrpcServerContext()
     ): Response {
 
         val handler = registry.resolve<Request, Response>(request)
@@ -38,8 +38,8 @@ class GrpcExecutor(
      */
     private fun <Request : Any, Response : Any> buildPipeline(
         request: Request,
-        context: GrpcContext,
-        handler: GrpcHandler<Request, Response>
+        context: GrpcServerContext,
+        handler: GrpcServerHandler<Request, Response>
     ): suspend () -> Response {
 
         val terminal: suspend () -> Response = {
