@@ -1,9 +1,11 @@
-package de.polocloud.common.certificate
+package de.polocloud.common.communication.certificate
 
 import org.bouncycastle.openssl.PEMParser
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import java.io.StringReader
+import java.io.StringWriter
+import java.security.cert.X509Certificate
 
 fun parseCsr(csrPem: String): PKCS10CertificationRequest {
     PEMParser(StringReader(csrPem)).use { parser ->
@@ -12,8 +14,8 @@ fun parseCsr(csrPem: String): PKCS10CertificationRequest {
     }
 }
 
-fun certToPem(cert: java.security.cert.X509Certificate): String {
-    val writer = java.io.StringWriter()
+fun certToPem(cert: X509Certificate): String {
+    val writer = StringWriter()
     JcaPEMWriter(writer).use { it.writeObject(cert) }
     return writer.toString()
 }

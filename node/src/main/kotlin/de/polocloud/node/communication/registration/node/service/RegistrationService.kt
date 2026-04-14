@@ -1,7 +1,7 @@
 package de.polocloud.node.communication.registration.node.service
 
-import de.polocloud.common.certificate.certToPem
-import de.polocloud.common.certificate.parseCsr
+import de.polocloud.common.communication.certificate.certToPem
+import de.polocloud.common.communication.certificate.parseCsr
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.cluster.node.NodeData
