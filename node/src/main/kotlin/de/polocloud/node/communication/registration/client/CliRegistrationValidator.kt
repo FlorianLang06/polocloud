@@ -1,6 +1,7 @@
 package de.polocloud.node.communication.registration.client
 
-import de.polocloud.node.core.configuration.cluster.CliAccessConfiguration
+import de.polocloud.common.configuration.ConfigurationHolder
+import de.polocloud.node.core.configuration.NodeConfigurations
 
 /**
  * Validates incoming CLI registration requests against the cluster configuration.
@@ -8,7 +9,9 @@ import de.polocloud.node.core.configuration.cluster.CliAccessConfiguration
  * Extracted from [de.polocloud.node.communication.registration.cli.CliRegistrationService] to isolate validation logic
  * and make it independently testable without a full gRPC context.
  */
-class CliRegistrationValidator(private val config: CliAccessConfiguration) {
+class CliRegistrationValidator(
+    val holder: ConfigurationHolder<NodeConfigurations>
+) {
 
     sealed interface Result {
         data object Ok : Result
@@ -16,12 +19,12 @@ class CliRegistrationValidator(private val config: CliAccessConfiguration) {
     }
 
     fun validateAccess(): Result {
-        if (!config.enabled) return Result.Denied("cli.access.disabled")
+        if (!holder.value.cluster.cliAccess.enabled) return Result.Denied("cli.access.disabled")
         return Result.Ok
     }
 
     fun validateToken(token: String): Result {
-        if (token != config.registrationToken) return Result.Denied("cluster.registration.cli.token.invalid")
+        if (token != holder.value.cluster.cliAccess.registrationToken) return Result.Denied("cluster.registration.cli.token.invalid")
         return Result.Ok
     }
 }

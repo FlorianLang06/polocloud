@@ -33,7 +33,7 @@ class CliRegistrationService(
 ) : CliRegistrationServiceGrpcKt.CliRegistrationServiceCoroutineImplBase() {
 
     private val logger = LoggerFactory.getLogger(CliRegistrationService::class.java)
-    private var validator = CliRegistrationValidator(holder.value.cluster.cliAccess)
+    private var validator = CliRegistrationValidator(holder)
     private val ca = CertificateDataStorage.certificateAuthority()
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {
