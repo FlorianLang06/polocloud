@@ -1,7 +1,7 @@
 package de.polocloud.cli.terminal
 
 import de.polocloud.cli.command.CommandService
-import de.polocloud.cli.connection.CliConnectionManager
+import de.polocloud.cli.communication.connection.CliConnectionManager
 import de.polocloud.cli.prompt.CliPromptProvider
 import de.polocloud.cli.prompt.DefaultCliPromptProvider
 import org.jline.reader.LineReader

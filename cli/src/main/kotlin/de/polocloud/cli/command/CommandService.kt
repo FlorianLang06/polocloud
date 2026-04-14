@@ -5,7 +5,7 @@ import de.polocloud.cli.command.impl.cluster.ConnectCommand
 import de.polocloud.cli.command.impl.HelpCommand
 import de.polocloud.cli.command.impl.ShutdownCommand
 import de.polocloud.cli.command.impl.cluster.NodesCommand
-import de.polocloud.cli.connection.CliConnectionManager
+import de.polocloud.cli.communication.connection.CliConnectionManager
 
 /**
  * Central registry and dispatcher for all CLI commands.

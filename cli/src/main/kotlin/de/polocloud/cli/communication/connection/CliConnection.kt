@@ -1,4 +1,4 @@
-package de.polocloud.cli.connection
+package de.polocloud.cli.communication.connection
 
 import de.polocloud.common.Address
 import io.grpc.ManagedChannel

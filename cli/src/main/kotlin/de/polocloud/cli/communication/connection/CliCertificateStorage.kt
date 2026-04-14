@@ -1,6 +1,8 @@
-package de.polocloud.cli.connection
+package de.polocloud.cli.communication.connection
 
 import de.polocloud.cli.CliPaths
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.PEMKeyPair
 import org.bouncycastle.openssl.PEMParser
@@ -117,14 +119,14 @@ class CliCertificateStorage {
             when (val obj = parser.readObject()) {
                 is PEMKeyPair -> converter.getKeyPair(obj).private
                 else -> converter.getPrivateKey(
-                    org.bouncycastle.asn1.pkcs.PrivateKeyInfo.getInstance(obj)
+                    PrivateKeyInfo.getInstance(obj)
                 )
             }
         }
 
         val publicKey = PEMParser(FileReader(publicKeyFile)).use { parser ->
             converter.getPublicKey(
-                org.bouncycastle.asn1.x509.SubjectPublicKeyInfo.getInstance(parser.readObject())
+                SubjectPublicKeyInfo.getInstance(parser.readObject())
             )
         }
 

@@ -6,9 +6,9 @@ import de.polocloud.cli.communication.CliSession
 import de.polocloud.cli.configuration.CliConfiguration
 import de.polocloud.cli.configuration.InstallerConfig
 import de.polocloud.cli.configuration.connection.ConnectionHistory
-import de.polocloud.cli.connection.CliCertificateStorage
-import de.polocloud.cli.connection.CliConnectionManager
-import de.polocloud.cli.connection.auto.AutoConnectService
+import de.polocloud.cli.communication.connection.CliCertificateStorage
+import de.polocloud.cli.communication.connection.CliConnectionManager
+import de.polocloud.cli.communication.connection.auto.AutoConnectService
 import de.polocloud.cli.logging.CliLogger
 import de.polocloud.cli.terminal.CliTerminal
 import de.polocloud.common.Closeable
@@ -17,6 +17,7 @@ import de.polocloud.common.configuration.ConfigurationManager
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.model.Language
+import kotlinx.coroutines.runBlocking
 
 /**
  * Application-wide logger instance, initialized once at startup.
@@ -60,7 +61,7 @@ object Cli : Closeable {
         this.terminal.clearScreen()
 
         logger.info(TranslationService.tr("cli", "cli.start.initiating", "version" to PolocloudVersion.CURRENT.toDisplayString()))
-        this.lifecycle.start()
+        runBlocking { this@Cli.lifecycle.start() }
         this.terminal.readingThread.start()
 
         logger.info(TranslationService.tr("cli", "cli.start.success"))

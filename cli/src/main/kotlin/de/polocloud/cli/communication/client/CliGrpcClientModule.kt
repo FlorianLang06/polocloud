@@ -2,7 +2,7 @@ package de.polocloud.cli.communication.client
 
 import de.polocloud.cli.communication.middleware.ClientErrorMiddleware
 import de.polocloud.cli.communication.middleware.ClientLoggingMiddleware
-import de.polocloud.cli.connection.CliConnectionManager
+import de.polocloud.cli.communication.connection.CliConnectionManager
 import de.polocloud.common.communication.client.executor.GrpcClientExecutor
 
 object CliGrpcClientModule {

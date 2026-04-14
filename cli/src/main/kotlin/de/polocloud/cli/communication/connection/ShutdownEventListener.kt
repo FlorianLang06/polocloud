@@ -1,14 +1,17 @@
-package de.polocloud.cli.node
+package de.polocloud.cli.communication.connection
 
-import de.polocloud.cli.connection.CliConnectionManager
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.proto.NodeEvent
 import de.polocloud.proto.NodeEventRequest
 import de.polocloud.proto.NodeServiceGrpcKt
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.slf4j.LoggerFactory
 
-class NodeEventListener(
+class ShutdownEventListener(
     private val connectionManager: CliConnectionManager
 ) {
 

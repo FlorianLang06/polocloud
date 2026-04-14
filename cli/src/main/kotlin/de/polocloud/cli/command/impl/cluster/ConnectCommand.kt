@@ -1,16 +1,14 @@
 package de.polocloud.cli.command.impl.cluster
 
 import de.polocloud.cli.Cli
-import de.polocloud.cli.node.NodeEventListener
-import de.polocloud.cli.communication.client.impl.node.NodeClientImpl
+import de.polocloud.cli.communication.connection.ShutdownEventListener
 import de.polocloud.cli.command.Command
 import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
 import de.polocloud.cli.command.arguments.type.string.TextArgument
 import de.polocloud.cli.communication.CliSession
-import de.polocloud.cli.communication.client.CliGrpcClientModule
 import de.polocloud.cli.configuration.connection.ConnectionEntry
-import de.polocloud.cli.connection.CliConnectionManager
+import de.polocloud.cli.communication.connection.CliConnectionManager
 import de.polocloud.cli.logger
 import de.polocloud.common.Address
 import de.polocloud.i18n.api.TranslationService
@@ -74,8 +72,9 @@ class ConnectCommand(
                             )
                         )
 
-                        Cli.session = CliSession(connectionManager)
-                        val listener = NodeEventListener(connectionManager)
+                        val session = CliSession(connectionManager)
+                        Cli.session = session
+                        val listener = ShutdownEventListener(connectionManager)
 
                         listener.start {
                             connectionManager.disconnect()
