@@ -8,6 +8,7 @@ import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.jar.JarFile
@@ -73,23 +74,35 @@ object ServiceFactory {
     }
 
     /**
-     * Resolves and downloads all dependencies declared in the [holder]'s JAR.
+     * Resolves and downloads all dependencies declared in the [holder]'s JAR into the
+     * global cache (`.cache/dependencies/`), then copies each JAR into [instanceDepDir]
+     * so every service instance has its own isolated copy.
      *
      * The JAR is expected to contain a `dependencies.index` file listing each
      * dependency in the format used by [OwnBlobScanner]. If no index is present,
      * an empty list is returned and the service is started without additional classpath entries.
      *
      * @param holder the service whose embedded dependency index should be resolved
-     * @return absolute filesystem paths of the downloaded dependency JARs
+     * @param instanceDepDir the `.dependencies` folder inside the service instance directory
+     * @return absolute filesystem paths of the dependency JARs inside [instanceDepDir]
      */
-    private fun loadDependencies(holder: ServiceHolder): List<String> {
-        val hasIndex = JarFile(holder.file).use { it.getJarEntry("dependencies.index") != null }
-        if (!hasIndex) return emptyList()
-
+    private fun loadDependencies(holder: ServiceHolder, instanceDepDir: Path): List<String> {
         val registry = DependencyRegistry(StringArgumentInsert())
         registry.scan(OwnBlobScanner(holder.file))
         registry.downloadAll()
-        return registry.collect()
+
+        // Copy from global cache into the per-instance .dependencies folder,
+        // preserving the full cache structure: <group>/<artifact>/<version>/<artifact>-<version>.jar
+        val cacheRoot = Path(".cache/dependencies").toAbsolutePath()
+        Files.createDirectories(instanceDepDir)
+        return registry.collect().map { cachePath ->
+            val source = Path(cachePath).toAbsolutePath()
+            val relative = cacheRoot.relativize(source)   // e.g. de/polocloud/example/1.0.0/example-1.0.0.jar
+            val target = instanceDepDir.resolve(relative)
+            Files.createDirectories(target.parent)
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING)
+            target.toAbsolutePath().toString()
+        }
     }
 
     /**
@@ -137,15 +150,13 @@ object ServiceFactory {
                 StandardCopyOption.REPLACE_EXISTING
             )
 
-            val dependencyPaths = loadDependencies(holder)
+            val dependencyPaths = loadDependencies(holder, workingDir.resolve(".dependencies"))
 
             val mainClass = holder.mainClass
             val processBuilder = if (mainClass != null) {
                 val classpath = buildList {
                     add(targetJar.toAbsolutePath().toString())
-                    System.out.println(targetJar.toAbsolutePath().toString())
                     addAll(dependencyPaths)
-                    System.out.println(dependencyPaths)
                 }.joinToString(java.io.File.pathSeparator)
 
                 ProcessBuilder("java", "-cp", classpath, mainClass)

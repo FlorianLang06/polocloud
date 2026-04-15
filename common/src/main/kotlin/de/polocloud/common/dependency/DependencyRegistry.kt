@@ -26,12 +26,12 @@ class DependencyRegistry<T>(val insert: DependencyInsert<T>) {
     }
 
     /**
-     * Downloads all registered dependencies in parallel.
-     *
-     * This uses [Executors] to improve download performance.
+     * Downloads all registered dependencies in parallel and registers them via [insert].
      */
     fun downloadAndRegister() {
-        val executor = Executors.newFixedThreadPool(4)
+        if (registeredDependencies.isEmpty()) return
+
+        val executor = Executors.newFixedThreadPool(registeredDependencies.size.coerceAtMost(8))
 
         try {
             val futures = registeredDependencies.map { dependency ->
@@ -45,6 +45,7 @@ class DependencyRegistry<T>(val insert: DependencyInsert<T>) {
                 val dependency = future.get()
                 insert.register(dependency)
             }
+            println("All ${registeredDependencies.size} dependencies resolved.")
         } finally {
             executor.shutdown()
         }
@@ -55,17 +56,20 @@ class DependencyRegistry<T>(val insert: DependencyInsert<T>) {
     }
 
     /**
-     * Downloads all registered dependencies in parallel without injecting them into the
-     * current runtime. Use this when the rendered representations (e.g., classpath strings)
-     * are collected separately via [collect] and passed to an external process.
+     * Downloads all registered dependencies in parallel into the global cache without
+     * injecting them into the current runtime. Paths are collected separately via [collect].
      */
     fun downloadAll() {
-        val executor = Executors.newFixedThreadPool(4)
+        if (registeredDependencies.isEmpty()) return
+
+        val executor = Executors.newFixedThreadPool(registeredDependencies.size.coerceAtMost(8))
+
         try {
             val futures = registeredDependencies.map { dependency ->
                 executor.submit { dependency.download() }
             }
             futures.forEach { it.get() }
+            println("All ${registeredDependencies.size} dependencies resolved.")
         } finally {
             executor.shutdown()
         }
