@@ -12,7 +12,9 @@ tasks.named<Jar>("jar") {
         attributes(
             "Enable-Native-Access" to "ALL-UNNAMED",
 
-            "kotlin-version" to libs.versions.kotlin.jvm.get(),
+            "kotlin-version"  to libs.versions.kotlin.jvm.get(),
+            "log4j-version"   to libs.versions.log4j.get(),
+            "slf4j-version"   to libs.versions.slf4j.get(),
         )
     }
 

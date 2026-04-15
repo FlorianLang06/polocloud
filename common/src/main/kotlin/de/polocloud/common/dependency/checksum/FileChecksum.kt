@@ -8,7 +8,7 @@ import java.security.MessageDigest
  */
 object FileChecksum {
 
-    private const val BUFFER_SIZE = 1024
+    private const val BUFFER_SIZE = 65_536 // 64 KB — reduces syscall count for large JARs
 
     /**
      * Computes the SHA-1 checksum of this file.

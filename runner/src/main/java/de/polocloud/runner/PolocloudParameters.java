@@ -74,10 +74,14 @@ public final class PolocloudParameters {
      */
     public static final Path EXPENDER_RUNTIME_CACHE = Paths.get(".cache/dependencies");
 
-    /**
-     * Manifest attribute key for the Kotlin runtime version.
-     */
+    /** Manifest attribute key for the Kotlin runtime version. */
     private static final String MANIFEST_KOTLIN_VERSION = "kotlin-version";
+
+    /** Manifest attribute key for the Log4j version. */
+    private static final String MANIFEST_LOG4J_VERSION  = "log4j-version";
+
+    /** Manifest attribute key for the SLF4J version. */
+    private static final String MANIFEST_SLF4J_VERSION  = "slf4j-version";
 
     /**
      * Cached manifest instance of the currently running application.
@@ -110,36 +114,98 @@ public final class PolocloudParameters {
         return value;
     }
 
-    /**
-     * Resolves the Kotlin runtime version from the manifest.
-     *
-     * @return the Kotlin version used at runtime
-     */
+    /** Resolves the Kotlin runtime version from the manifest. */
     public static String kotlinVersion() {
         return requireManifestValue(MANIFEST_KOTLIN_VERSION);
     }
 
-    /**
-     * Builds the download URL for the Kotlin standard library.
-     *
-     * @return Maven Central URL for kotlin-stdlib
-     */
+    /** Resolves the Log4j version from the manifest. */
+    public static String log4jVersion() {
+        return requireManifestValue(MANIFEST_LOG4J_VERSION);
+    }
+
+    /** Resolves the SLF4J version from the manifest. */
+    public static String slf4jVersion() {
+        return requireManifestValue(MANIFEST_SLF4J_VERSION);
+    }
+
+    /** Maven Central URL for kotlin-stdlib. */
     public static String kotlinDownloadUrl() {
         String v = kotlinVersion();
         return "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/"
                 + v + "/kotlin-stdlib-" + v + ".jar";
     }
 
-    /**
-     * Resolves the local cache path of the Kotlin runtime JAR.
-     *
-     * @return path to kotlin-stdlib JAR inside the cache directory
-     */
+    /** Local cache path of the Kotlin runtime JAR. */
     public static Path bootKotlin() {
         String v = kotlinVersion();
         return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
                 "org", "jetbrains", "kotlin", "kotlin-stdlib",
                 v, "kotlin-stdlib-" + v + ".jar"
+        ));
+    }
+
+    /** Maven Central URL for log4j-api. */
+    public static String log4jApiDownloadUrl() {
+        String v = log4jVersion();
+        return "https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-api/"
+                + v + "/log4j-api-" + v + ".jar";
+    }
+
+    /** Maven Central URL for log4j-core. */
+    public static String log4jCoreDownloadUrl() {
+        String v = log4jVersion();
+        return "https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-core/"
+                + v + "/log4j-core-" + v + ".jar";
+    }
+
+    /** Maven Central URL for log4j-slf4j2-impl. */
+    public static String log4jSlf4jImplDownloadUrl() {
+        String v = log4jVersion();
+        return "https://repo1.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j2-impl/"
+                + v + "/log4j-slf4j2-impl-" + v + ".jar";
+    }
+
+    /** Maven Central URL for slf4j-api. */
+    public static String slf4jApiDownloadUrl() {
+        String v = slf4jVersion();
+        return "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/"
+                + v + "/slf4j-api-" + v + ".jar";
+    }
+
+    /** Local cache path for log4j-api JAR (mirrors Dependency.localPath() structure). */
+    public static Path bootLog4jApi() {
+        String v = log4jVersion();
+        return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
+                "org", "apache", "logging", "log4j", "log4j-api",
+                v, "log4j-api-" + v + ".jar"
+        ));
+    }
+
+    /** Local cache path for log4j-core JAR. */
+    public static Path bootLog4jCore() {
+        String v = log4jVersion();
+        return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
+                "org", "apache", "logging", "log4j", "log4j-core",
+                v, "log4j-core-" + v + ".jar"
+        ));
+    }
+
+    /** Local cache path for log4j-slf4j2-impl JAR. */
+    public static Path bootLog4jSlf4jImpl() {
+        String v = log4jVersion();
+        return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
+                "org", "apache", "logging", "log4j", "log4j-slf4j2-impl",
+                v, "log4j-slf4j2-impl-" + v + ".jar"
+        ));
+    }
+
+    /** Local cache path for slf4j-api JAR. */
+    public static Path bootSlf4jApi() {
+        String v = slf4jVersion();
+        return EXPENDER_RUNTIME_CACHE.resolve(Paths.get(
+                "org", "slf4j", "slf4j-api",
+                v, "slf4j-api-" + v + ".jar"
         ));
     }
 
