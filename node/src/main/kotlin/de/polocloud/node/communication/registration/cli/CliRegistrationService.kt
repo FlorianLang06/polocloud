@@ -34,7 +34,9 @@ class CliRegistrationService(
 
     private val logger = LoggerFactory.getLogger(CliRegistrationService::class.java)
     private var validator = CliRegistrationValidator(holder)
-    private val ca = CertificateDataStorage.certificateAuthority()
+    private val ca by lazy {
+        CertificateDataStorage.certificateAuthority()
+    }
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {
         val clientIp = GrpcClientContext.CLIENT_IP.get() ?: "unknown"

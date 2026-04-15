@@ -10,4 +10,6 @@ object ServiceProcessRepository {
     fun update(process: ServiceProcess) {
         DatabaseAccess.executor().save(databaseKey, process)
     }
+
+    fun findAll(): List<ServiceProcess> = DatabaseAccess.executor().findAll(databaseKey)
 }

@@ -3,9 +3,10 @@ package de.polocloud.node.services.process
 import de.polocloud.database.EntryIdentifier
 import de.polocloud.database.EntryRef
 import de.polocloud.node.cluster.node.NodeData
-import de.polocloud.node.services.ServiceState
 import de.polocloud.node.services.control.ServiceControlPlan
-import java.util.UUID
+import de.polocloud.proto.ProtoServiceProcessData
+import de.polocloud.proto.ServiceState
+import java.util.*
 
 data class ServiceProcess(
     @EntryIdentifier val uuid: UUID,
@@ -13,7 +14,7 @@ data class ServiceProcess(
     @EntryRef(clazz = NodeData::class) val nodeID: UUID,
     val boundPort: Int,
     var pid: Int,
-    private var state: ServiceState,
+    var state: ServiceState,
 ) {
 
     fun changeState(state: ServiceState) {
@@ -29,4 +30,15 @@ data class ServiceProcess(
     private fun update() {
         ServiceProcessRepository.update(this)
     }
+}
+
+fun ServiceProcess.toProto(): ProtoServiceProcessData {
+    return ProtoServiceProcessData.newBuilder()
+        .setUuid(this.uuid.toString())
+        .setPlan(this.plan)
+        .setNodeId(this.nodeID.toString())
+        .setBoundPort(this.boundPort)
+        .setPid(this.pid)
+        .setState(this.state)
+        .build()
 }

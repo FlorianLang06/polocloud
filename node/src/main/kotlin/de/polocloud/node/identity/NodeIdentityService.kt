@@ -16,6 +16,7 @@ import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.identity.provider.NodeIdProvider
+import de.polocloud.node.security.CertificateDataStorage
 import de.polocloud.node.services.ServiceHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -48,9 +49,10 @@ class NodeIdentityService(
         if (NodeRepository.count() == 0L) {
             logger.trInfo("cluster", "cluster.node.identity.created")
 
-            container = LocalNodeContainer(
-                NodeFactory.createInitial(bindAddress, launchProperties.group)
-            )
+            container = LocalNodeContainer(NodeFactory.createInitial(bindAddress, launchProperties.group))
+
+            CertificateDataStorage.nodeName = container.data.name()
+            CertificateDataStorage.initialize()
 
             NodeRepository.save(container.data)
 
@@ -76,6 +78,10 @@ class NodeIdentityService(
             logger.trInfo("cluster", "cluster.node.identity.detected", "nodeId" to localId.toString())
 
             container = LocalNodeContainer(possibleNode)
+
+            CertificateDataStorage.nodeName = container.data.name()
+            CertificateDataStorage.initialize()
+
             container.markStarting()
 
             grpc.start()
@@ -98,6 +104,9 @@ class NodeIdentityService(
 
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
+
+        CertificateDataStorage.nodeName = container.data.name()
+        CertificateDataStorage.initialize()
 
         return NodeRuntimeContext(holder, container, registrationManager, serviceHandler, grpc, headConnection)
     }

@@ -3,6 +3,7 @@ package de.polocloud.cli.communication
 import de.polocloud.cli.communication.client.CliGrpcClientModule
 import de.polocloud.cli.communication.client.impl.cluster.ClusterClientImpl
 import de.polocloud.cli.communication.client.impl.node.NodeClientImpl
+import de.polocloud.cli.communication.client.impl.services.ServiceClientImpl
 import de.polocloud.cli.communication.connection.CliConnectionManager
 import de.polocloud.common.communication.client.executor.GrpcClientExecutor
 
@@ -14,4 +15,5 @@ class CliSession(
 
     val clusterClient = ClusterClientImpl(executor)
     val nodeClient = NodeClientImpl(executor)
+    val serviceClient = ServiceClientImpl(executor)
 }

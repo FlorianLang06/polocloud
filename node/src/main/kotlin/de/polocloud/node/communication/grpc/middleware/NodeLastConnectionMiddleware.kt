@@ -48,13 +48,13 @@ class NodeLastConnectionMiddleware : GrpcServerMiddleware {
      * Updates the lastConnection timestamp for the node with the given ID.
      */
     private fun updateLastConnection(nodeId: String) {
-        runCatching {
+        try {
             val uuid = UUID.fromString(nodeId)
-            val node = NodeRepository.find(uuid)
-            if (node != null) {
-                node.lastConnection = Clock.System.now()
-                NodeRepository.save(node)
-            }
+            val node = NodeRepository.find(uuid) ?: return
+            node.lastConnection = Clock.System.now()
+            NodeRepository.save(node)
+        } catch (e: Exception) {
+            logger.warn("Failed to update lastConnection for node $nodeId", e)
         }
     }
 }

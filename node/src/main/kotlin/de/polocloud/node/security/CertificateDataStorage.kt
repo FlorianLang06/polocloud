@@ -2,11 +2,7 @@ package de.polocloud.node.security
 
 import de.polocloud.node.utils.rootDir
 import org.bouncycastle.asn1.x500.X500Name
-import org.bouncycastle.asn1.x509.BasicConstraints
-import org.bouncycastle.asn1.x509.Extension
-import org.bouncycastle.asn1.x509.GeneralName
-import org.bouncycastle.asn1.x509.GeneralNames
-import org.bouncycastle.asn1.x509.KeyUsage
+import org.bouncycastle.asn1.x509.*
 import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder
@@ -21,7 +17,10 @@ import java.io.FileReader
 import java.io.FileWriter
 import java.math.BigInteger
 import java.nio.file.Files
-import java.security.*
+import java.security.KeyPair
+import java.security.KeyPairGenerator
+import java.security.SecureRandom
+import java.security.Security
 import java.security.cert.X509Certificate
 import java.util.*
 
@@ -40,10 +39,12 @@ object CertificateDataStorage {
     private val certificateFile = nodePath.resolve("certificate.pem").toFile()
     private val caCertificateFile = caPath.resolve("certificate.pem").toFile()
 
-    val keyPair: KeyPair
-    private val caKeyPair: KeyPair
+    lateinit var keyPair: KeyPair
+    lateinit var caKeyPair: KeyPair
 
-    init {
+    lateinit var nodeName: String
+
+    fun initialize() {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(BouncyCastleProvider())
         }
@@ -115,7 +116,7 @@ object CertificateDataStorage {
 
         val builder = JcaX509v3CertificateBuilder(
             X500Name(issuer),
-            BigInteger.valueOf(System.currentTimeMillis()),
+            BigInteger(64, SecureRandom()),
             now,
             until,
             X500Name(subject),
@@ -153,19 +154,12 @@ object CertificateDataStorage {
                 )
             )
 
-            val subjectAltNames = GeneralNames(
-                arrayOf(
-                    GeneralName(GeneralName.dNSName, "localhost"),
-                    GeneralName(GeneralName.dNSName, "*.polocloud.local"), //TODO match SAN later
-                    GeneralName(GeneralName.iPAddress, "127.0.0.1"),
-                    GeneralName(GeneralName.iPAddress, "::1")
-                )
-            )
+            val spec = NodeIdentityPolicy.resolve(nodeName)
 
             builder.addExtension(
                 Extension.subjectAlternativeName,
                 false,
-                subjectAltNames
+                SanBuilder.build(spec)
             )
         }
 
@@ -210,7 +204,7 @@ object CertificateDataStorage {
 
         val publicKey = PEMParser(FileReader(publicFile)).use { parser ->
             JcaPEMKeyConverter().setProvider("BC").getPublicKey(
-                org.bouncycastle.asn1.x509.SubjectPublicKeyInfo.getInstance(parser.readObject())
+                SubjectPublicKeyInfo.getInstance(parser.readObject())
             )
         }
 

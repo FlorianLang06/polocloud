@@ -8,6 +8,7 @@ import de.polocloud.node.communication.cli.session.CliSessionCleanup
 import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.impl.cluster.ClusterServiceImpl
 import de.polocloud.node.communication.impl.node.NodeServiceImpl
+import de.polocloud.node.communication.impl.services.ServiceManagerImpl
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
@@ -37,6 +38,7 @@ class NodeGrpcEndpoint(
 
     private val nodeService = NodeServiceImpl(executor)
     private val clusterService = ClusterServiceImpl(executor)
+    private val serviceManager = ServiceManagerImpl(executor)
 
 
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
@@ -62,6 +64,11 @@ class NodeGrpcEndpoint(
         )
         .interceptedService(
             clusterService,
+            IpWhitelistInterceptor(),
+            CliSessionInterceptor(cliSessionManager)
+        )
+        .interceptedService(
+            serviceManager,
             IpWhitelistInterceptor(),
             CliSessionInterceptor(cliSessionManager)
         )

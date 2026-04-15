@@ -34,6 +34,7 @@ class ShutdownEventListener(
                     }
             } catch (ex: Exception) {
                 logger.debug("Event stream closed: ${ex.message}")
+                ex.printStackTrace()
 
                 if (connectionManager.isConnected) {
                     logger.trInfo("cli", "cli.connect.connection.lost")

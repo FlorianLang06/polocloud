@@ -6,6 +6,7 @@ import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
+import de.polocloud.proto.ServiceState
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
