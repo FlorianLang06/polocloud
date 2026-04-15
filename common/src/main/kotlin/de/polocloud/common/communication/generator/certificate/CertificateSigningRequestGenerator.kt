@@ -12,8 +12,10 @@ import java.util.UUID
 
 class CertificateSigningRequestGenerator(
     private val keyPair: KeyPair,
-    private val localId: UUID
+    private val commonName: String
 ) : Generator<PKCS10CertificationRequest> {
+
+    constructor(keyPair: KeyPair, localId: UUID) : this(keyPair, localId.toString())
 
     companion object {
         init {
@@ -24,7 +26,7 @@ class CertificateSigningRequestGenerator(
     }
 
     override fun generate(): PKCS10CertificationRequest {
-        val subject = X500Name("CN=${localId}")
+        val subject = X500Name("CN=$commonName")
 
         val builder = JcaPKCS10CertificationRequestBuilder(
             subject,
