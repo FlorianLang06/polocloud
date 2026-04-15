@@ -12,4 +12,6 @@ object ServiceProcessRepository {
     }
 
     fun findAll(): List<ServiceProcess> = DatabaseAccess.executor().findAll(databaseKey)
+
+    fun delete(process: ServiceProcess) = DatabaseAccess.executor().delete(databaseKey, process)
 }

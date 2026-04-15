@@ -24,6 +24,11 @@ class ServiceHandler {
     private var localServices: List<ServiceHolder> = emptyList()
 
     /**
+     * Cached list of all service container
+     */
+    private val containers = mutableListOf<ServiceContainer>()
+
+    /**
      * Initializes the service handler.
      *
      * This will:
@@ -71,7 +76,7 @@ class ServiceHandler {
 
             repeat(plan.minimum) {
                 logger.info("Starting service '{}' (instance {}/{})", plan.name, it + 1, plan.minimum)
-                ServiceFactory.bootService(plan, holder)
+                this.containers.add(ServiceFactory.bootService(plan, holder))
             }
         }
     }
