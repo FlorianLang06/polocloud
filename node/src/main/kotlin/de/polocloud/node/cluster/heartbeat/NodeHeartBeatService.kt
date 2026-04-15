@@ -1,8 +1,5 @@
 package de.polocloud.node.cluster.heartbeat
 
-import de.polocloud.database.DatabaseConnectionFactory
-import de.polocloud.database.DatabaseKey
-import de.polocloud.database.filtering.Eq
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.api.trError
 import de.polocloud.node.core.environment.NodeEnvironment
@@ -25,12 +22,9 @@ import kotlin.time.Duration.Companion.seconds
  *
  * @property factory The database connection used for saving heartbeats.
  */
-class NodeHeartBeatService(
-    val factory: DatabaseConnectionFactory<*>
-) {
+class NodeHeartBeatService {
 
     private val logger = LoggerFactory.getLogger(NodeHeartBeatService::class.java)
-    private val databaseKey = DatabaseKey( NodeHeartBeat::class)
     private val sysInfo = SystemInfo()
     private val processor: CentralProcessor = sysInfo.hardware.processor
     private val memory: GlobalMemory = sysInfo.hardware.memory
@@ -52,7 +46,7 @@ class NodeHeartBeatService(
         schedulerJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
                 runCatching {
-                    factory.executor().save(databaseKey, generate())
+                    NodeHeartBeatRepository.save(generate())
                 }.onFailure { exception ->
                     logger.trError("cluster", "cluster.heartbeat.save_failed", exception, "nodeId" to nodeId)
                 }
@@ -76,9 +70,7 @@ class NodeHeartBeatService(
      * in older data.
      */
     fun cleanUp() {
-        val beats = factory.executor().find(databaseKey, Eq("nodeId", NodeEnvironment.runtime.nodeId.get()))
-            .sortedBy { it.heartBeatAt }
-
+        val beats = NodeHeartBeatRepository.find(NodeEnvironment.runtime.nodeId.get()).sortedBy { it.heartBeatAt }
         if (beats.isEmpty()) return
 
         val now = Clock.System.now()
@@ -100,7 +92,7 @@ class NodeHeartBeatService(
         logger.info(TranslationService.tr("cluster", "cluster.heartbeat.cleanup"))
 
         toDelete.forEach { beat ->
-            factory.executor().delete(databaseKey, beat)
+            NodeHeartBeatRepository.delete(beat)
         }
 
         logger.info(

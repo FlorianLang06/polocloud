@@ -57,6 +57,8 @@ class NodeLifecycle(
 
         container.markOnline()
 
+        runtime.heartBeatService.startScheduler()
+
         logger.trInfo(
             "cluster",
             "cluster.node.started",
@@ -75,6 +77,10 @@ class NodeLifecycle(
         logger.trInfo("node", "node.shutdown.stopping")
 
         container.markStopping()
+
+        safe("heartBeatService") {
+            runtime.heartBeatService.stopScheduler()
+        }
 
         safe("registrationManager") {
             context.registrationManager.close(mode)
