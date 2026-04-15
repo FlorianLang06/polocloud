@@ -57,7 +57,7 @@ class CliRegistrationService(
 
         val signedCert = ca.signCsr(
             csr,
-            subjectAltNames = listOf("cli.polocloud.local") // TODO: derive from config
+            subjectAltNames = listOf("cli.polocloud.local")
         )
 
         val subject = extractCn(csr).lowercase()
