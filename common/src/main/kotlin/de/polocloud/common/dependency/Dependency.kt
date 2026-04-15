@@ -50,7 +50,6 @@ data class Dependency(
      */
     fun download() {
         if (url == "unknown") {
-            logger.debug("Skipping {}:{} — no download URL", artifactId, version)
             return
         }
 
@@ -61,7 +60,6 @@ data class Dependency(
 
             if (target.exists()) {
                 if (verifyChecksum(target)) {
-                    logger.debug("Cache hit: {}:{}", artifactId, version)
                     return
                 }
                 logger.warn("Checksum mismatch for cached {}:{} — re-downloading", artifactId, version)
