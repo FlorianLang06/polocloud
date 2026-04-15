@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.polocloud.gradle.plugin)
 }
 
+polocloud {
+    mainClass = "de.polocloud.services.sdk.ServiceBootKt"
+}
+
 dependencies {
     compileOnly(projects.common)
     polocloudRuntime(libs.polocloud.database)

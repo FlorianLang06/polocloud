@@ -152,24 +152,12 @@ object ServiceFactory {
 
             val dependencyPaths = loadDependencies(holder, workingDir.resolve(".dependencies"))
 
-            val mainClass = holder.mainClass
-            val processBuilder = if (mainClass != null) {
-                val classpath = buildList {
-                    add(targetJar.toAbsolutePath().toString())
-                    addAll(dependencyPaths)
-                }.joinToString(java.io.File.pathSeparator)
+            val classpath = buildList {
+                add(targetJar.toAbsolutePath().toString())
+                addAll(dependencyPaths)
+            }.joinToString(java.io.File.pathSeparator)
 
-                ProcessBuilder("java", "-cp", classpath, mainClass)
-            } else {
-                if (dependencyPaths.isNotEmpty()) {
-                    logger.warn(
-                        "Service '{}' has dependencies but no Main-Class in manifest — dependencies will not be loaded",
-                        holder.name
-                    )
-                }
-                ProcessBuilder("java", "-jar", targetJar.fileName.toString())
-            }
-
+            val processBuilder = ProcessBuilder("java", "-cp", classpath, "de.polocloud.services.sdk.ServiceBootKt")
             processBuilder.directory(workingDir.toFile()).inheritIO()
 
             serviceProcess.changeState(ServiceState.BOOTING)
