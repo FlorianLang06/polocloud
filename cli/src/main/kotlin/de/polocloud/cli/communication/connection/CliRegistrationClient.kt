@@ -31,6 +31,7 @@ class CliRegistrationClient(
 
     /**
      * Connects to [address], registers with [token], and persists received certificates.
+     * Uses the current system username as the certificate CN to identify CLI clients.
      */
     suspend fun register(address: Address, token: String) {
         logger.info(TranslationService.tr(
@@ -40,13 +41,14 @@ class CliRegistrationClient(
         ))
 
         val channel = openPlaintextChannel(address)
+        val username = System.getProperty("user.name") ?: "unknown"
 
         try {
             val stub = CliRegistrationServiceGrpcKt.CliRegistrationServiceCoroutineStub(channel)
 
             val csr = CertificateSigningRequestGenerator(
                 certificateStorage.keyPair,
-                UUID.randomUUID()
+                username
             ).generate()
 
             val response = try {
