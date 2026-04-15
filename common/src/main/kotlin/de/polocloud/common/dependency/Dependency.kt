@@ -2,6 +2,7 @@ package de.polocloud.common.dependency
 
 import de.polocloud.common.dependency.checksum.FileChecksum.sha1
 import de.polocloud.common.dependency.checksum.FileChecksum.sha256
+import org.slf4j.LoggerFactory
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
@@ -34,6 +35,8 @@ data class Dependency(
         // Global lock map shared across all Dependency instances so that two registries
         // scanning the same coordinates never download the same JAR concurrently.
         private val downloadLocks = ConcurrentHashMap<String, Any>()
+
+        private val logger = LoggerFactory.getLogger(Dependency::class.java)
     }
 
     /**
@@ -47,7 +50,7 @@ data class Dependency(
      */
     fun download() {
         if (url == "unknown") {
-            println("[Dependency] Skipping $artifactId:$version — no download URL")
+            logger.debug("Skipping {}:{} — no download URL", artifactId, version)
             return
         }
 
@@ -58,17 +61,17 @@ data class Dependency(
 
             if (target.exists()) {
                 if (verifyChecksum(target)) {
-                    println("[Dependency] Cache hit: $artifactId:$version")
+                    logger.debug("Cache hit: {}:{}", artifactId, version)
                     return
                 }
-                println("[Dependency] Checksum mismatch for cached $artifactId:$version — re-downloading")
+                logger.warn("Checksum mismatch for cached {}:{} — re-downloading", artifactId, version)
                 target.deleteIfExists()
             }
 
             Files.createDirectories(target.parent)
             val tempFile = Files.createTempFile(target.parent, "$artifactId-$version", ".tmp")
 
-            println("[Dependency] Downloading $artifactId:$version")
+            logger.info("Downloading {}:{}", artifactId, version)
             val start = System.currentTimeMillis()
 
             try {
@@ -90,7 +93,7 @@ data class Dependency(
             }
 
             Files.move(tempFile, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-            println("[Dependency] Downloaded $artifactId:$version in ${System.currentTimeMillis() - start} ms")
+            logger.info("Downloaded {}:{} in {} ms", artifactId, version, System.currentTimeMillis() - start)
         }
     }
 

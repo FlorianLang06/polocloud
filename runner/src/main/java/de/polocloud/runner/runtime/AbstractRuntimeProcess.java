@@ -57,7 +57,12 @@ public abstract class AbstractRuntimeProcess implements RuntimeProcess {
     private List<Path> getClasspath() {
         List<Path> elements = new ArrayList<>();
 
+        // bootstrap: kotlin + logging (must be present before node main is invoked)
         elements.add(PolocloudParameters.bootKotlin());
+        elements.add(PolocloudParameters.bootLog4jApi());
+        elements.add(PolocloudParameters.bootLog4jCore());
+        elements.add(PolocloudParameters.bootLog4jSlf4jImpl());
+        elements.add(PolocloudParameters.bootSlf4jApi());
 
         for (String module : getRequiredModules()) {
             elements.add(PolocloudParameters.expenderRuntimeCache(module));
@@ -98,15 +103,25 @@ public abstract class AbstractRuntimeProcess implements RuntimeProcess {
     }
 
     private void ensureBootstrapLibrariesPresent() throws Exception {
-        Path target = PolocloudParameters.bootKotlin();
+        ensureJar(PolocloudParameters.bootKotlin(),        PolocloudParameters.kotlinDownloadUrl());
+        ensureJar(PolocloudParameters.bootLog4jApi(),      PolocloudParameters.log4jApiDownloadUrl());
+        ensureJar(PolocloudParameters.bootLog4jCore(),     PolocloudParameters.log4jCoreDownloadUrl());
+        ensureJar(PolocloudParameters.bootLog4jSlf4jImpl(), PolocloudParameters.log4jSlf4jImplDownloadUrl());
+        ensureJar(PolocloudParameters.bootSlf4jApi(),      PolocloudParameters.slf4jApiDownloadUrl());
+    }
+
+    private void ensureJar(Path target, String downloadUrl) throws Exception {
         if (Files.exists(target)) {
             return;
         }
 
+        System.out.println("[Bootstrap] Downloading " + target.getFileName() + " ...");
         Files.createDirectories(target.getParent());
 
-        try (InputStream inputStream = new URI(PolocloudParameters.kotlinDownloadUrl()).toURL().openStream()) {
+        try (InputStream inputStream = new URI(downloadUrl).toURL().openStream()) {
             Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
         }
+
+        System.out.println("[Bootstrap] Downloaded  " + target.getFileName());
     }
 }
