@@ -9,6 +9,7 @@ import de.polocloud.node.cluster.node.NodeIndexGenerator
 import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.security.CertificateDataStorage
+import de.polocloud.node.security.SanBuilder
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeState
 import de.polocloud.proto.RegisterNodeRequest
@@ -38,16 +39,20 @@ class RegistrationService(
             return this.sendDenyResponse("cluster.registration.node.version.mismatch")
         }
 
+        val nodeIndex = NodeIndexGenerator.generate()
+        val nodeName = "${request.group}-$nodeIndex"
+
         val ca = CertificateDataStorage.certificateAuthority()
 
         val csr = parseCsr(request.publicKey)
-        val cert = ca.signCsr(csr, subjectAltNames = listOf("node1.polocloud.local", "127.0.0.1"))
+        val sans = SanBuilder.forNode(request.hostname, request.group, nodeIndex)
+        val cert = ca.signCsr(csr, subjectAltNames = sans)
         val certPem = certToPem(cert)
 
         NodeRepository.save(
             NodeData(
                 UUID.fromString(request.localId),
-                NodeIndexGenerator.generate(),
+                nodeIndex,
                 request.group,
                 request.hostname,
                 request.port,

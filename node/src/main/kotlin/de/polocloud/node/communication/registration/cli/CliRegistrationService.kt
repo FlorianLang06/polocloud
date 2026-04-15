@@ -11,6 +11,7 @@ import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.registration.client.CliRegistrationValidator
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.security.CertificateDataStorage
+import de.polocloud.node.security.SanBuilder
 import de.polocloud.proto.*
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
@@ -57,7 +58,7 @@ class CliRegistrationService(
 
         val signedCert = ca.signCsr(
             csr,
-            subjectAltNames = listOf("cli.polocloud.local")
+            subjectAltNames = SanBuilder.forCliClient(clientIp)
         )
 
         val subject = extractCn(csr).lowercase()

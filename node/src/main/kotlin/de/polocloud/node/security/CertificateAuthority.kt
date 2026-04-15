@@ -33,12 +33,12 @@ class CertificateAuthority(
      * Signs a PKCS10 CSR and returns a signed X509Certificate.
      * @param csr the CSR from the node
      * @param validityDays how long the certificate is valid
-     * @param subjectAltNames optional SANs (IP or DNS)
+     * @param subjectAltNames optional SANs as GeneralNames
      */
     fun signCsr(
         csr: PKCS10CertificationRequest,
         validityDays: Int = 365,
-        subjectAltNames: List<String> = emptyList()
+        subjectAltNames: GeneralNames? = null
     ): X509Certificate {
 
         val now = Date()
@@ -62,18 +62,11 @@ class CertificateAuthority(
         )
 
         // SAN hinzufügen, falls vorhanden
-        if (subjectAltNames.isNotEmpty()) {
-            val sanArray = subjectAltNames.map { name ->
-                if (name.matches(Regex("\\d+\\.\\d+\\.\\d+\\.\\d+"))) {
-                    GeneralName(GeneralName.iPAddress, name)
-                } else {
-                    GeneralName(GeneralName.dNSName, name)
-                }
-            }.toTypedArray()
+        if (subjectAltNames != null) {
             certBuilder.addExtension(
                 org.bouncycastle.asn1.x509.Extension.subjectAlternativeName,
                 false,
-                GeneralNames(sanArray)
+                subjectAltNames
             )
         }
 
