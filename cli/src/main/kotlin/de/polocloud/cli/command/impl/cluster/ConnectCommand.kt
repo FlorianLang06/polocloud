@@ -39,62 +39,26 @@ class ConnectCommand(
                     return@syntax
                 }
 
-                logger.info(
-                    TranslationService.tr(
-                    "cli",
-                    "cli.connect.connecting",
-                    "host" to host,
-                    "clusterPort" to clusterPort,
-                    "registrationPort" to registrationPort
-                ))
-
-                runBlocking {
-                    runCatching {
-                        connectionManager.connect(
-                            clusterAddress = Address(host, clusterPort),
-                            registrationAddress = Address(host, registrationPort),
-                            token = token
-                        )
-                    }.onSuccess {
-                        logger.info(
-                            TranslationService.tr(
-                                "cli",
-                                "cli.connect.success",
-                                "host" to host,
-                                "port" to clusterPort
-                            )
-                        )
-
-                        Cli.connectionHistory.push(
-                            ConnectionEntry(
-                                clusterAddress = Address(host, clusterPort),
-                                registrationAddress = Address(host, registrationPort)
-                            )
-                        )
-
-                        val session = CliSession(connectionManager)
-                        Cli.session = session
-                        val listener = ShutdownEventListener(connectionManager)
-
-                        listener.start {
-                            connectionManager.disconnect()
-                            Cli.terminal.disconnectPrompt()
-                        }
-
-                        Cli.terminal.connectedPrompt(Cli.session.nodeClient.nodeName())
-                    }.onFailure { ex ->
-                        logger.info(
-                            TranslationService.tr(
-                                "cli",
-                                "cli.connect.failed",
-                                "message" to (ex.message ?: "unknown")
-                            )
-                        )
-                    }
-                }
+                connect(host, clusterPort, registrationPort, token)
             },
             "cli.command.impl.syntax.connect.description",
             hostArg, clusterPortArg, registrationPortArg, tokenArg
+        )
+
+        syntax(
+            { ctx ->
+                val host = ctx.arg(hostArg)
+                val token = ctx.arg(tokenArg)
+
+                if (connectionManager.isConnected) {
+                    logger.info(TranslationService.tr("cli", "cli.connect.alreadyConnected"))
+                    return@syntax
+                }
+
+                connect(host, 4240, 4239, token)
+            },
+            "cli.command.impl.syntax.connect.description",
+            hostArg, tokenArg
         )
 
         syntax(
@@ -110,5 +74,61 @@ class ConnectCommand(
             "cli.command.impl.syntax.disconnect.description",
             KeywordArgument("disconnect")
         )
+    }
+
+    private fun connect(host: String, clusterPort: Int, registrationPort: Int, token: String) {
+        logger.info(
+            TranslationService.tr(
+                "cli",
+                "cli.connect.connecting",
+                "host" to host,
+                "clusterPort" to clusterPort,
+                "registrationPort" to registrationPort
+            ))
+
+        runBlocking {
+            runCatching {
+                connectionManager.connect(
+                    clusterAddress = Address(host, clusterPort),
+                    registrationAddress = Address(host, registrationPort),
+                    token = token
+                )
+            }.onSuccess {
+                logger.info(
+                    TranslationService.tr(
+                        "cli",
+                        "cli.connect.success",
+                        "host" to host,
+                        "port" to clusterPort
+                    )
+                )
+
+                Cli.connectionHistory.push(
+                    ConnectionEntry(
+                        clusterAddress = Address(host, clusterPort),
+                        registrationAddress = Address(host, registrationPort)
+                    )
+                )
+
+                val session = CliSession(connectionManager)
+                Cli.session = session
+                val listener = ShutdownEventListener(connectionManager)
+
+                listener.start {
+                    connectionManager.disconnect()
+                    Cli.terminal.disconnectPrompt()
+                }
+
+                Cli.terminal.connectedPrompt(Cli.session.nodeClient.nodeName())
+            }.onFailure { ex ->
+                logger.info(
+                    TranslationService.tr(
+                        "cli",
+                        "cli.connect.failed",
+                        "message" to (ex.message ?: "unknown")
+                    )
+                )
+            }
+        }
     }
 }

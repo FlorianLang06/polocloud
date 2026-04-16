@@ -1,5 +1,6 @@
 package de.polocloud.node.core.configuration.cluster
 
+import de.polocloud.common.utils.localIpAddress
 import de.polocloud.node.security.CSPRNGGenerator
 import kotlinx.serialization.Serializable
 
@@ -13,6 +14,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CliAccessConfiguration(
     var enabled: Boolean = true,
-    var allowedIps: List<String> = listOf("127.0.0.1"),
+    var allowedIps: List<String> = listOf(localIpAddress()),
     var registrationToken: String = CSPRNGGenerator.generate()
 )
