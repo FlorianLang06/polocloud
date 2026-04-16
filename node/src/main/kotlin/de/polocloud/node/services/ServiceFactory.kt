@@ -161,7 +161,7 @@ object ServiceFactory {
             }.joinToString(java.io.File.pathSeparator)
 
             val processBuilder = ProcessBuilder("java", "-cp", classpath, "de.polocloud.services.sdk.ServiceBootKt")
-            processBuilder.directory(workingDir.toFile()).inheritIO()
+            processBuilder.directory(workingDir.toFile())
 
             serviceProcess.changeState(ServiceState.BOOTING)
 
@@ -181,37 +181,38 @@ object ServiceFactory {
         return container
     }
 
-    fun shutdown(serviceProcess: ServiceProcess) {
-        val handle = ProcessHandle.of(serviceProcess.pid.toLong()).orElse(null)
+    fun shutdown(container: ServiceContainer) {
+        val process = container.process
+        val handle = ProcessHandle.of(container.process.pid.toLong()).orElse(null)
 
         if (handle == null || !handle.isAlive) {
-            logger.warn("No alive process found for service '{}' (pid {})", serviceProcess.plan, serviceProcess.pid)
+            logger.warn("No alive process found for service '{}' (pid {})", process.plan, process.pid)
         } else {
-            logger.info("Stopping service '{}' (pid {})", serviceProcess.plan, serviceProcess.pid)
+            logger.info("Stopping service '{}' (pid {})", process.plan, process.pid)
 
             // Graceful shutdown — give the process up to 10 seconds to exit
             handle.destroy()
             try {
                 handle.onExit().get(10, TimeUnit.SECONDS)
             } catch (_: Exception) {
-                logger.warn("Service '{}' did not stop gracefully — force-killing", serviceProcess.plan)
+                logger.warn("Service '{}' did not stop gracefully — force-killing", process.plan)
                 handle.destroyForcibly()
             }
         }
 
         // Remove from the database
-        ServiceProcessRepository.delete(serviceProcess)
+        ServiceProcessRepository.delete(process)
 
         // Delete the working directory
-        val workingDir = ServiceContainer(1, serviceProcess).path()
+        val workingDir = ServiceContainer(1, process).path()
         try {
             Files.walk(workingDir)
                 .sorted(Comparator.reverseOrder())
                 .forEach { Files.deleteIfExists(it) }
         } catch (ex: Exception) {
-            logger.error("Failed to delete working directory '{}' for service '{}'", workingDir, serviceProcess.uuid, ex)
+            logger.error("Failed to delete working directory '{}' for service '{}'", workingDir, process.uuid, ex)
         }
 
-        logger.info("Service '{}' stopped and cleaned up", serviceProcess.plan)
+        logger.info("Service '{}' stopped and cleaned up", process.plan)
     }
 }

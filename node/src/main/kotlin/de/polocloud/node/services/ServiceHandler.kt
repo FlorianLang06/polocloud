@@ -81,6 +81,10 @@ class ServiceHandler {
         }
     }
 
+    fun shutdown() {
+        this.containers.stream().forEach { it.shutdown() }
+    }
+
     /**
      * Finds a [ServiceHolder] by its identifier.
      *

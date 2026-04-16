@@ -86,6 +86,10 @@ class NodeLifecycle(
             context.registrationManager.close(mode)
         }
 
+        safe("serviceHandler") {
+            context.serviceHandler.shutdown()
+        }
+
         safe("localNodeContainer") {
             container.markStopped()
         }
