@@ -11,5 +11,9 @@ polocloud {
 
 dependencies {
     compileOnly(projects.common)
+
+    // logging
+    polocloudRuntime(libs.bundles.logging.full)
+
     polocloudRuntime(libs.polocloud.database)
 }

@@ -9,6 +9,7 @@ import de.polocloud.node.services.process.ServiceProcess
 import de.polocloud.node.services.process.ServiceProcessRepository
 import de.polocloud.proto.ServiceState
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -121,7 +122,7 @@ object ServiceFactory {
      * @param plan the control plan defining how the service should run
      * @param holder the service definition containing artifact metadata and file reference
      */
-    fun bootService(plan: ServiceControlPlan, holder: ServiceHolder) : ServiceContainer {
+    fun bootService(plan: ServiceControlPlan, holder: ServiceHolder): ServiceContainer {
         val serviceProcess = ServiceProcess(
             UUID.randomUUID(),
             plan.name,
@@ -158,9 +159,17 @@ object ServiceFactory {
             val classpath = buildList {
                 add(targetJar.toAbsolutePath().toString())
                 addAll(dependencyPaths)
-            }.joinToString(java.io.File.pathSeparator)
+            }.joinToString(File.pathSeparator)
 
-            val processBuilder = ProcessBuilder("java", "-cp", classpath, "de.polocloud.services.sdk.ServiceBootKt")
+            val processBuilder = ProcessBuilder(
+                "java",
+                "-Dservice.id=${serviceProcess.uuid}",
+                "-Dservice.name=${container.name()}",
+                "-cp",
+                classpath,
+                "de.polocloud.services.sdk.ServiceBootKt"
+            )
+
             processBuilder.directory(workingDir.toFile())
 
             serviceProcess.changeState(ServiceState.BOOTING)
