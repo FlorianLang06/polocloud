@@ -6,12 +6,14 @@ import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
+import de.polocloud.node.services.process.ServiceProcessRepository
 import de.polocloud.proto.ServiceState
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import java.util.jar.JarFile
 import kotlin.io.path.*
 
@@ -119,7 +121,7 @@ object ServiceFactory {
      * @param plan the control plan defining how the service should run
      * @param holder the service definition containing artifact metadata and file reference
      */
-    fun bootService(plan: ServiceControlPlan, holder: ServiceHolder) {
+    fun bootService(plan: ServiceControlPlan, holder: ServiceHolder) : ServiceContainer {
         val serviceProcess = ServiceProcess(
             UUID.randomUUID(),
             plan.name,
@@ -176,5 +178,40 @@ object ServiceFactory {
             )
             serviceProcess.changeState(ServiceState.FAILED)
         }
+        return container
+    }
+
+    fun shutdown(serviceProcess: ServiceProcess) {
+        val handle = ProcessHandle.of(serviceProcess.pid.toLong()).orElse(null)
+
+        if (handle == null || !handle.isAlive) {
+            logger.warn("No alive process found for service '{}' (pid {})", serviceProcess.plan, serviceProcess.pid)
+        } else {
+            logger.info("Stopping service '{}' (pid {})", serviceProcess.plan, serviceProcess.pid)
+
+            // Graceful shutdown — give the process up to 10 seconds to exit
+            handle.destroy()
+            try {
+                handle.onExit().get(10, TimeUnit.SECONDS)
+            } catch (_: Exception) {
+                logger.warn("Service '{}' did not stop gracefully — force-killing", serviceProcess.plan)
+                handle.destroyForcibly()
+            }
+        }
+
+        // Remove from the database
+        ServiceProcessRepository.delete(serviceProcess)
+
+        // Delete the working directory
+        val workingDir = ServiceContainer(1, serviceProcess).path()
+        try {
+            Files.walk(workingDir)
+                .sorted(Comparator.reverseOrder())
+                .forEach { Files.deleteIfExists(it) }
+        } catch (ex: Exception) {
+            logger.error("Failed to delete working directory '{}' for service '{}'", workingDir, serviceProcess.uuid, ex)
+        }
+
+        logger.info("Service '{}' stopped and cleaned up", serviceProcess.plan)
     }
 }
