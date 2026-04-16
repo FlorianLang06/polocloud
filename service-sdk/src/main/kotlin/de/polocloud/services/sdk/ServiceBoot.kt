@@ -14,7 +14,7 @@ fun main() {
     val serviceName = System.getProperty("service.name")
 
     logger.info("Starting service: $serviceName (id: $serviceId)")
-    logger.info("Log directory: service-logs/$serviceName")
+    logger.info("Log directory: services/logs")
 
     while (true) {
         Thread.sleep(1000)
