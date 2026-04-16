@@ -2,7 +2,6 @@ package de.polocloud.node.identity
 
 import de.polocloud.common.Address
 import de.polocloud.common.configuration.ConfigurationHolder
-import de.polocloud.common.utils.localIpAddress
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.bootstrap.properties.NodeProperties
 import de.polocloud.node.cluster.node.LocalNodeContainer
@@ -36,6 +35,10 @@ class NodeIdentityService(
 
     fun resolve(launchProperties: NodeProperties): NodeRuntimeContext {
         val localId = nodeId.get()
+
+        CertificateDataStorage.nodeId = localId.toString()
+        CertificateDataStorage.initialize()
+
         val bindAddress = resolveBindAddress(launchProperties)
 
         val grpc = NodeGrpcEndpoint(
@@ -50,10 +53,6 @@ class NodeIdentityService(
             logger.trInfo("cluster", "cluster.node.identity.created")
 
             container = LocalNodeContainer(NodeFactory.createInitial(bindAddress, launchProperties.group))
-
-            CertificateDataStorage.nodeName = container.data.name()
-            CertificateDataStorage.initialize()
-
             NodeRepository.save(container.data)
 
             val clusterToken = registrationManager.registrationTokenManger.createInitialCliToken()
@@ -78,10 +77,6 @@ class NodeIdentityService(
             logger.trInfo("cluster", "cluster.node.identity.detected", "nodeId" to localId.toString())
 
             container = LocalNodeContainer(possibleNode)
-
-            CertificateDataStorage.nodeName = container.data.name()
-            CertificateDataStorage.initialize()
-
             container.markStarting()
 
             grpc.start()
@@ -105,9 +100,6 @@ class NodeIdentityService(
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
 
-        CertificateDataStorage.nodeName = container.data.name()
-        CertificateDataStorage.initialize()
-
         return NodeRuntimeContext(holder, container, registrationManager, serviceHandler, grpc, headConnection)
     }
 
@@ -124,7 +116,7 @@ class NodeIdentityService(
      */
     private fun resolveBindAddress(launchProperties: NodeProperties): Address {
         val launchAddress = launchProperties.address
-        val defaultAddress = Address(localIpAddress(), holder.value.general.bindAddress.port)
+        val defaultAddress = Address(holder.value.general.bindAddress.hostname, holder.value.general.bindAddress.port)
 
         if (launchAddress != null) {
             val hostname = launchAddress.hostname.takeIf { it.isNotBlank() } ?: defaultAddress.hostname

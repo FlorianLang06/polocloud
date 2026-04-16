@@ -24,10 +24,10 @@ object SanBuilder {
      * Builds SANs for a node certificate based on its network identity.
      * Includes: hostname, local IP, loopback, and optional DNS names.
      */
-    fun forNode(hostname: String, groupName: String, index: Int): GeneralNames {
+    fun forNode(hostname: String, nodeId: String): GeneralNames {
         val dnsNames = listOf(
             hostname,
-            "$groupName-$index.polocloud.local",
+            "$nodeId.polocloud.local",
             "localhost"
         )
         val ipAddresses = listOf(
@@ -37,7 +37,7 @@ object SanBuilder {
         )
 
         return build(NodeIdentitySpec(
-            nodeName = "$groupName-$index",
+            nodeId = nodeId,
             dnsNames = dnsNames,
             ipAddresses = ipAddresses
         ))
@@ -49,7 +49,7 @@ object SanBuilder {
      */
     fun forCliClient(clientIp: String): GeneralNames {
         return build(NodeIdentitySpec(
-            nodeName = clientIp,
+            nodeId = clientIp,
             dnsNames = listOf(clientIp, "cli.polocloud.local"),
             ipAddresses = emptyList()
         ))
