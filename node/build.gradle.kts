@@ -41,7 +41,6 @@ dependencies {
     polocloudRuntime(libs.polocloud.database)
 
     compileOnly(projects.common)
-    compileOnly(projects.serviceSdk)
     implementation(projects.proto)
 }
 
