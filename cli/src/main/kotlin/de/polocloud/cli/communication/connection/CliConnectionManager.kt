@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
  * ```
  */
 class CliConnectionManager(
-    private val certificateStorage: CliCertificateStorage,
+    val certificateStorage: CliCertificateStorage,
     private val registrationClient: CliRegistrationClient = CliRegistrationClient(certificateStorage),
     private val grpcChannel: CliGrpcChannel = CliGrpcChannel(certificateStorage),
 ) : CliConnection {

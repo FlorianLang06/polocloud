@@ -3,7 +3,6 @@ package de.polocloud.cli.command.impl.cluster
 import de.polocloud.cli.Cli
 import de.polocloud.cli.communication.connection.ShutdownEventListener
 import de.polocloud.cli.command.Command
-import de.polocloud.cli.command.arguments.type.KeywordArgument
 import de.polocloud.cli.command.arguments.type.int.IntArgument
 import de.polocloud.cli.command.arguments.type.string.TextArgument
 import de.polocloud.cli.communication.CliSession
@@ -11,6 +10,7 @@ import de.polocloud.cli.configuration.connection.ConnectionEntry
 import de.polocloud.cli.communication.connection.CliConnectionManager
 import de.polocloud.cli.logger
 import de.polocloud.common.Address
+import de.polocloud.common.utils.localIpAddress
 import de.polocloud.i18n.api.TranslationService
 import kotlinx.coroutines.runBlocking
 
@@ -22,9 +22,6 @@ class ConnectCommand(
     private val clusterPortArg = IntArgument("clusterPort", 1, 65535)
     private val registrationPortArg = IntArgument("registrationPort", 1, 65535)
     private val tokenArg = TextArgument("token")
-
-    //TODO we need better/simpler command and disconnect needs to be better.
-
 
     init {
         syntax(
@@ -57,22 +54,23 @@ class ConnectCommand(
 
                 connect(host, 4240, 4239, token)
             },
-            "cli.command.impl.syntax.connect.description",
+            "cli.command.impl.syntax.connect.description", //TODO
             hostArg, tokenArg
         )
 
         syntax(
-            {
-                if (!connectionManager.isConnected) {
-                    logger.info(TranslationService.tr("cli", "cli.connect.notConnected"))
+            { ctx ->
+                val token = ctx.arg(tokenArg)
+
+                if (connectionManager.isConnected) {
+                    logger.info(TranslationService.tr("cli", "cli.connect.alreadyConnected"))
                     return@syntax
                 }
 
-                connectionManager.disconnect()
-                Cli.terminal.disconnectPrompt() //TODO remove certificates
+                connect(localIpAddress(), 4240, 4239, token)
             },
-            "cli.command.impl.syntax.disconnect.description",
-            KeywordArgument("disconnect")
+            "cli.command.impl.syntax.connect.description", //TODO
+            tokenArg
         )
     }
 
