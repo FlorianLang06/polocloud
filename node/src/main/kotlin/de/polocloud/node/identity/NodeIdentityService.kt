@@ -52,7 +52,7 @@ class NodeIdentityService(
         if (NodeRepository.count() == 0L) {
             logger.trInfo("cluster", "cluster.node.identity.created")
 
-            container = LocalNodeContainer(NodeFactory.createInitial(bindAddress, launchProperties.group))
+            container = LocalNodeContainer(NodeFactory.createInitial(Address(holder.value.general.hostname, holder.value.general.bindAddress.port), launchProperties.group))
             NodeRepository.save(container.data)
 
             val clusterToken = registrationManager.registrationTokenManger.createInitialCliToken()

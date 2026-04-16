@@ -26,7 +26,6 @@ object SanBuilder {
      */
     fun forNode(hostname: String, nodeId: String): GeneralNames {
         val dnsNames = listOf(
-            hostname,
             "$nodeId.polocloud.local",
             "localhost"
         )
