@@ -67,7 +67,7 @@ class ConnectCommand(
                     return@syntax
                 }
 
-                connect(localIpAddress(), 4240, 4239, token)
+                connect("127.0.0.1", 4240, 4239, token)
             },
             "cli.command.impl.syntax.connect.description", //TODO
             tokenArg

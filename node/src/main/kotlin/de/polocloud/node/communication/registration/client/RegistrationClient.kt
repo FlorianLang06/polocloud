@@ -1,10 +1,8 @@
 package de.polocloud.node.communication.registration.client
 
 import de.polocloud.common.Address
-import de.polocloud.common.utils.localIpAddress
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.trInfo
-import de.polocloud.node.communication.registration.node.RegistrationInfo
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeVersion
 import de.polocloud.proto.RegisterNodeRequest
@@ -39,9 +37,8 @@ class RegistrationClient {
      * @param publicKey The node's public key for secure communication.
      * @return The response from the cluster node registration service.
      */
-    fun tryRegister(info: RegistrationInfo, localId: UUID, group: String, port: Int, publicKey: String): RegisterNodeResponse {
-        val address = "${info.address.hostname}:${info.address.port}"
-        val channel = createChannel(info.address)
+    fun tryRegister(address: Address, token: String, hostname: String, port: Int, localId: UUID, group: String, publicKey: String): RegisterNodeResponse {
+        val channel = createChannel(address)
 
         try {
             val stub = NodeRegistrationServiceGrpcKt.NodeRegistrationServiceCoroutineStub(channel)
@@ -49,7 +46,7 @@ class RegistrationClient {
             val request = RegisterNodeRequest.newBuilder()
                 .setLocalId(localId.toString())
                 .setGroup(group)
-                .setHostname(localIpAddress())
+                .setHostname(hostname)
                 .setPort(port)
                 .setPublicKey(publicKey)
                 .setDetails(
@@ -58,7 +55,7 @@ class RegistrationClient {
                         .setGitHash(PolocloudVersion.CURRENT.commitId)
                         .build()
                 )
-                .setToken(info.token)
+                .setToken(token)
                 .build()
 
             logger.trInfo("cluster", "cluster.registration.sendingRequest", "address" to address)

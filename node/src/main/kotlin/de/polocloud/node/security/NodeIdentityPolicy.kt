@@ -1,21 +1,22 @@
 package de.polocloud.node.security
 
-import de.polocloud.common.utils.localIpAddress
+import de.polocloud.common.utils.publicIpAddress
 
 object NodeIdentityPolicy {
 
-    fun resolve(hostname: String): NodeIdentitySpec {
+    fun resolve(nodeId: String): NodeIdentitySpec {
         val dns = mutableListOf(
             "localhost",
-            "$hostname.polocloud.local"
+            "$nodeId.polocloud.local"
         )
 
-        val ips = mutableListOf<String>()
+        val ips = mutableListOf("127.0.0.1")
 
-        localIpAddress().let { ips += it }
+        //localIpAddress().let { ips += it } This does not work
+        publicIpAddress()?.let { ips += it }
 
         return NodeIdentitySpec(
-            nodeName = hostname,
+            nodeId = nodeId,
             dnsNames = dns,
             ipAddresses = ips
         )

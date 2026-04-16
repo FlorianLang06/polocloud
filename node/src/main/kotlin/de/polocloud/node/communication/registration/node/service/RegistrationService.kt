@@ -39,20 +39,18 @@ class RegistrationService(
             return this.sendDenyResponse("cluster.registration.node.version.mismatch")
         }
 
-        val nodeIndex = NodeIndexGenerator.generate()
-        val nodeName = "${request.group}-$nodeIndex"
-
+        val localId = request.localId
         val ca = CertificateDataStorage.certificateAuthority()
 
         val csr = parseCsr(request.publicKey)
-        val sans = SanBuilder.forNode(request.hostname, request.group, nodeIndex)
+        val sans = SanBuilder.forNode(request.hostname, localId)
         val cert = ca.signCsr(csr, subjectAltNames = sans)
         val certPem = certToPem(cert)
 
         NodeRepository.save(
             NodeData(
-                UUID.fromString(request.localId),
-                nodeIndex,
+                UUID.fromString(localId),
+                NodeIndexGenerator.generate(),
                 request.group,
                 request.hostname,
                 request.port,

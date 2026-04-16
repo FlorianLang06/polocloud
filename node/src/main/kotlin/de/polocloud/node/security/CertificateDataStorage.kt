@@ -42,7 +42,7 @@ object CertificateDataStorage {
     lateinit var keyPair: KeyPair
     lateinit var caKeyPair: KeyPair
 
-    lateinit var nodeName: String
+    lateinit var nodeId: String
 
     fun initialize() {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
@@ -154,7 +154,7 @@ object CertificateDataStorage {
                 )
             )
 
-            val spec = NodeIdentityPolicy.resolve(nodeName)
+            val spec = NodeIdentityPolicy.resolve(nodeId)
 
             builder.addExtension(
                 Extension.subjectAlternativeName,

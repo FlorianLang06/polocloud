@@ -36,7 +36,7 @@ class RegistrationManager(
         val client = RegistrationClient()
         val csr = CertificateSigningRequestGenerator(CertificateDataStorage.keyPair, localId).generate().toPem()
 
-        val response = client.tryRegister(registrationInfo, localId, group, holder.value.general.bindAddress.port, csr)
+        val response = client.tryRegister(registrationInfo.address,registrationInfo.token, holder.value.general.hostname, holder.value.general.bindAddress.port, localId, group, csr)
 
         if (!response.accepted) {
             logger.warn(TranslationService.tr("cluster", "cluster.registration.node.denied", "reason" to response.message))
