@@ -3,6 +3,7 @@ package de.polocloud.node.services
 import de.polocloud.common.dependency.DependencyRegistry
 import de.polocloud.common.dependency.insert.StringArgumentInsert
 import de.polocloud.common.dependency.scanning.OwnBlobScanner
+import de.polocloud.common.system.PolocloudSystemProperties
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
@@ -13,10 +14,12 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.jar.JarFile
-import kotlin.io.path.*
+import kotlin.io.path.Path
+import kotlin.io.path.exists
+import kotlin.io.path.listDirectoryEntries
 
 /**
  * Factory responsible for discovering and bootstrapping services.
@@ -26,6 +29,18 @@ import kotlin.io.path.*
  * - Extracting metadata from JAR manifests
  * - Creating [ServiceHolder] instances
  * - Booting services based on a given [ServiceControlPlan]
+ *
+ * Each service process receives the following system properties so it can
+ * establish an mTLS channel back to this node:
+ *
+ * | Property       | Value                                                  |
+ * |----------------|--------------------------------------------------------|
+ * | `service.id`   | UUID of the [ServiceProcess]                           |
+ * | `service.name` | Human-readable container name (e.g. `lobby-1`)         |
+ * | `node.address` | `host:port` of the node's gRPC endpoint                |
+ * | `service.cert` | Absolute path to the service's signed certificate PEM  |
+ * | `service.key`  | Absolute path to the service's private key PEM         |
+ * | `service.ca`   | Absolute path to the CA certificate PEM                |
  */
 object ServiceFactory {
 
@@ -78,6 +93,134 @@ object ServiceFactory {
     }
 
     /**
+     * Boots a new service instance.
+     *
+     * In addition to the standard JVM classpath setup the process is given
+     * four TLS-related system properties so [de.polocloud.services.sdk.communication.NodeConnection]
+     * can open an mTLS channel back to this node without any additional configuration.
+     */
+    fun bootService(plan: ServiceControlPlan, holder: ServiceHolder): ServiceContainer {
+        val serviceId = UUID.randomUUID()
+
+        val serviceProcess = ServiceProcess(
+            serviceId,
+            plan.name,
+            NodeEnvironment.runtime.nodeId.get(),
+            -1,
+            -1,
+            ServiceState.LOADING,
+        )
+
+        // Persist BEFORE booting the JVM — ServiceRegistrationService needs
+        // this entry to exist when the service sends its CSR.
+        ServiceProcessRepository.update(serviceProcess)
+
+        val container = ServiceContainer(1, serviceProcess)
+        val workingDir = container.path()
+        val identityDir = workingDir.resolve(".identity")
+
+        try {
+            Files.createDirectories(workingDir)
+
+            val targetJar = workingDir.resolve(holder.file.name)
+
+            logger.info(
+                "Starting service '{}' with plan '{}' in '{}'",
+                container.name(),
+                plan.name,
+                workingDir,
+            )
+
+            Files.copy(holder.file.toPath(), targetJar, StandardCopyOption.REPLACE_EXISTING)
+
+            val dependencyPaths = loadDependencies(holder, workingDir.resolve(".dependencies"))
+
+            val classpath = buildList {
+                add(targetJar.toAbsolutePath().toString())
+                add(File(System.getProperty(PolocloudSystemProperties.COMMON_PATH)).absolutePath)
+                add(File(System.getProperty(PolocloudSystemProperties.PROTO_PATH)).absolutePath)
+                addAll(dependencyPaths)
+            }.joinToString(File.pathSeparator)
+
+            val token = NodeEnvironment.runtime.tokenManager.issue(serviceId)
+
+            val nodeConfig = NodeEnvironment.configurations
+            val nodeGrpcAddress = "${nodeConfig.general.bindAddress.hostname}:${nodeConfig.general.bindAddress.port}"
+            val nodeRegistrationAddress = nodeConfig.cluster.registration.let { "${it.hostname}:${it.port}" }
+
+            val processBuilder = ProcessBuilder(
+                "java",
+                "-Dservice.id=$serviceId",
+                "-Dservice.name=${container.name()}",
+                "-Dservice.token=$token",
+                "-Dservice.identity.dir=${identityDir.toAbsolutePath()}",
+                "-Dnode.address=$nodeGrpcAddress",
+                "-Dnode.registration.address=$nodeRegistrationAddress",
+                "-cp", classpath,
+                "de.polocloud.services.sdk.ServiceBootKt",
+            )
+
+            processBuilder.directory(workingDir.toFile())
+            serviceProcess.changeState(ServiceState.BOOTING)
+
+            val process = processBuilder.start()
+            serviceProcess.withRuntime(process)
+
+        } catch (ex: Exception) {
+            logger.error(
+                "Failed to start service '{}' with plan '{}'",
+                holder.name,
+                plan.name,
+                ex,
+            )
+            serviceProcess.changeState(ServiceState.FAILED)
+        }
+
+        return container
+    }
+
+    fun shutdown(container: ServiceContainer) {
+        val process = container.process
+        val handle = ProcessHandle.of(container.process.pid.toLong()).orElse(null)
+
+        if (handle == null || !handle.isAlive) {
+            logger.warn(
+                "No alive process found for service '{}' (pid {})",
+                process.plan,
+                process.pid,
+            )
+        } else {
+            logger.info("Stopping service '{}' (pid {})", process.plan, process.pid)
+
+            handle.destroy()
+            try {
+                handle.onExit().get(10, TimeUnit.SECONDS)
+            } catch (_: Exception) {
+                logger.warn("Service '{}' did not stop gracefully — force-killing", process.plan)
+                handle.destroyForcibly()
+            }
+        }
+
+        ServiceProcessRepository.delete(process)
+
+        val workingDir = ServiceContainer(1, process).path()
+        try {
+            Files.walk(workingDir)
+                .sorted(Comparator.reverseOrder())
+                .forEach { Files.deleteIfExists(it) }
+        } catch (ex: Exception) {
+            logger.error(
+                "Failed to delete working directory '{}' for service '{}'",
+                workingDir,
+                process.uuid,
+                ex,
+            )
+        }
+
+        logger.info("Service '{}' stopped and cleaned up", process.plan)
+    }
+
+    /**
      * Resolves and downloads all dependencies declared in the [holder]'s JAR into the
      * global cache (`.cache/dependencies/`), then copies each JAR into [instanceDepDir]
      * so every service instance has its own isolated copy.
@@ -99,129 +242,21 @@ object ServiceFactory {
         // preserving the full cache structure: <group>/<artifact>/<version>/<artifact>-<version>.jar
         val cacheRoot = Path(".cache/dependencies").toAbsolutePath()
         Files.createDirectories(instanceDepDir)
-        return registry.collect().map { cachePath ->
+
+        return registry.collect().mapNotNull { cachePath ->
             val source = Path(cachePath).toAbsolutePath()
-            val relative = cacheRoot.relativize(source)   // e.g. de/polocloud/example/1.0.0/example-1.0.0.jar
+
+            if (!Files.exists(source)) {
+                return@mapNotNull null
+            }
+
+            val relative = cacheRoot.relativize(source)
             val target = instanceDepDir.resolve(relative)
+
             Files.createDirectories(target.parent)
             Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING)
+
             target.toAbsolutePath().toString()
         }
-    }
-
-    /**
-     * Boots a new service instance based on the given plan and service definition.
-     *
-     * Steps:
-     * 1. Create a [ServiceProcess] representation
-     * 2. Prepare a container directory
-     * 3. Copy the service JAR into the container
-     * 4. Resolve and download embedded dependencies
-     * 5. Start a new JVM process with a full classpath
-     *
-     * @param plan the control plan defining how the service should run
-     * @param holder the service definition containing artifact metadata and file reference
-     */
-    fun bootService(plan: ServiceControlPlan, holder: ServiceHolder): ServiceContainer {
-        val serviceProcess = ServiceProcess(
-            UUID.randomUUID(),
-            plan.name,
-            NodeEnvironment.runtime.nodeId.get(),
-            -1,
-            -1,
-            ServiceState.LOADING
-        )
-
-        val container = ServiceContainer(1, serviceProcess)
-        val workingDir = container.path()
-
-        try {
-            Files.createDirectories(workingDir)
-
-            val targetJar = workingDir.resolve(holder.file.name)
-
-            logger.info(
-                "Starting service '{}' with plan '{}' in '{}'",
-                container.name(),
-                plan.name,
-                workingDir
-            )
-
-            // Copy service JAR into container (overwrite if exists)
-            Files.copy(
-                holder.file.toPath(),
-                targetJar,
-                StandardCopyOption.REPLACE_EXISTING
-            )
-
-            val dependencyPaths = loadDependencies(holder, workingDir.resolve(".dependencies"))
-
-            val classpath = buildList {
-                add(targetJar.toAbsolutePath().toString())
-                addAll(dependencyPaths)
-            }.joinToString(File.pathSeparator)
-
-            val processBuilder = ProcessBuilder(
-                "java",
-                "-Dservice.id=${serviceProcess.uuid}",
-                "-Dservice.name=${container.name()}",
-                "-cp",
-                classpath,
-                "de.polocloud.services.sdk.ServiceBootKt"
-            )
-
-            processBuilder.directory(workingDir.toFile())
-
-            serviceProcess.changeState(ServiceState.BOOTING)
-
-            val process = processBuilder.start()
-
-            serviceProcess.withRuntime(process)
-
-        } catch (ex: Exception) {
-            logger.error(
-                "Failed to start service '{}' with plan '{}'",
-                holder.name,
-                plan.name,
-                ex
-            )
-            serviceProcess.changeState(ServiceState.FAILED)
-        }
-        return container
-    }
-
-    fun shutdown(container: ServiceContainer) {
-        val process = container.process
-        val handle = ProcessHandle.of(container.process.pid.toLong()).orElse(null)
-
-        if (handle == null || !handle.isAlive) {
-            logger.warn("No alive process found for service '{}' (pid {})", process.plan, process.pid)
-        } else {
-            logger.info("Stopping service '{}' (pid {})", process.plan, process.pid)
-
-            // Graceful shutdown — give the process up to 10 seconds to exit
-            handle.destroy()
-            try {
-                handle.onExit().get(10, TimeUnit.SECONDS)
-            } catch (_: Exception) {
-                logger.warn("Service '{}' did not stop gracefully — force-killing", process.plan)
-                handle.destroyForcibly()
-            }
-        }
-
-        // Remove from the database
-        ServiceProcessRepository.delete(process)
-
-        // Delete the working directory
-        val workingDir = ServiceContainer(1, process).path()
-        try {
-            Files.walk(workingDir)
-                .sorted(Comparator.reverseOrder())
-                .forEach { Files.deleteIfExists(it) }
-        } catch (ex: Exception) {
-            logger.error("Failed to delete working directory '{}' for service '{}'", workingDir, process.uuid, ex)
-        }
-
-        logger.info("Service '{}' stopped and cleaned up", process.plan)
     }
 }

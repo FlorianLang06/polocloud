@@ -1,16 +1,16 @@
 package de.polocloud.node.communication.registration.cli
 
+import de.polocloud.common.communication.GrpcClientContext
 import de.polocloud.common.communication.certificate.certToPem
 import de.polocloud.common.communication.certificate.parseCsr
 import de.polocloud.common.configuration.ConfigurationHolder
-import de.polocloud.common.communication.GrpcClientContext
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.registration.client.CliRegistrationValidator
 import de.polocloud.node.core.configuration.NodeConfigurations
-import de.polocloud.node.security.CertificateDataStorage
+import de.polocloud.node.security.NodeCertificateStorage
 import de.polocloud.node.security.SanBuilder
 import de.polocloud.proto.*
 import org.bouncycastle.asn1.x500.style.BCStyle
@@ -36,7 +36,7 @@ class CliRegistrationService(
     private val logger = LoggerFactory.getLogger(CliRegistrationService::class.java)
     private var validator = CliRegistrationValidator(holder)
     private val ca by lazy {
-        CertificateDataStorage.certificateAuthority()
+        NodeCertificateStorage.certificateAuthority()
     }
 
     override suspend fun registerCli(request: RegisterCliRequest): RegisterCliResponse {
@@ -67,7 +67,7 @@ class CliRegistrationService(
         logger.trInfo(
             "cluster",
             "cluster.registration.cli.registered",
-            "client" to session.sessionId,
+            "client" to subject,
             "ip"     to session.address,
         )
 
@@ -79,7 +79,7 @@ class CliRegistrationService(
     }
 
     override suspend fun disconnectCli(request: DisconnectRequest): DisconnectResponse {
-        val subject = CliSessionInterceptor.Companion.SUBJECT_CTX_KEY.get()
+        val subject = CliSessionInterceptor.SUBJECT_CTX_KEY.get()
 
         if (subject == null) {
             logger.warn("Disconnect received without subject in context — ignoring")

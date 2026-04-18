@@ -11,9 +11,14 @@ polocloud {
 
 dependencies {
     compileOnly(projects.common)
+    compileOnly(projects.proto)
+
+    polocloudRuntime(libs.kotlinx.coroutines.core)
 
     // logging
     polocloudRuntime(libs.bundles.logging.full)
+    polocloudRuntime(libs.bundles.grpc.node)
+    polocloudRuntime(libs.bundles.tls)
 
     polocloudRuntime(libs.polocloud.database)
 }

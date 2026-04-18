@@ -1,28 +1,24 @@
 syntax = "proto3";
 
+package node;
+
 option java_package = "de.polocloud.proto";
 option java_outer_classname = "NodeProto";
 option java_multiple_files = true;
 
-package node;
+import "common.proto";
 
 service NodeRegistrationService {
-  // First contact with cluster
   rpc RegisterNode (RegisterNodeRequest) returns (RegisterNodeResponse);
 }
 
-service NodeService {
-  rpc GetNodeInformation (NodeInformationRequest) returns (NodeInformationResponse);
-  rpc ListenForEvents (NodeEventRequest) returns (stream NodeEvent);
-}
-
 message RegisterNodeRequest {
-  string localId = 1;
+  string local_id = 1;
   string group = 2;
   string hostname = 3;
   int32 port = 4;
   string token = 5;
-  string publicKey = 6;
+  string csr_pem = 6;
   NodeVersion details = 7;
 }
 
@@ -36,6 +32,11 @@ message RegisterNodeResponse {
 message NodeVersion {
   string version = 1;
   string gitHash = 2;
+}
+
+service NodeService {
+  rpc GetNodeInformation (NodeInformationRequest) returns (NodeInformationResponse);
+  rpc ListenForEvents (NodeEventRequest) returns (stream NodeEvent);
 }
 
 message NodeInformationRequest {}

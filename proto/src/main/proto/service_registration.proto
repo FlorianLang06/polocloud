@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package service;
+
+option java_package = "de.polocloud.proto";
+option java_outer_classname = "ServiceRegistrationProto";
+option java_multiple_files = true;
+
+service ServiceRegistrationService {
+  rpc RegisterService (RegisterServiceRequest) returns (RegisterServiceResponse);
+}
+
+message RegisterServiceRequest {
+  string service_id = 1;
+  string token      = 2;
+  string csr_pem    = 3;
+}
+
+message RegisterServiceResponse {
+  bool   accepted        = 1;
+  string message         = 2;
+  string certificate     = 3;
+  string ca_certificate  = 4;
+}

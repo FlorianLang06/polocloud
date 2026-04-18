@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package common;
+
+option java_package = "de.polocloud.proto";
+option java_outer_classname = "CommonProto";
+option java_multiple_files = true;
+
+enum NodeState {
+  OFFLINE = 0;
+  STARTING = 1;
+  SYNCING = 2;
+  ONLINE = 3;
+  STOPPING = 4;
+  STOPPED = 5;
+  CRASHED = 6;
+}
+
+enum ServiceState {
+  LOADING = 0;
+  BOOTING = 1;
+  RUNNING = 2;
+  UNCONTROLLED = 3;
+  FAILED = 4;
+}

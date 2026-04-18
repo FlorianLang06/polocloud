@@ -10,7 +10,6 @@ import de.polocloud.proto.RegisterCliRequest
 import io.grpc.ManagedChannel
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 import org.slf4j.LoggerFactory
-import java.util.*
 
 /**
  * Performs the one-time CLI registration handshake with the cluster.
@@ -68,9 +67,7 @@ class CliRegistrationClient(
                 return
             }
 
-            certificateStorage.saveCertificate(response.certificatePem)
-            certificateStorage.saveCaCertificate(response.caCertificatePem)
-
+            certificateStorage.saveCertificates(response.certificatePem, response.caCertificatePem)
             logger.info(TranslationService.tr("cli", "cli.registration.success"))
 
         } finally {

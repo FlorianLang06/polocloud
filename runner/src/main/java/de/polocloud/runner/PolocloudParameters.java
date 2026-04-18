@@ -38,6 +38,18 @@ public final class PolocloudParameters {
     public static final String RUNTIME_PATH = "polocloud.runtime.path";
 
     /**
+     * Give the common jar path to the thread
+     * We attach the common jar into the classpath
+     */
+    public static final String COMMON_PATH = "polocloud.common.path";
+
+    /**
+     * Give the common jar path to the thread
+     * We attach the common jar into the classpath
+     */
+    public static final String PROTO_PATH = "polocloud.proto.path";
+
+    /**
      * System property that defines the join token, to join in a cluster.
      */
     public static final String JOIN_TOKEN = "polocloud.join.token";

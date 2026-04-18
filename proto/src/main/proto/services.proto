@@ -1,8 +1,12 @@
 syntax = "proto3";
 
+package service;
+
 option java_package = "de.polocloud.proto";
-option java_outer_classname = "Services";
+option java_outer_classname = "ServicesProto";
 option java_multiple_files = true;
+
+import "common.proto";
 
 service ServiceManager {
   rpc ListServices (ListServicesRequest) returns (ListServicesResponse);
@@ -12,11 +16,11 @@ message ListServicesRequest {
   // optional Filter
   string plan_name = 1;
   string node_id = 2;
-  ServiceState state = 3;
+  common.ServiceState state = 3;
 }
 
 message ListServicesResponse {
-  repeated ProtoServiceProcessData serviceProcess = 1;
+  repeated ProtoServiceProcessData service_process = 1;
 }
 
 message ProtoServiceProcessData {
@@ -25,7 +29,7 @@ message ProtoServiceProcessData {
   string node_id = 3;
   int32 bound_port = 4;
   int32 pid = 5;
-  ServiceState state = 6;
+  common.ServiceState state = 6;
 }
 
 message ProtoServiceControlPlan {
@@ -36,13 +40,4 @@ message ProtoServiceControlPlan {
   int32 minimum = 5;
   int32 maximum = 6;
   string node_whitelist = 7;
-}
-
-
-enum ServiceState {
-  LOADING = 0;
-  BOOTING = 1;
-  RUNNING = 2;
-  UNCONTROLLED = 3;
-  FAILED = 4;
 }

@@ -15,7 +15,7 @@ import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.identity.provider.NodeIdProvider
-import de.polocloud.node.security.CertificateDataStorage
+import de.polocloud.node.security.NodeCertificateStorage
 import de.polocloud.node.services.ServiceHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -36,8 +36,8 @@ class NodeIdentityService(
     fun resolve(launchProperties: NodeProperties): NodeRuntimeContext {
         val localId = nodeId.get()
 
-        CertificateDataStorage.nodeId = localId.toString()
-        CertificateDataStorage.initialize()
+        NodeCertificateStorage.nodeId = localId.toString()
+        NodeCertificateStorage.initialize()
 
         val bindAddress = resolveBindAddress(launchProperties)
 

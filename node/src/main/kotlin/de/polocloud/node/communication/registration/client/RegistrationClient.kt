@@ -48,7 +48,7 @@ class RegistrationClient {
                 .setGroup(group)
                 .setHostname(hostname)
                 .setPort(port)
-                .setPublicKey(publicKey)
+                .setCsrPem(publicKey)
                 .setDetails(
                     NodeVersion.newBuilder()
                         .setVersion(PolocloudVersion.CURRENT.toString())

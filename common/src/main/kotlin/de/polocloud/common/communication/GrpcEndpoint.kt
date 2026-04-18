@@ -3,6 +3,8 @@ package de.polocloud.common.communication
 import de.polocloud.common.Address
 import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
+import de.polocloud.common.communication.tls.ClientAuthMode
+import de.polocloud.common.communication.tls.MtlsConfig
 import de.polocloud.i18n.api.trDebug
 import de.polocloud.i18n.api.trError
 import de.polocloud.i18n.api.trInfo
@@ -14,7 +16,6 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder
 import io.grpc.netty.shaded.io.netty.handler.ssl.ClientAuth
 import io.grpc.protobuf.services.HealthStatusManager
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.FileInputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -29,16 +30,30 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * It is intended for cloud-native usage and supports both optional TLS
  * and optional client certificate authentication.
+ *
+ * ---
+ * **Preferred usage — via [MtlsConfig]:**
+ * ```kotlin
+ * val endpoint = GrpcEndpoint.Builder(address)
+ *     .service(MyService())
+ *     .tls(MtlsConfig.mutual(certFile, keyFile, caCertFile))
+ *     .build()
+ * endpoint.start()
+ * ```
+ *
+ * **Multi-CA usage (CLI + Node on same port):**
+ * ```kotlin
+ * GrpcEndpoint.Builder(address)
+ *     .tls(MtlsConfig.mutual(certFile, keyFile, nodeCaFile, cliCaFile))
+ *     .build()
+ * ```
  */
 class GrpcEndpoint private constructor(
     private val address: Address,
     private val services: List<BindableService>,
     private val interceptedServices: List<ServerServiceDefinition>,
-    private val caCertFiles: List<File>,
-    private val certFile: File?,
-    private val keyFile: File?,
-    private val clientAuth: ClientAuth,
-    private val shutdownTimeoutSeconds: Long
+    private val mtlsConfig: MtlsConfig?,
+    private val shutdownTimeoutSeconds: Long,
 ) : Closeable {
 
     private val logger = LoggerFactory.getLogger(GrpcEndpoint::class.java)
@@ -48,9 +63,6 @@ class GrpcEndpoint private constructor(
 
     /**
      * Starts the gRPC server if not already running.
-     *
-     * Registers all provided services and starts reporting SERVING health status.
-     * Supports optional TLS and client certificate authentication.
      */
     @Synchronized
     fun start() {
@@ -64,32 +76,26 @@ class GrpcEndpoint private constructor(
         val builder = NettyServerBuilder.forAddress(address.toInetSocketAddress())
             .addService(healthManager.healthService)
 
-        if (certFile != null && keyFile != null) {
+        mtlsConfig?.let { cfg ->
             val sslContext = runCatching {
-                GrpcSslContexts.forServer(certFile, keyFile)
-                    .apply {
-                        if (caCertFiles.isNotEmpty()) {
-                            // Parse each CA File into X509Certificate objects and pass as Iterable.
-                            // This is the only trustManager overload that accepts multiple entries.
-                            // Clients presenting a cert signed by ANY of these CAs will be accepted.
-                            val cf = CertificateFactory.getInstance("X.509")
-                            val certs: List<X509Certificate> = caCertFiles.flatMap { file ->
-                                FileInputStream(file).use { stream ->
-                                    @Suppress("UNCHECKED_CAST")
-                                    cf.generateCertificates(stream) as Collection<X509Certificate>
-                                }
-                            }
-                            trustManager(certs)
-                        }
+                val cf = CertificateFactory.getInstance("X.509")
+                val trustedCerts: List<X509Certificate> = cfg.caCerts.flatMap { file ->
+                    FileInputStream(file).use { stream ->
+                        @Suppress("UNCHECKED_CAST")
+                        cf.generateCertificates(stream) as Collection<X509Certificate>
                     }
-                    .clientAuth(clientAuth)
+                }
+
+                GrpcSslContexts.forServer(cfg.certFile, cfg.keyFile)
+                    .trustManager(trustedCerts)
+                    .clientAuth(cfg.clientAuth.toNetty())
                     .build()
-            }.getOrElse { exception ->
-                throw IllegalStateException("Failed to initialize TLS for gRPC server", exception)
+            }.getOrElse { ex ->
+                throw IllegalStateException("Failed to initialize TLS for gRPC server at $address", ex)
             }
 
             builder.sslContext(sslContext)
-            logger.trDebug("grpc", "grpc.start.tls.enabled", "clientAuth" to clientAuth)
+            logger.trDebug("grpc", "grpc.start.tls.enabled", "clientAuth" to cfg.clientAuth)
         }
 
         services.forEach(builder::addService)
@@ -97,16 +103,14 @@ class GrpcEndpoint private constructor(
 
         val server = runCatching {
             builder.build().apply {
-                val servingStatus = HealthCheckResponse.ServingStatus.SERVING
-
                 start()
-                healthManager.setStatus("", servingStatus)
-
-                logger.trInfo("grpc", "grpc.start.success", "servingStatus" to servingStatus)
+                healthManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING)
+                logger.trInfo("grpc", "grpc.start.success",
+                    "servingStatus" to HealthCheckResponse.ServingStatus.SERVING)
             }
-        }.getOrElse { exception ->
+        }.getOrElse { ex ->
             logger.trError("grpc", "grpc.bind_failed", "address" to address)
-            throw IllegalStateException("Failed to start gRPC server at $address", exception)
+            throw IllegalStateException("Failed to start gRPC server at $address", ex)
         }
 
         serverRef.set(server)
@@ -114,11 +118,6 @@ class GrpcEndpoint private constructor(
 
     /**
      * Stops the gRPC server gracefully.
-     *
-     * Updates the health status to NOT_SERVING, then shuts down the server.
-     * If the server does not terminate within [shutdownTimeoutSeconds], it is forcibly shut down.
-     *
-     * @param mode Shutdown mode, either [ShutdownMode.GRACEFUL] or [ShutdownMode.FORCE]
      */
     override fun close(mode: ShutdownMode) {
         val server = serverRef.getAndSet(null) ?: run {
@@ -127,10 +126,7 @@ class GrpcEndpoint private constructor(
         }
 
         logger.trInfo("grpc", "grpc.shutdown.starting")
-        healthManager.setStatus(
-            "",
-            HealthCheckResponse.ServingStatus.NOT_SERVING
-        )
+        healthManager.setStatus("", HealthCheckResponse.ServingStatus.NOT_SERVING)
 
         if (mode == ShutdownMode.FORCE) {
             logger.trWarn("grpc", "grpc.shutdown.force")
@@ -156,69 +152,69 @@ class GrpcEndpoint private constructor(
     /**
      * Builder for [GrpcEndpoint].
      *
-     * Usage example:
-     * ```
-     * val endpoint = GrpcEndpoint.Builder(address)
-     *     .service(RegistrationService())
-     *     .tls(certFile, keyFile) // optional TLS
-     *     .clientAuth(ClientAuth.REQUIRE) // optional mTLS
+     * **Preferred pattern — [MtlsConfig]-based:**
+     * ```kotlin
+     * GrpcEndpoint.Builder(address)
+     *     .service(MyService())
+     *     .tls(MtlsConfig.mutual(certFile, keyFile, caCertFile))
      *     .shutdownTimeout(10)
      *     .build()
-     * endpoint.start()
      * ```
      */
     class Builder(private val address: Address) {
 
-        private val interceptedServices = mutableListOf<ServerServiceDefinition>()
         private val services = mutableListOf<BindableService>()
-        private val caCertFiles = mutableListOf<File>()
-        private var certFile: File? = null
-        private var keyFile: File? = null
-        private var clientAuth: ClientAuth = ClientAuth.NONE
+        private val interceptedServices = mutableListOf<ServerServiceDefinition>()
+        private var mtlsConfig: MtlsConfig? = null
         private var shutdownTimeoutSeconds: Long = 5
 
-        /** Registers a gRPC service with this endpoint. */
+        /** Registers a single gRPC service with this endpoint. */
         fun service(service: BindableService) = apply { services += service }
 
         /** Registers multiple gRPC services with this endpoint. */
         fun services(vararg s: BindableService) = apply { services += s }
 
+        /** Registers a service with one or more server-side interceptors. */
         fun interceptedService(service: BindableService, vararg interceptors: ServerInterceptor) = apply {
             interceptedServices += ServerInterceptors.intercept(service, *interceptors)
         }
 
         /**
-         * Enables TLS for this gRPC endpoint.
+         * Configures TLS/mTLS using an [MtlsConfig] value object.
          *
-         * @param certFile Server certificate
-         * @param keyFile Server private key
-         * @param clientAuth Optional client certificate authentication
-         * @param caCertFiles  One or more CA certificates to trust.
-         *                     Clients signed by **any** of these CAs will be accepted.
-         *                     Pass multiple files to support different client types on the same port.
+         * This is the **preferred** way to enable TLS. The config encapsulates
+         * cert, key, trusted CAs, and client-auth mode in one place.
+         *
+         * ```kotlin
+         * // Full mTLS — node-to-node or service-to-node
+         * .tls(MtlsConfig.mutual(certFile, keyFile, caCertFile))
+         *
+         * // Multi-CA — accept both CLI and node clients on the same port
+         * .tls(MtlsConfig.mutual(certFile, keyFile, nodeCaFile, cliCaFile))
+         * ```
          */
-        fun tls(certFile: File, keyFile: File, clientAuth: ClientAuth = ClientAuth.NONE, vararg caCertFiles: File) = apply {
-            this.certFile = certFile
-            this.keyFile = keyFile
-            this.clientAuth = clientAuth
-            this.caCertFiles += caCertFiles
-        }
+        fun tls(config: MtlsConfig) = apply { this.mtlsConfig = config }
 
-        /** Sets shutdown timeout in seconds for graceful termination. */
+        /** Sets the graceful shutdown timeout in seconds (default: 5). */
         fun shutdownTimeout(seconds: Long) = apply { this.shutdownTimeoutSeconds = seconds }
 
         /** Builds the [GrpcEndpoint] instance. */
-        fun build(): GrpcEndpoint {
-            return GrpcEndpoint(
-                address,
-                services,
-                interceptedServices,
-                caCertFiles,
-                certFile,
-                keyFile,
-                clientAuth,
-                shutdownTimeoutSeconds
-            )
-        }
+        fun build(): GrpcEndpoint = GrpcEndpoint(
+            address,
+            services.toList(),
+            interceptedServices.toList(),
+            mtlsConfig,
+            shutdownTimeoutSeconds,
+        )
     }
+}
+
+/**
+ * Maps the transport-agnostic [ClientAuthMode] to Netty's [ClientAuth].
+ * This extension is `internal` so Netty never leaks into caller code.
+ */
+internal fun ClientAuthMode.toNetty(): ClientAuth = when (this) {
+    ClientAuthMode.NONE     -> ClientAuth.NONE
+    ClientAuthMode.OPTIONAL -> ClientAuth.OPTIONAL
+    ClientAuthMode.REQUIRE  -> ClientAuth.REQUIRE
 }

@@ -8,15 +8,18 @@ import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.communication.registration.node.service.RegistrationService
+import de.polocloud.node.communication.registration.service.service.ServiceRegistrationService
 
 class RegistrationServer(
     registrationManager: RegistrationManager,
     address: Address,
     cliRegistrationService: CliRegistrationService,
+    serviceRegistrationService: ServiceRegistrationService,
 ) : Closeable {
 
     private val grpcServer = GrpcEndpoint.Builder(address)
         .service(RegistrationService(registrationManager))
+        .service(serviceRegistrationService)
         .interceptedService(
             cliRegistrationService,
             IpWhitelistInterceptor()

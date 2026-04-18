@@ -8,7 +8,7 @@ import de.polocloud.node.cluster.node.NodeData
 import de.polocloud.node.cluster.node.NodeIndexGenerator
 import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.registration.node.RegistrationManager
-import de.polocloud.node.security.CertificateDataStorage
+import de.polocloud.node.security.NodeCertificateStorage
 import de.polocloud.node.security.SanBuilder
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
 import de.polocloud.proto.NodeState
@@ -40,9 +40,9 @@ class RegistrationService(
         }
 
         val localId = request.localId
-        val ca = CertificateDataStorage.certificateAuthority()
+        val ca = NodeCertificateStorage.certificateAuthority()
 
-        val csr = parseCsr(request.publicKey)
+        val csr = parseCsr(request.csrPem)
         val sans = SanBuilder.forNode(request.hostname, localId)
         val cert = ca.signCsr(csr, subjectAltNames = sans)
         val certPem = certToPem(cert)

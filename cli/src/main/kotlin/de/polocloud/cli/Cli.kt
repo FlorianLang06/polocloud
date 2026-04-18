@@ -34,7 +34,7 @@ object Cli : Closeable {
     val config: CliConfiguration = loadConfiguration()
     lateinit var session: CliSession
 
-    private val certificateStorage = CliCertificateStorage()
+    private val certificateStorage = CliCertificateStorage().also { it.initialize() }
     val connectionManager = CliConnectionManager(certificateStorage)
     val connectionHistory = ConnectionHistory(certificateStorage.keyPair)
     val lifecycle: AutoConnectService = AutoConnectService(connectionManager, connectionHistory)

@@ -1,11 +1,13 @@
 syntax = "proto3";
 
+package cli;
+
 option java_package = "de.polocloud.proto";
-option java_outer_classname = "CliRegistration";
+option java_outer_classname = "CliRegistrationProto";
 option java_multiple_files = true;
 
 service CliRegistrationService {
-  rpc RegisterCli (RegisterCliRequest) returns (RegisterCliResponse);
+  rpc RegisterCli(RegisterCliRequest) returns (RegisterCliResponse);
   rpc DisconnectCli(DisconnectRequest) returns (DisconnectResponse);
 }
 
@@ -22,5 +24,4 @@ message RegisterCliResponse {
 }
 
 message DisconnectRequest {}
-
 message DisconnectResponse {}

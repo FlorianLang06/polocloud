@@ -78,6 +78,8 @@ public abstract class AbstractRuntimeProcess implements RuntimeProcess {
 
         // attach right boot file name
         System.setProperty(PolocloudParameters.RUNTIME_PATH, String.valueOf(Objects.requireNonNull(PolocloudParameters.expenderRuntimeCache(getArtifactId()))));
+        System.setProperty(PolocloudParameters.COMMON_PATH, String.valueOf(Objects.requireNonNull(PolocloudParameters.expenderRuntimeCache("common"))));
+        System.setProperty(PolocloudParameters.PROTO_PATH, String.valueOf(Objects.requireNonNull(PolocloudParameters.expenderRuntimeCache("proto"))));
 
         Class<?> mainClass = Class.forName(mainClassName, true, classLoader);
         Method mainMethod = mainClass.getMethod("main", String[].class);
