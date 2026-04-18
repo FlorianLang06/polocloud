@@ -5,7 +5,7 @@ import de.polocloud.common.communication.certificate.parseCsr
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.cluster.node.NodeData
-import de.polocloud.node.cluster.node.NodeIndexGenerator
+import de.polocloud.node.utils.IndexGenerator
 import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.security.NodeCertificateStorage
@@ -50,7 +50,7 @@ class RegistrationService(
         NodeRepository.save(
             NodeData(
                 UUID.fromString(localId),
-                NodeIndexGenerator.generate(),
+                IndexGenerator.generateNode(),
                 request.group,
                 request.hostname,
                 request.port,

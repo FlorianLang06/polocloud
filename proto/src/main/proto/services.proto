@@ -25,11 +25,12 @@ message ListServicesResponse {
 
 message ProtoServiceProcessData {
   string uuid = 1;
-  string plan = 2;
-  string node_id = 3;
-  int32 bound_port = 4;
-  int32 pid = 5;
-  common.ServiceState state = 6;
+  int32 index = 2;
+  string plan = 3;
+  string node_id = 4;
+  int32 bound_port = 5;
+  int32 pid = 6;
+  common.ServiceState state = 7;
 }
 
 message ProtoServiceControlPlan {

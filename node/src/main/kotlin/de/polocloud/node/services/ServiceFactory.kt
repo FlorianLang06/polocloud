@@ -4,6 +4,7 @@ import de.polocloud.common.dependency.DependencyRegistry
 import de.polocloud.common.dependency.insert.StringArgumentInsert
 import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.common.system.PolocloudSystemProperties
+import de.polocloud.node.utils.IndexGenerator
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.node.services.control.ServiceControlPlan
 import de.polocloud.node.services.process.ServiceProcess
@@ -104,6 +105,7 @@ object ServiceFactory {
 
         val serviceProcess = ServiceProcess(
             serviceId,
+            IndexGenerator.generateService(),
             plan.name,
             NodeEnvironment.runtime.nodeId.get(),
             -1,
@@ -115,7 +117,7 @@ object ServiceFactory {
         // this entry to exist when the service sends its CSR.
         ServiceProcessRepository.update(serviceProcess)
 
-        val container = ServiceContainer(1, serviceProcess)
+        val container = ServiceContainer(serviceProcess.index, serviceProcess)
         val workingDir = container.path()
         val identityDir = workingDir.resolve(".identity")
 

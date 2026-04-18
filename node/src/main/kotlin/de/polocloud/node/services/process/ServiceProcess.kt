@@ -10,6 +10,7 @@ import java.util.*
 
 data class ServiceProcess(
     @EntryIdentifier val uuid: UUID,
+    val index: Int,
     @EntryRef(clazz = ServiceControlPlan::class) val plan: String,
     @EntryRef(clazz = NodeData::class) val nodeID: UUID,
     val boundPort: Int,
@@ -35,6 +36,7 @@ data class ServiceProcess(
 fun ServiceProcess.toProto(): ProtoServiceProcessData {
     return ProtoServiceProcessData.newBuilder()
         .setUuid(this.uuid.toString())
+        .setIndex(this.index)
         .setPlan(this.plan)
         .setNodeId(this.nodeID.toString())
         .setBoundPort(this.boundPort)
