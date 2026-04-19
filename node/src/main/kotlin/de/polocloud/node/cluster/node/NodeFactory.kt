@@ -5,18 +5,23 @@ import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.proto.NodeState
 import java.util.*
+import kotlin.time.Clock.System.now
+import kotlin.time.Instant
 
 object NodeFactory {
 
     fun createInitial(address: Address, group: String): NodeData =
-        create(NodeEnvironment.runtime.nodeId.get(), 1, group, address, true)
+        create(NodeEnvironment.runtime.nodeId.get(), 1, group, address, PolocloudVersion.CURRENT.toVersionString(), PolocloudVersion.CURRENT.commitId, true, now())
 
     fun create(
         id: UUID,
         index: Int,
         groupName: String,
         address: Address,
-        head: Boolean = false
+        version: String,
+        gitCommitHash: String,
+        head: Boolean = false,
+        electedAt: Instant? = null,
     ): NodeData =
         NodeData(
             id = id,
@@ -26,7 +31,8 @@ object NodeFactory {
             port = address.port,
             state = NodeState.STARTING,
             head = head,
-            version = PolocloudVersion.CURRENT.toVersionString(),
-            gitCommitHash = PolocloudVersion.CURRENT.commitId
+            electedAt = electedAt,
+            version = version,
+            gitCommitHash = gitCommitHash
         )
 }

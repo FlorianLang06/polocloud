@@ -2,6 +2,8 @@ package de.polocloud.node.core
 
 import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.node.bootstrap.properties.NodeProperties
+import de.polocloud.node.cluster.election.NodeElectionService
+import de.polocloud.node.cluster.heartbeat.NodeHeartBeatMonitor
 import de.polocloud.node.cluster.heartbeat.NodeHeartBeatService
 import de.polocloud.node.communication.cli.session.CliSessionManager
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
@@ -45,4 +47,7 @@ class NodeRuntime(
 
     val lifecycle = NodeLifecycle(holder, this)
     val heartBeatService = NodeHeartBeatService()
+
+    val electionService = NodeElectionService()
+    val heartBeatMonitor = NodeHeartBeatMonitor(electionService)
 }

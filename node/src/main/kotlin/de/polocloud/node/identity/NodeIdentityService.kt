@@ -20,6 +20,7 @@ import de.polocloud.node.services.ServiceHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.time.Clock.System.now
 
 class NodeIdentityService(
     private val nodeId: NodeIdProvider,
@@ -78,6 +79,9 @@ class NodeIdentityService(
 
             container = LocalNodeContainer(possibleNode)
             container.markStarting()
+
+            container.data.lastConnection = now()
+            NodeRepository.save(container.data)
 
             grpc.start()
 

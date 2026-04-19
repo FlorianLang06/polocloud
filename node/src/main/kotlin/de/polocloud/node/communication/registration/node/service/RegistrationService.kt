@@ -1,17 +1,17 @@
 package de.polocloud.node.communication.registration.node.service
 
+import de.polocloud.common.Address
 import de.polocloud.common.communication.certificate.certToPem
 import de.polocloud.common.communication.certificate.parseCsr
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.i18n.api.trInfo
-import de.polocloud.node.cluster.node.NodeData
+import de.polocloud.node.cluster.node.NodeFactory
 import de.polocloud.node.utils.IndexGenerator
 import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.security.NodeCertificateStorage
 import de.polocloud.node.security.SanBuilder
 import de.polocloud.proto.NodeRegistrationServiceGrpcKt
-import de.polocloud.proto.NodeState
 import de.polocloud.proto.RegisterNodeRequest
 import de.polocloud.proto.RegisterNodeResponse
 import org.slf4j.LoggerFactory
@@ -48,14 +48,11 @@ class RegistrationService(
         val certPem = certToPem(cert)
 
         NodeRepository.save(
-            NodeData(
+            NodeFactory.create(
                 UUID.fromString(localId),
                 IndexGenerator.generateNode(),
                 request.group,
-                request.hostname,
-                request.port,
-                NodeState.STARTING,
-                false,
+                Address(request.hostname, request.port),
                 request.details.version,
                 request.details.gitHash
             )

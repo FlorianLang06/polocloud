@@ -33,7 +33,7 @@ gson                    = "2.13.2"
 
 # ── PoloCloud ─────────────────────────────────────────────────────────────────
 polocloud-i18n          = "3.0.2"
-polocloud-database      = "3.0.2"
+polocloud-database      = "3.0.3"
 polocloud-gradle-plugin = "3.0.3"
 gradle-git-properties   = "2.5.7"
 

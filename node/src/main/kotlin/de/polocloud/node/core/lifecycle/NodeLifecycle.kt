@@ -58,6 +58,7 @@ class NodeLifecycle(
         container.markOnline()
 
         runtime.heartBeatService.startScheduler()
+        runtime.heartBeatMonitor.start()
 
         logger.trInfo(
             "cluster",
@@ -75,8 +76,11 @@ class NodeLifecycle(
         }
 
         logger.trInfo("node", "node.shutdown.stopping")
-
         container.markStopping()
+
+        safe("heartBeatMonitor") {
+            runtime.heartBeatMonitor.stop()
+        }
 
         safe("heartBeatService") {
             runtime.heartBeatService.stopScheduler()
@@ -92,6 +96,10 @@ class NodeLifecycle(
 
         safe("localNodeContainer") {
             container.markStopped()
+        }
+
+        safe("electionService") {
+            runtime.electionService.onHeadNodeLeft(context.localNodeContainer.data)
         }
 
         safe("database") {
