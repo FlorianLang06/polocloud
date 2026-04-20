@@ -7,7 +7,7 @@ class RegistrationTokenManager {
 
     private val tokens = ConcurrentHashMap<String, RegistrationToken>()
 
-    fun create(ttlMs: Long): RegistrationToken {
+    fun create(ttlMs: Long = 5 * 60 * 1000L): RegistrationToken {
         val token = CSPRNGGenerator.generate()
         val entry = RegistrationToken(token, now() + ttlMs)
 
@@ -29,7 +29,7 @@ class RegistrationTokenManager {
 
     private fun now() = System.currentTimeMillis()
 
-    fun createInitialCliToken(): RegistrationToken {
+    fun createInitialToken(): RegistrationToken {
         return create(ttlMs = 10 * 60 * 1000L)
     }
 }

@@ -16,7 +16,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class NodeHeartBeatMonitor(
     private val electionService: NodeElectionService,
-    private val timeout: Duration = 10.seconds
+    private val timeout: Duration = 3.seconds
 ) {
 
     private var job: Job? = null
@@ -25,7 +25,7 @@ class NodeHeartBeatMonitor(
         job = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
                 checkAll()
-                delay(5.seconds)
+                delay(3.seconds)
             }
         }
     }

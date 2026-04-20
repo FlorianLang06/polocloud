@@ -144,7 +144,7 @@ object ServiceFactory {
                 addAll(dependencyPaths)
             }.joinToString(File.pathSeparator)
 
-            val token = NodeEnvironment.runtime.tokenManager.issue(serviceId)
+            val token = NodeEnvironment.runtime.serviceTokenManager.issue(serviceId)
 
             val nodeConfig = NodeEnvironment.configurations
             val nodeGrpcAddress = "${nodeConfig.general.bindAddress.hostname}:${nodeConfig.general.bindAddress.port}"

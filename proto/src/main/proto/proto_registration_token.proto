@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package token;
+
+option java_multiple_files = true;
+option java_package = "de.polocloud.node.communication.registration.node.token";
+
+message ProtoRegistrationToken {
+  string token = 1;
+  int64 expires_at = 2;
+}

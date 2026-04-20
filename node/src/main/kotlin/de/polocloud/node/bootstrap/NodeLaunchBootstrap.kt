@@ -4,6 +4,7 @@ import de.polocloud.common.dependency.DependencyRegistry
 import de.polocloud.common.dependency.insert.ClasspathInsert
 import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.common.system.PolocloudSystemProperties
+import de.polocloud.node.core.environment.NodeEnvironment
 import java.nio.file.Path
 import kotlin.io.path.Path
 

@@ -7,9 +7,19 @@ option java_outer_classname = "ClusterProto";
 option java_multiple_files = true;
 
 import "common.proto";
+import "proto_registration_token.proto";
 
 service ClusterService {
+  rpc CreateToken (CreateTokenRequest) returns (CreateTokenResponse);
   rpc ListNodes (ListNodesRequest) returns (ListNodesResponse);
+}
+
+message CreateTokenRequest {
+  int64 ttlMs = 1;
+}
+
+message CreateTokenResponse {
+  token.ProtoRegistrationToken token = 1;
 }
 
 message ListNodesRequest {}

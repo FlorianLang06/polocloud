@@ -24,7 +24,7 @@ class RegistrationManager(
 
     private val logger = LoggerFactory.getLogger(RegistrationManager::class.java)
 
-    val registrationTokenManger = RegistrationTokenManager()
+    val tokenManger = RegistrationTokenManager()
 
     private val registrationServer = RegistrationServer(
         registrationManager = this,

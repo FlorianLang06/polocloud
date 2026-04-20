@@ -56,7 +56,7 @@ class NodeIdentityService(
             container = LocalNodeContainer(NodeFactory.createInitial(Address(holder.value.general.hostname, holder.value.general.bindAddress.port), launchProperties.group))
             NodeRepository.save(container.data)
 
-            val clusterToken = registrationManager.registrationTokenManger.createInitialCliToken()
+            val clusterToken = registrationManager.tokenManger.createInitialToken()
             val expire = Instant.ofEpochMilli(clusterToken.expiresAt)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime()

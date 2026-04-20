@@ -28,10 +28,10 @@ class NodeRuntime(
         cliSessionManager
     )
 
-    val tokenManager = ServiceRegistrationTokenManager()
-    val serviceRegistrationService = ServiceRegistrationService(tokenManager)
+    val serviceTokenManager = ServiceRegistrationTokenManager()
+    val serviceRegistrationService = ServiceRegistrationService(serviceTokenManager)
 
-    val registrationManager = RegistrationManager(
+    val nodeRegistrationManager = RegistrationManager(
         holder,
         cliRegistrationService,
         serviceRegistrationService
@@ -40,7 +40,7 @@ class NodeRuntime(
     val identityService = NodeIdentityService(
         nodeId,
         holder,
-        registrationManager,
+        nodeRegistrationManager,
         cliRegistrationService,
         cliSessionManager
     )
