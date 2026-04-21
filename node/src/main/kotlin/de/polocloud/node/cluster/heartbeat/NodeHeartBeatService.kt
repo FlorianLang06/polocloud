@@ -1,13 +1,13 @@
 package de.polocloud.node.cluster.heartbeat
 
+import de.polocloud.common.os.ApplicationResources
+import de.polocloud.common.os.ResourceProvider
+import de.polocloud.common.os.SystemResources
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.i18n.api.trError
 import de.polocloud.node.core.environment.NodeEnvironment
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
-import oshi.SystemInfo
-import oshi.hardware.CentralProcessor
-import oshi.hardware.GlobalMemory
 import java.util.*
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -25,13 +25,11 @@ import kotlin.time.Duration.Companion.seconds
 class NodeHeartBeatService {
 
     private val logger = LoggerFactory.getLogger(NodeHeartBeatService::class.java)
-    private val sysInfo = SystemInfo()
-    private val processor: CentralProcessor = sysInfo.hardware.processor
-    private val memory: GlobalMemory = sysInfo.hardware.memory
+    private val systemResources: ResourceProvider = SystemResources
+    private val applicationResources: ResourceProvider = ApplicationResources
 
     private val tickDurations = mutableListOf<Long>()
     private var schedulerJob: Job? = null
-    private var prevTicks: LongArray = processor.systemCpuLoadTicks
 
     /**
      * Starts the heartbeat scheduler.
@@ -111,16 +109,22 @@ class NodeHeartBeatService {
      * @return A [NodeHeartBeat] object with CPU usage, memory usage, and TPS data.
      */
     fun generate(): NodeHeartBeat {
-        val cpuLoad = processor.getSystemCpuLoadBetweenTicks(prevTicks) * 100.0
-        prevTicks = processor.systemCpuLoadTicks
+        val systemUsed = systemResources.usedMemory()
+        val systemMax = systemResources.maxMemory()
 
-        val usedMem = memory.total - memory.available
-        val memoryUsage = (usedMem.toDouble() / memory.total) * 100.0
+        val appUsed = applicationResources.usedMemory()
+        val appMax = applicationResources.maxMemory()
 
-        // TPS calculation (simulated tick durations)
+        val systemCpuUsage = systemResources.cpuUsage()
+        val systemMemoryUsage = if (systemMax == 0.0) 0.0 else (systemUsed / systemMax) * 100.0
+
+        val applicationCpuUsage = applicationResources.cpuUsage()
+        val applicationMemoryUsage = if (appMax == 0.0) 0.0 else (appUsed / appMax) * 100.0
+
         val tickDuration = (50L..60L).random()
         tickDurations.add(tickDuration)
         if (tickDurations.size > 100) tickDurations.removeAt(0)
+
         val avgTick = tickDurations.average()
         val tps = 1000.0 / avgTick
 
@@ -128,8 +132,10 @@ class NodeHeartBeatService {
             id = UUID.randomUUID().toString(),
             nodeId = NodeEnvironment.runtime.nodeId.get(),
             heartBeatAt = Clock.System.now(),
-            cpuUsage = cpuLoad,
-            memoryUsage = memoryUsage,
+            systemCpuUsage = systemCpuUsage,
+            systemMemoryUsage = systemMemoryUsage,
+            applicationCpuUsage = applicationCpuUsage,
+            applicationMemoryUsage = applicationMemoryUsage,
             tps = tps
         )
     }

@@ -17,6 +17,7 @@ dependencies {
     compileOnly(libs.bundles.tls)
     runtimeOnly(libs.bundles.tls)
 
+    polocloudRuntime(libs.oshi)
 
     //database
     polocloudRuntime(libs.polocloud.database)

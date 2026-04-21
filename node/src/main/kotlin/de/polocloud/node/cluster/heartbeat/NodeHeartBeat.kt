@@ -23,21 +23,28 @@ data class NodeHeartBeat(
     @EntryIdentifier val id: String,
     @EntryRef(clazz = NodeData::class) val nodeId: UUID,
     val heartBeatAt: Instant,
-    val cpuUsage: Double,
-    val memoryUsage: Double,
+
+    val systemCpuUsage: Double,
+    val systemMemoryUsage: Double,
+
+    val applicationCpuUsage: Double,
+    val applicationMemoryUsage: Double,
+
     val tps: Double
 ) {
 
     init {
-        require(cpuUsage in 0.0..100.0) { "CPU usage must be between 0 and 100" }
-        require(memoryUsage in 0.0..100.0) { "Memory usage must be between 0 and 100" }
+        require(systemCpuUsage in 0.0..100.0 && applicationCpuUsage in 0.0..100.0) { "CPU usage must be between 0 and 100" }
+        require(systemMemoryUsage in 0.0..100.0 && applicationMemoryUsage in 0.0..100.0) { "Memory usage must be between 0 and 100" }
     }
 
     fun diff(other: NodeHeartBeat) = NodeHeartBeat(
         id, nodeId,
         heartBeatAt,
-        cpuUsage - other.cpuUsage,
-        memoryUsage - other.memoryUsage,
+        systemCpuUsage - other.systemCpuUsage,
+        systemMemoryUsage - other.systemMemoryUsage,
+        applicationCpuUsage - other.applicationCpuUsage,
+        applicationMemoryUsage - other.applicationMemoryUsage,
         tps - other.tps
     )
 }
