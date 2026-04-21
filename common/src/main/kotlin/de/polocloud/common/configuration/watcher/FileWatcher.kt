@@ -33,7 +33,7 @@ class FileWatcher(
 
                 key.pollEvents()
                     .filter { it.kind() != StandardWatchEventKinds.OVERFLOW }
-                    .map { it as WatchEvent<Path> }
+                    .map { @Suppress("UNCHECKED_CAST") (it as WatchEvent<Path>) }
                     .filter { it.context().fileName == file.fileName }
                     .forEach { _ ->
                         // Debounce: editors often fire multiple events on save
