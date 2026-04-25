@@ -76,8 +76,49 @@ fun main() {
         nodeConnection.close()
     })
 
+    bootServices()
+
     while (true) {
         Thread.sleep(1000)
+    }
+}
+
+private fun bootServices() {
+    val classLoader = Thread.currentThread().contextClassLoader
+
+    val serviceClasses = classLoader.getResources("").asSequence()
+        .flatMap { url ->
+            val root = java.io.File(url.toURI())
+            root.walkTopDown()
+                .filter { it.isFile && it.name.endsWith(".class") }
+                .map { file ->
+                    file.relativeTo(root).path
+                        .removeSuffix(".class")
+                        .replace(java.io.File.separatorChar, '.')
+                }
+        }
+        .mapNotNull { className ->
+            runCatching { Class.forName(className, false, classLoader) }.getOrNull()
+        }
+        .filter { clazz ->
+            !clazz.isInterface && !clazz.isAnnotation &&
+                Service::class.java.isAssignableFrom(clazz) &&
+                clazz != Service::class.java
+        }
+        .toList()
+
+    serviceClasses.forEach { clazz ->
+        val instance = runCatching { clazz.getDeclaredConstructor().newInstance() as Service }
+            .onFailure { logger.error("Failed to instantiate service class: ${clazz.name}", it) }
+            .getOrNull() ?: return@forEach
+
+        clazz.methods
+            .filter { it.isAnnotationPresent(BootMethod::class.java) }
+            .sortedByDescending { it.getAnnotation(BootMethod::class.java).priority }
+            .forEach { method ->
+                runCatching { method.invoke(instance) }
+                    .onFailure { logger.error("Failed to invoke @BootMethod ${method.name} on ${clazz.name}", it) }
+            }
     }
 }
 
