@@ -53,12 +53,13 @@ class NodeLifecycle(
         }
 
         context.registrationManager.allowRequests()
-        context.serviceHandler.initialize()
 
         container.markOnline()
 
         runtime.heartBeatService.startScheduler()
         runtime.heartBeatMonitor.start()
+
+        context.groupService.run()
 
         logger.trInfo(
             "cluster",
@@ -88,10 +89,6 @@ class NodeLifecycle(
 
         safe("registrationManager") {
             context.registrationManager.close(mode)
-        }
-
-        safe("serviceHandler") {
-            context.serviceHandler.shutdown()
         }
 
         safe("localNodeContainer") {

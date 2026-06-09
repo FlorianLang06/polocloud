@@ -16,7 +16,6 @@ import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.identity.provider.NodeIdProvider
 import de.polocloud.node.security.NodeCertificateStorage
-import de.polocloud.node.services.ServiceHandler
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
@@ -48,8 +47,6 @@ class NodeIdentityService(
             cliSessionManager
         )
 
-        val serviceHandler = ServiceHandler()
-
         if (NodeRepository.count() == 0L) {
             logger.trInfo("cluster", "cluster.node.identity.created")
 
@@ -70,7 +67,7 @@ class NodeIdentityService(
 
             grpc.start()
 
-            return NodeRuntimeContext(holder,container, registrationManager, serviceHandler, grpc, null)
+            return NodeRuntimeContext(holder,container, registrationManager, grpc, null)
         }
 
         val possibleNode = NodeRepository.find(localId)
@@ -85,7 +82,7 @@ class NodeIdentityService(
 
             grpc.start()
 
-            return NodeRuntimeContext(holder, container, registrationManager, serviceHandler, grpc, null)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, null)
         }
 
         if (launchProperties.clusterRegistration == null) {
@@ -104,7 +101,7 @@ class NodeIdentityService(
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
 
-        return NodeRuntimeContext(holder, container, registrationManager, serviceHandler, grpc, headConnection)
+        return NodeRuntimeContext(holder, container, registrationManager, grpc, headConnection)
     }
 
     /**
