@@ -64,6 +64,8 @@ final class PolocloudRuntimeLauncher {
                 case "group":
                     System.setProperty(PolocloudParameters.NODE_GROUP, parts[1]);
                     break;
+                default:
+                    break;
             }
         }
     }
