@@ -1,4 +1,4 @@
-package de.polocloud.factory.template
+package de.polocloud.node.services.factory.template
 
 import kotlinx.serialization.json.Json
 import java.io.File

@@ -1,7 +1,7 @@
-package de.polocloud.factory.template
+package de.polocloud.node.services.factory.template
 
-import de.polocloud.factory.platform.PlatformVersion
-import de.polocloud.factory.platform.Platform
+import de.polocloud.node.services.factory.platform.Platform
+import de.polocloud.node.services.factory.platform.PlatformVersion
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.int

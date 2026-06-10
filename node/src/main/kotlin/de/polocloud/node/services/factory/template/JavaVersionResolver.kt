@@ -1,6 +1,6 @@
-package de.polocloud.factory.template
+package de.polocloud.node.services.factory.template
 
-import de.polocloud.factory.platform.JavaVersionRange
+import de.polocloud.node.services.factory.platform.JavaVersionRange
 
 /**
  * Resolves the minimum required Java version for a given platform version string

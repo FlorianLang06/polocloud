@@ -1,10 +1,10 @@
-package de.polocloud.factory.process
+package de.polocloud.node.services.factory.process
 
 import de.polocloud.service.factory.process.PlatformRuntime
 import java.io.File
 
 /**
- * Default [de.polocloud.service.factory.process.PlatformRuntime] for Java-based platforms.
+ * Default [PlatformRuntime] for Java-based platforms.
  *
  * Splits [args] into JVM flags and program arguments:
  * flags matching known JVM prefixes (`-X`, `-D`, `--enable-`, `--add-`, `--patch-`)

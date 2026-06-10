@@ -1,6 +1,6 @@
 package de.polocloud.service.factory.process
 
-import de.polocloud.factory.process.JavaRuntime
+import de.polocloud.node.services.factory.process.JavaRuntime
 import java.io.File
 
 /**
@@ -12,7 +12,7 @@ import java.io.File
  */
 interface PlatformRuntime {
 
-    /** Language identifier matching [de.polocloud.factory.platform.Platform.language]. */
+    /** Language identifier matching [de.polocloud.node.services.factory.platform.Platform.language]. */
     val language: String
 
     /**

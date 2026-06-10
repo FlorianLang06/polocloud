@@ -60,6 +60,7 @@ class NodeLifecycle(
         runtime.heartBeatMonitor.start()
 
         context.groupService.run()
+        context.serviceProvider.run()
 
         logger.trInfo(
             "cluster",

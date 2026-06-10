@@ -1,4 +1,4 @@
-package de.polocloud.factory.platform
+package de.polocloud.node.services.factory.platform
 
 /**
  * Represents a server platform with all its resolved versions.

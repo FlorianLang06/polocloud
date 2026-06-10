@@ -6,12 +6,12 @@ import de.polocloud.database.RepositoryName
 @RepositoryName("groups")
 data class Group (
     @EntryIdentifier val name: String,
-    val memory: String,
+    val memory: Int,
     val startThreshold: Double,
     val minOnline: Long,
     val maxOnline: Long,
-    private val platform: String,
-    private val version: String
+    val platform: String,
+    val version: String
 ) {
 
 }

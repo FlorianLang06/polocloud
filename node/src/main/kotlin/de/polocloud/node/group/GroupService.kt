@@ -9,6 +9,13 @@ class GroupService {
 
     fun run() {
         logger.info("Initializing GroupService...")
+
+        // todo: remove only testing
+        if(groupRepository.count().toInt() == 0) {
+            val group = Group("proxy", 512, 100.0, 1, 1, "velocity", "3.4.0-SNAPSHOT")
+            groupRepository.save(group);
+        }
+
         logger.info("Found {} groups", groupRepository.count())
     }
 }

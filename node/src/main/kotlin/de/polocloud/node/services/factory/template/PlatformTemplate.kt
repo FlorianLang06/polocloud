@@ -1,6 +1,6 @@
-package de.polocloud.factory.template
+package de.polocloud.node.services.factory.template
 
-import de.polocloud.factory.platform.JavaVersionRange
+import de.polocloud.node.services.factory.platform.JavaVersionRange
 import kotlinx.serialization.Serializable
 
 /**

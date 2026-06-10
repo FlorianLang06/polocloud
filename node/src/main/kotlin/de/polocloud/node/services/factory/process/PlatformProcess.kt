@@ -1,8 +1,8 @@
-package de.polocloud.factory.process
+package de.polocloud.node.services.factory.process
 
-import de.polocloud.factory.platform.PlatformVersion
-import de.polocloud.factory.platform.Platform
-import de.polocloud.factory.template.resolveJavaVersion
+import de.polocloud.node.services.factory.platform.Platform
+import de.polocloud.node.services.factory.platform.PlatformVersion
+import de.polocloud.node.services.factory.template.resolveJavaVersion
 import de.polocloud.service.factory.process.JavaRuntimeManager
 import de.polocloud.service.factory.process.PlatformRuntime
 import java.io.File
@@ -49,7 +49,7 @@ class PlatformProcess(
      * Starts the platform process from the given [jarFile].
      *
      * The required Java version is resolved from [Platform.javaVersionRanges].
-     * If a range matches, [de.polocloud.service.factory.process.JavaRuntimeManager] downloads the appropriate JRE
+     * If a range matches, [JavaRuntimeManager] downloads the appropriate JRE
      * automatically. Falls back to the system `java` when no range is configured.
      *
      * @param jarFile The JAR file to execute.
@@ -70,7 +70,7 @@ class PlatformProcess(
 
     /**
      * Resolves the java executable path for this version.
-     * Downloads the matching JRE via [de.polocloud.service.factory.process.JavaRuntimeManager] if [Platform.javaVersionRanges]
+     * Downloads the matching JRE via [JavaRuntimeManager] if [Platform.javaVersionRanges]
      * contains a matching breakpoint; otherwise returns `"java"` (system default).
      */
     private fun resolveExecutable(): String {

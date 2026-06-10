@@ -7,6 +7,7 @@ import de.polocloud.node.communication.grpc.NodeGrpcEndpoint
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.group.GroupService
+import de.polocloud.node.services.ServiceProvider
 
 class NodeRuntimeContext(
     var holder: ConfigurationHolder<NodeConfigurations>,
@@ -14,5 +15,6 @@ class NodeRuntimeContext(
     val registrationManager: RegistrationManager,
     val grpcEndpoint: NodeGrpcEndpoint,
     val headNodeConnection: NodeGrpcClient?,
-    val groupService: GroupService = GroupService()
+    val groupService: GroupService = GroupService(),
+    val serviceProvider: ServiceProvider = ServiceProvider()
 )
