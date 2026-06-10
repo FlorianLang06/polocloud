@@ -64,7 +64,6 @@ class PlatformProcess(
         return ProcessBuilder(command)
             .directory(jarFile.parentFile)
             .redirectErrorStream(true)
-            .inheritIO()
             .start()
     }
 

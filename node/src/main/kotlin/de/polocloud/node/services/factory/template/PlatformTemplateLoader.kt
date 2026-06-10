@@ -12,7 +12,7 @@ private val json = Json { ignoreUnknownKeys = true }
  * @param cacheDir Directory containing the platform JSON configuration files.
  * @return List of successfully parsed [PlatformTemplate]s.
  */
-fun loadTemplatesFromCache(cacheDir: File = File("cache")): List<PlatformTemplate> {
+fun loadTemplatesFromCache(cacheDir: File = File(".cache/platforms")): List<PlatformTemplate> {
     if (!cacheDir.exists() || !cacheDir.isDirectory) return emptyList()
     return cacheDir.listFiles { f -> f.extension == "json" }
         ?.mapNotNull { runCatching { json.decodeFromString<PlatformTemplate>(it.readText()) }.getOrNull() }
