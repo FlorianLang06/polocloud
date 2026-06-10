@@ -12,7 +12,7 @@ class GroupService {
 
         // todo: remove only testing
         if(groupRepository.count().toInt() == 0) {
-            val group = Group("proxy", 512, 100.0, 1, 1, "velocity", "3.4.0-SNAPSHOT")
+            val group = Group("proxy", 512, 100.0, 1, 1, "velocity", "3.5.0-SNAPSHOT")
             groupRepository.save(group);
         }
 
