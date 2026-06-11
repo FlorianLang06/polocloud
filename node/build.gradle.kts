@@ -40,6 +40,9 @@ dependencies {
     //database
     polocloudRuntime(libs.polocloud.database)
 
+    // cli
+    polocloudRuntime(libs.jline)
+
     compileOnly(projects.common)
     implementation(projects.proto)
 }

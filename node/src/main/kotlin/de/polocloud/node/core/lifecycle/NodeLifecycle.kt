@@ -68,6 +68,8 @@ class NodeLifecycle(
             "version" to PolocloudVersion.CURRENT.toDisplayString(),
             "time" to StartupTimer.formatted
         )
+
+        context.cli.readingThread.start()
     }
 
     fun shutdown(mode: ShutdownMode) {

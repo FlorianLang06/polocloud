@@ -65,10 +65,7 @@ class ServiceQueue(
 
     private fun processNext() {
         val (service, group) = queue.poll() ?: return
-        logger.info(
-            "Starting {}-{} [memory: {}MB, platform: {}/{}]",
-            group.name, service.index, group.memory, group.platform, group.version
-        )
+        logger.info("Starting {}-{} [memory: {}MB, platform: {}/{}]", group.name, service.index, group.memory, group.platform, group.version)
         try {
             factory.start(service, group)
         } catch (e: Exception) {

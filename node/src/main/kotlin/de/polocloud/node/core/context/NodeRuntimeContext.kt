@@ -8,6 +8,7 @@ import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.services.ServiceProvider
+import de.polocloud.node.terminal.CliTerminal
 
 class NodeRuntimeContext(
     var holder: ConfigurationHolder<NodeConfigurations>,
@@ -17,4 +18,8 @@ class NodeRuntimeContext(
     val headNodeConnection: NodeGrpcClient?,
     val groupService: GroupService = GroupService(),
     val serviceProvider: ServiceProvider = ServiceProvider()
-)
+) {
+
+    val cli: CliTerminal = CliTerminal(this)
+
+}

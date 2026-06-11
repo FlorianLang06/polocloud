@@ -5,6 +5,7 @@ import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.template.resolveJavaVersion
 import de.polocloud.service.factory.process.JavaRuntimeManager
 import de.polocloud.service.factory.process.PlatformRuntime
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URI
 
@@ -20,6 +21,7 @@ class PlatformProcess(
     private val version: PlatformVersion
 ) {
 
+    private val logger = LoggerFactory.getLogger(PlatformProcess::class.java)
     private val jarName = "${platform.name}-${version.version}-${version.build}.jar"
 
     /**
@@ -33,15 +35,15 @@ class PlatformProcess(
         targetDir.mkdirs()
         val file = File(targetDir, jarName)
         if (file.exists()) {
-            println("  ↩ $jarName already cached")
+            logger.info("  ↩ $jarName already cached")
             return file
         }
-        print("  ↓ Downloading $jarName ...")
+        logger.info("  ↓ Downloading $jarName ...")
         System.out.flush()
         URI(version.downloadUrl).toURL().openStream().use { input ->
             file.outputStream().use { output -> input.copyTo(output) }
         }
-        println("  done (${file.length() / 1024} KB)")
+        logger.info("  done (${file.length() / 1024} KB)")
         return file
     }
 
@@ -60,7 +62,7 @@ class PlatformProcess(
         val executable = resolveExecutable()
         val runtime = PlatformRuntime.Companion.forLanguage(platform.language)
         val command = runtime.buildCommand(executable, jarFile, platform.globalArgs)
-        println("  ▶ Starting ${platform.name} ${version.version} (build ${version.build})")
+        logger.info("  ▶ Starting ${platform.name} ${version.version} (build ${version.build})")
         return ProcessBuilder(command)
             .directory(jarFile.parentFile)
             .redirectErrorStream(true)
