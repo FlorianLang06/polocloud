@@ -53,12 +53,14 @@ class NodeLifecycle(
         }
 
         context.registrationManager.allowRequests()
-        context.serviceHandler.initialize()
 
         container.markOnline()
 
         runtime.heartBeatService.startScheduler()
         runtime.heartBeatMonitor.start()
+
+        context.groupService.run()
+        context.serviceProvider.run()
 
         logger.trInfo(
             "cluster",
@@ -66,6 +68,8 @@ class NodeLifecycle(
             "version" to PolocloudVersion.CURRENT.toDisplayString(),
             "time" to StartupTimer.formatted
         )
+
+        context.cli.readingThread.start()
     }
 
     fun shutdown(mode: ShutdownMode) {
@@ -88,10 +92,6 @@ class NodeLifecycle(
 
         safe("registrationManager") {
             context.registrationManager.close(mode)
-        }
-
-        safe("serviceHandler") {
-            context.serviceHandler.shutdown()
         }
 
         safe("localNodeContainer") {

@@ -3,7 +3,7 @@
 
     <Properties>
         <Property name="CONSOLE_PATTERN">
-            %color{%d{HH:mm:ss}}{white} %color{%-5level} %color{|}{dark_gray} %color{%t}{white} %color{-}{dark_gray} %color{%msg}{white}%n%throwable{short}
+            %color{%d{HH:mm:ss}}{white} %color{|}{dark_gray} %color{%level} %color{-}{dark_gray} %color{%msg}{white}%n%throwable{short}
         </Property>
         <Property name="FILE_PATTERN">
             %d{yyyy-MM-dd HH:mm:ss.SSS} %5level ${sys:PID}--- [%15.15t] %logger : %msg%n

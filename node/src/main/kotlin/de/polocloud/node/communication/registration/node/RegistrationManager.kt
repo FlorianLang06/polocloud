@@ -10,7 +10,6 @@ import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.registration.client.RegistrationClient
 import de.polocloud.node.communication.registration.node.token.RegistrationTokenManager
 import de.polocloud.node.communication.registration.server.RegistrationServer
-import de.polocloud.node.communication.registration.service.service.ServiceRegistrationService
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.security.NodeCertificateStorage
 import org.slf4j.LoggerFactory
@@ -19,7 +18,6 @@ import java.util.*
 class RegistrationManager(
     val holder: ConfigurationHolder<NodeConfigurations>,
     cliRegistrationService: CliRegistrationService,
-    serviceRegistrationService: ServiceRegistrationService,
 ) : Closeable {
 
     private val logger = LoggerFactory.getLogger(RegistrationManager::class.java)
@@ -30,7 +28,6 @@ class RegistrationManager(
         registrationManager = this,
         address = holder.value.cluster.registration,
         cliRegistrationService = cliRegistrationService,
-        serviceRegistrationService = serviceRegistrationService
     )
 
     fun allowRequests() = registrationServer.allowRequests()
