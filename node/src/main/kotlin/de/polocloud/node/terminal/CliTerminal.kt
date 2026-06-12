@@ -1,6 +1,8 @@
 package de.polocloud.node.terminal
 
+import de.polocloud.common.commands.CommandService
 import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.terminal.impl.GroupCommand
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.LineReaderImpl
@@ -25,6 +27,7 @@ class CliTerminal(val context: NodeRuntimeContext) {
      * The currently displayed prompt string (ANSI-translated).
      */
     var prompt: String? = AnsiColors.translate("&bpolocloud&8@&7${context.localNodeContainer.data.name()} &8» &7")
+    val commandService = CommandService()
 
     private val terminal = TerminalBuilder.builder()
         .system(true)
@@ -45,7 +48,11 @@ class CliTerminal(val context: NodeRuntimeContext) {
     /**
      * The background thread that reads and dispatches user input.
      */
-    val readingThread = ReadingThread(this, this.lineReader)
+    val readingThread = ReadingThread(this, this.lineReader, this.commandService)
+
+    init {
+        this.commandService.registerCommand(GroupCommand(this.context.groupService))
+    }
 
     /**
      * Clears the entire terminal screen.

@@ -1,5 +1,6 @@
 package de.polocloud.node.terminal
 
+import de.polocloud.common.commands.CommandService
 import org.jline.jansi.Ansi
 import org.jline.reader.LineReader
 import org.jline.reader.UserInterruptException
@@ -34,6 +35,7 @@ import kotlin.system.exitProcess
 class ReadingThread(
     private var terminal: CliTerminal,
     private val lineReader: LineReader,
+    private val commandService: CommandService
 ) : Thread("reading-thread") {
 
     private val logger = LoggerFactory.getLogger(ReadingThread::class.java)
@@ -54,7 +56,7 @@ class ReadingThread(
                 val commandName = tokens.firstOrNull() ?: continue
                 val args = tokens.drop(1).toTypedArray()
 
-                //commandService.call(commandName, args)
+                commandService.call(commandName, args)
             } catch (_: UserInterruptException) {
                 // pressing Ctrl+C or similar to interrupt reading
                 exitProcess(-1)

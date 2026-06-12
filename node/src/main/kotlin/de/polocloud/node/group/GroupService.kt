@@ -18,4 +18,6 @@ class GroupService {
 
         logger.info("Found {} groups", groupRepository.count())
     }
+
+    fun list() = groupRepository.findAll()
 }
