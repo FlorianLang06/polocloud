@@ -16,4 +16,6 @@ class GroupRepository {
 
     fun count() = DatabaseAccess.executor().count(groupDatabaseKey)
 
+    fun exists(name: String) = DatabaseAccess.executor().findById(groupDatabaseKey,  name) != null
+
 }
