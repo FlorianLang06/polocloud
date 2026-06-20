@@ -15,8 +15,6 @@ class GroupCommand(val groupService: GroupService) : Command("group", "Manage al
     private val logger = LoggerFactory.getLogger(GroupCommand::class.java)
 
     init {
-
-
         val nameArgument = TextArgument("name")
         val memoryArgument = IntArgument("memory")
         val startThresholdArgument = DoubleArgument("startThreshold")
@@ -37,8 +35,6 @@ class GroupCommand(val groupService: GroupService) : Command("group", "Manage al
 
             groupService.create(name, memory, startThreshold, minOnline, maxOnline, "VELOCITY", "3.5.0-SNAPSHOT")
             logger.trInfo("node", "node.command.group.created", Pair("name", name))
-
         }, "Create a new group", KeywordArgument("create"), nameArgument, memoryArgument, startThresholdArgument, maxOnlineArgument, minOnlineArgument)
     }
-
 }

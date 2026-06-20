@@ -14,7 +14,8 @@ private val json = Json { ignoreUnknownKeys = true }
  */
 fun loadTemplatesFromCache(cacheDir: File = File(".cache/platforms")): List<PlatformTemplate> {
     if (!cacheDir.exists() || !cacheDir.isDirectory) return emptyList()
-    return cacheDir.listFiles { f -> f.extension == "json" }
-        ?.mapNotNull { runCatching { json.decodeFromString<PlatformTemplate>(it.readText()) }.getOrNull() }
-        ?: emptyList()
+    return cacheDir.walkTopDown()
+        .filter { it.isFile && it.extension == "json" }
+        .mapNotNull { runCatching { json.decodeFromString<PlatformTemplate>(it.readText()) }.getOrNull() }
+        .toList()
 }
