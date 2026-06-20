@@ -13,6 +13,8 @@ class GroupService {
 
     fun exists(name: String) = groupRepository.exists(name)
 
+    fun find(name: String) = groupRepository.find(name)
+
     fun create(name: String, memory: Int, startThreshold: Double, minOnline: Long, maxOnline: Long, platform: String, version: String) : Group {
         val group = Group(name, memory, startThreshold, minOnline, maxOnline, platform, version)
 
@@ -21,4 +23,12 @@ class GroupService {
     }
 
     fun list() = groupRepository.findAll()
+
+    fun delete(group: Group) {
+
+        // TODO shutdown all services on ervery node
+        // TODO CLEAN QUEUE
+
+        groupRepository.delete(group)
+    }
 }
