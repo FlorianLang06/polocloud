@@ -1,7 +1,9 @@
-package de.polocloud.node.group
+package de.polocloud.node.terminal.types
 
 import de.polocloud.common.commands.InputContext
 import de.polocloud.common.commands.TerminalArgument
+import de.polocloud.node.group.Group
+import de.polocloud.node.group.GroupService
 
 /**
  * Terminal argument that resolves an existing [Group] by its name.

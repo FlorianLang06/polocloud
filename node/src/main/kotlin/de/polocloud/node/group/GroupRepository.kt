@@ -2,7 +2,6 @@ package de.polocloud.node.group
 
 import de.polocloud.database.DatabaseAccess
 import de.polocloud.database.DatabaseKey
-import de.polocloud.node.cluster.node.NodeData
 
 class GroupRepository {
 

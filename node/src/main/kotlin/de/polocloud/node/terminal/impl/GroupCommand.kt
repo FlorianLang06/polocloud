@@ -7,8 +7,8 @@ import de.polocloud.common.commands.type.KeywordArgument
 import de.polocloud.common.commands.type.LongArgument
 import de.polocloud.common.commands.type.TextArgument
 import de.polocloud.i18n.api.trInfo
-import de.polocloud.node.group.GroupArgument
 import de.polocloud.node.group.GroupService
+import de.polocloud.node.terminal.types.GroupArgument
 import org.slf4j.LoggerFactory
 
 class GroupCommand(val groupService: GroupService) : Command("group", "Manage all group things here") {
