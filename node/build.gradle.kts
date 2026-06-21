@@ -45,6 +45,7 @@ dependencies {
 
     compileOnly(projects.common)
     implementation(projects.proto)
+    implementation(projects.api)
 }
 
 tasks.test {
