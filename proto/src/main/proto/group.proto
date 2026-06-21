@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package cluster;
+
+option java_package = "de.polocloud.proto";
+option java_outer_classname = "GroupProto";
+option java_multiple_files = true;
+
+
+
+message GroupData {
+  string name = 1;
+  int32 memory = 2;
+  double startThreshold = 3;
+  int64 minOnline = 4;
+  int64 maxOnline = 5;
+  string platform = 6;
+  string version = 7;
+}
