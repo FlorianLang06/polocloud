@@ -2,9 +2,8 @@ package de.polocloud.node.communication.handler.group
 
 import de.polocloud.common.communication.server.context.GrpcServerContext
 import de.polocloud.common.communication.server.handler.GrpcServerHandler
-import de.polocloud.node.group.Group
+import de.polocloud.node.group.GroupProtoMapper
 import de.polocloud.node.group.GroupService
-import de.polocloud.proto.GroupData
 import de.polocloud.proto.GroupListRequest
 import de.polocloud.proto.GroupListResponse
 
@@ -25,17 +24,7 @@ class GetGroupInformationServerHandler(val groupService: GroupService) : GrpcSer
         }
 
         return GroupListResponse.newBuilder()
-            .addAllGroups(groups.map { it.toGroupData() }.toList())
+            .addAllGroups(groups.map { GroupProtoMapper.toProto(it) }.toList())
             .build()
     }
-
-    private fun Group.toGroupData(): GroupData = GroupData.newBuilder()
-        .setName(name)
-        .setMemory(memory)
-        .setStartThreshold(startThreshold)
-        .setMinOnline(minOnline)
-        .setMaxOnline(maxOnline)
-        .setPlatform(platform)
-        .setVersion(version)
-        .build()
 }

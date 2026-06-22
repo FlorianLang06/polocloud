@@ -46,6 +46,12 @@ dependencies {
     compileOnly(projects.common)
     implementation(projects.proto)
     implementation(projects.api)
+
+    // testing
+    testImplementation(projects.common)
+    testImplementation(libs.bundles.testing)
+    testImplementation(libs.kotlinx.coroutines.core)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks.test {

@@ -8,11 +8,13 @@ import de.polocloud.common.communication.tls.MtlsConfig
 import de.polocloud.node.communication.cli.session.CliSessionCleanup
 import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.impl.cluster.ClusterServiceImpl
+import de.polocloud.node.communication.impl.group.GroupApiServiceImpl
 import de.polocloud.node.communication.impl.node.NodeServiceImpl
 import de.polocloud.node.communication.impl.services.ServiceManagerImpl
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
+import de.polocloud.node.group.GroupService
 import de.polocloud.node.security.NodeCertificateStorage
 
 /**
@@ -31,14 +33,16 @@ import de.polocloud.node.security.NodeCertificateStorage
 class NodeGrpcEndpoint(
     address: Address,
     cliRegistrationService: CliRegistrationService,
-    cliSessionManager: ICliSessionManager
+    cliSessionManager: ICliSessionManager,
+    groupService: GroupService,
 ) : Closeable {
 
-    private val executor = GrpcModule.createExecutor()
+    private val executor = GrpcModule.createExecutor(groupService)
 
     private val nodeService = NodeServiceImpl(executor)
     private val clusterService = ClusterServiceImpl(executor)
     private val serviceManager = ServiceManagerImpl(executor)
+    private val groupApiService = GroupApiServiceImpl(executor)
 
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
@@ -67,6 +71,11 @@ class NodeGrpcEndpoint(
         )
         .interceptedService(
             serviceManager,
+            IpWhitelistInterceptor(),
+            CliSessionInterceptor(cliSessionManager)
+        )
+        .interceptedService(
+            groupApiService,
             IpWhitelistInterceptor(),
             CliSessionInterceptor(cliSessionManager)
         )

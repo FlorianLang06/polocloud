@@ -8,6 +8,9 @@ option java_multiple_files = true;
 
 service GroupApiService {
   rpc FindGroups (GroupListRequest) returns (GroupListResponse);
+  rpc CreateGroup (CreateGroupRequest) returns (GroupData);
+  rpc UpdateGroup (UpdateGroupRequest) returns (GroupData);
+  rpc DeleteGroup (DeleteGroupRequest) returns (DeleteGroupResponse);
 }
 
 message GroupListRequest {
@@ -17,6 +20,22 @@ message GroupListRequest {
 
 message GroupListResponse {
   repeated GroupData groups = 1;
+}
+
+message CreateGroupRequest {
+  GroupData group = 1;
+}
+
+message UpdateGroupRequest {
+  GroupData group = 1;
+}
+
+message DeleteGroupRequest {
+  string name = 1;
+}
+
+message DeleteGroupResponse {
+  bool success = 1;
 }
 
 message GroupData {

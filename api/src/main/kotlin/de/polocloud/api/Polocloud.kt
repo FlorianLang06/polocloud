@@ -1,9 +1,31 @@
 package de.polocloud.api
 
+import de.polocloud.api.connection.PolocloudConnection
+import de.polocloud.api.group.GroupApiClient
 import de.polocloud.api.group.GroupService
+import de.polocloud.api.group.GrpcGroupApiClient
 
+/**
+ * Standalone entry point to the PoloCloud API.
+ *
+ * A service or plugin uses this to talk back to the node over mTLS:
+ * ```kotlin
+ * val groups = Polocloud.groupService.findAll()
+ * ```
+ *
+ * The underlying gRPC channel is opened lazily on the first call, so referencing
+ * [Polocloud] does not require a provisioned identity until an API call is made.
+ */
 object Polocloud {
 
-    val groupService = GroupService()
+    private val connection = PolocloudConnection()
 
+    private val groupClient: GroupApiClient = GrpcGroupApiClient { connection.channel() }
+
+    val groupService = GroupService(groupClient)
+
+    /**
+     * Closes the underlying connection. A subsequent API call re-opens it.
+     */
+    fun close() = connection.close()
 }

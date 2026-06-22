@@ -14,6 +14,7 @@ import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.group.GroupService
 import de.polocloud.node.identity.provider.NodeIdProvider
 import de.polocloud.node.security.NodeCertificateStorage
 import org.slf4j.LoggerFactory
@@ -41,10 +42,13 @@ class NodeIdentityService(
 
         val bindAddress = resolveBindAddress(launchProperties)
 
+        val groupService = GroupService()
+
         val grpc = NodeGrpcEndpoint(
             bindAddress,
             cliRegistrationService,
-            cliSessionManager
+            cliSessionManager,
+            groupService
         )
 
         if (NodeRepository.count() == 0L) {
@@ -67,7 +71,7 @@ class NodeIdentityService(
 
             grpc.start()
 
-            return NodeRuntimeContext(holder,container, registrationManager, grpc, null)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, null, groupService)
         }
 
         val possibleNode = NodeRepository.find(localId)
@@ -82,7 +86,7 @@ class NodeIdentityService(
 
             grpc.start()
 
-            return NodeRuntimeContext(holder, container, registrationManager, grpc, null)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, null, groupService)
         }
 
         if (launchProperties.clusterRegistration == null) {
@@ -101,7 +105,7 @@ class NodeIdentityService(
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
 
-        return NodeRuntimeContext(holder, container, registrationManager, grpc, headConnection)
+        return NodeRuntimeContext(holder, container, registrationManager, grpc, headConnection, groupService)
     }
 
     /**
