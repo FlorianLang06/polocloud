@@ -16,7 +16,7 @@ class NodeRuntimeContext(
     val registrationManager: RegistrationManager,
     val grpcEndpoint: NodeGrpcEndpoint,
     val headNodeConnection: NodeGrpcClient?,
-    val groupService: GroupService = GroupService(),
+    val groupService: GroupService,
     val serviceProvider: ServiceProvider = ServiceProvider()
 ) {
 

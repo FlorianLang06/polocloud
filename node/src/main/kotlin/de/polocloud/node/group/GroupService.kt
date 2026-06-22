@@ -2,7 +2,7 @@ package de.polocloud.node.group
 
 import org.slf4j.LoggerFactory
 
-class GroupService {
+open class GroupService {
 
     private var logger = LoggerFactory.getLogger(GroupService::class.java)
     private var groupRepository = GroupRepository()
@@ -10,6 +10,8 @@ class GroupService {
     fun run() {
         logger.info("Found {} groups", groupRepository.count())
     }
+
+    open fun findAll() = groupRepository.findAll()
 
     fun exists(name: String) = groupRepository.exists(name)
 

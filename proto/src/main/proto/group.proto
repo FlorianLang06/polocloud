@@ -6,7 +6,18 @@ option java_package = "de.polocloud.proto";
 option java_outer_classname = "GroupProto";
 option java_multiple_files = true;
 
+service GroupApiService {
+  rpc FindGroups (GroupListRequest) returns (GroupListResponse);
+}
 
+message GroupListRequest {
+  optional string name_filter = 2;
+  optional string type_filter = 3;
+}
+
+message GroupListResponse {
+  repeated GroupData groups = 1;
+}
 
 message GroupData {
   string name = 1;
