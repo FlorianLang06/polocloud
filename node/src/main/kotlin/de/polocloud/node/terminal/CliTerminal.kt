@@ -32,7 +32,7 @@ class CliTerminal(val context: NodeRuntimeContext) {
     private val terminal = TerminalBuilder.builder()
         .system(true)
         .encoding(StandardCharsets.UTF_8)
-        .dumb(false)
+        .dumb(true)
         .build()
 
     private val lineReader: LineReaderImpl = LineReaderBuilder.builder()

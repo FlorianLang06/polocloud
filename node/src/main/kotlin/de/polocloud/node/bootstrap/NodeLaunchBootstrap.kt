@@ -4,11 +4,13 @@ import de.polocloud.common.dependency.DependencyRegistry
 import de.polocloud.common.dependency.insert.ClasspathInsert
 import de.polocloud.common.dependency.scanning.OwnBlobScanner
 import de.polocloud.common.system.PolocloudSystemProperties
-import de.polocloud.node.core.environment.NodeEnvironment
 import java.nio.file.Path
-import kotlin.io.path.Path
 
 fun main(args: Array<String>) {
+    // Ensure the console renders UTF-8 output (arrows, emoji, ...) correctly,
+    // especially on Windows where the default OEM code page mangles them.
+    enableUtf8Console()
+
     val dependencyRegistry = DependencyRegistry(ClasspathInsert())
 
     val cliJar = Path.of(System.getProperty(PolocloudSystemProperties.RUNTIME_PATH)).toFile()

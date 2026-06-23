@@ -15,4 +15,8 @@ class ServiceProvider {
         platformService.load()
         queue.run()
     }
+
+    fun shutdown() {
+
+    }
 }

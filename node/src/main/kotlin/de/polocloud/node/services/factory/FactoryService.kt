@@ -24,7 +24,7 @@ class FactoryService(private val platformService: PlatformService) {
                 "Version '${group.version}' not available for platform '${group.platform}'"
             )
 
-        val workDir = File("servers/${group.name}/${service.index}")
+        val workDir = File("servers/${group.name}/${group.name}-${service.index}")
         val process = PlatformProcess(platform, version)
         val jar = process.download(workDir)
 
