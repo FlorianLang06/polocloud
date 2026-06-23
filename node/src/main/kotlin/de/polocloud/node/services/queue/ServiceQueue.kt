@@ -2,6 +2,7 @@ package de.polocloud.node.services.queue
 
 import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupRepository
+import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.Service
 import de.polocloud.node.services.ServiceState
 import de.polocloud.node.services.factory.FactoryService
@@ -16,7 +17,7 @@ class ServiceQueue(
 ) {
 
     private val logger = LoggerFactory.getLogger(ServiceQueue::class.java)
-    private val queue: Queue<Pair<Service, Group>> = LinkedList()
+    private val queue: Queue<Pair<LocalService, Group>> = LinkedList()
 
     fun run() {
         val thread = Thread({
@@ -53,7 +54,7 @@ class ServiceQueue(
             )
             repeat(needed.toInt()) {
                 val index = nextIndex(group)
-                val service = Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED)
+                val service = LocalService(Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED))
                 queue.offer(Pair(service, group))
                 logger.info(
                     "  Queued {}-{} [memory: {}MB, platform: {}/{}]",

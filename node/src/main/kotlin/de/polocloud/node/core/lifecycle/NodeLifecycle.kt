@@ -90,6 +90,11 @@ class NodeLifecycle(
             runtime.heartBeatService.stopScheduler()
         }
 
+
+        safe("serviceProvider") {
+            context.serviceProvider.shutdown()
+        }
+
         safe("registrationManager") {
             context.registrationManager.close(mode)
         }

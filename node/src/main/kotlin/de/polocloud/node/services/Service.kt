@@ -11,5 +11,5 @@ open  class Service(
     @EntryIdentifier val id: UUID,
     val index: Int,
     @EntryRef(clazz = Group::class) val group: String,
-    val state: ServiceState = ServiceState.QUEUED
+    var state: ServiceState = ServiceState.QUEUED
 )

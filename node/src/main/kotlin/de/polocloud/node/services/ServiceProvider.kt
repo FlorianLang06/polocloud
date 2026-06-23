@@ -7,8 +7,10 @@ import de.polocloud.node.services.queue.ServiceQueue
 
 class ServiceProvider {
 
+    val localServices = ArrayList<LocalService>()
+
     private val platformService = PlatformService()
-    private val factory = FactoryService(platformService)
+    private val factory = FactoryService(platformService, this)
     private val queue = ServiceQueue(factory, GroupRepository())
 
     fun run() {
@@ -17,6 +19,8 @@ class ServiceProvider {
     }
 
     fun shutdown() {
-
+        this.localServices.forEach {
+            it.shutdown()
+        }
     }
 }
