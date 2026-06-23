@@ -23,6 +23,11 @@ slf4j                   = "2.0.17"
 jline                   = "4.0.4"
 oshi                    = "6.10.0"
 
+# ── Proxy bridge ──────────────────────────────────────────────────────────────
+velocity-api            = "3.3.0-SNAPSHOT"
+waterfall-api           = "1.20-R0.1-SNAPSHOT"
+shadow                  = "9.0.0"
+
 # ── Security ──────────────────────────────────────────────────────────────────
 bcprov                  = "1.83"
 argon2                  = "2.12"
@@ -70,6 +75,10 @@ jline                       = { group = "org.jline",        name = "jline",     
 jansi                       = { group = "org.jline",        name = "jansi",               version.ref = "jline" }
 oshi                        = { group = "com.github.oshi",  name = "oshi-core",           version.ref = "oshi" }
 
+# ── Proxy bridge ──────────────────────────────────────────────────────────────
+velocity-api                = { group = "com.velocitypowered",   name = "velocity-api",   version.ref = "velocity-api" }
+waterfall-api               = { group = "io.github.waterfallmc", name = "waterfall-api",  version.ref = "waterfall-api" }
+
 # ── Security ───── ─────────────────────────────────────────────────────────────
 bcprov                      = { group = "org.bouncycastle", name = "bcprov-jdk18on",      version.ref = "bcprov" }
 bcpkix                      = { group = "org.bouncycastle", name = "bcpkix-jdk18on",      version.ref = "bcprov" }
@@ -95,6 +104,7 @@ kotlin-serialization    = { id = "org.jetbrains.kotlin.plugin.serialization", ve
 gradle-git-properties   = { id = "com.gorylenko.gradle-git-properties",       version.ref = "gradle-git-properties" }
 protobuf-plugin         = { id = "com.google.protobuf",                       version.ref = "protobuf-plugin" }
 polocloud-gradle-plugin = { id = "de.polocloud.gradle.plugin", version.ref = "polocloud-gradle-plugin" }
+shadow                  = { id = "com.gradleup.shadow",                       version.ref = "shadow" }
 
 [bundles]
 

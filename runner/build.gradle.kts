@@ -34,6 +34,14 @@ tasks.named<Jar>("jar") {
             into(".cache/dependencies")
         }
     }
+
+    // The bridge ships as a self-contained fat jar (shadowJar). It is embedded here so the
+    // node can drop it into a proxy's plugins/ folder on start (see FactoryService).
+    val bridgeShadowJar = project(":bridge").tasks.named("shadowJar")
+    dependsOn(bridgeShadowJar)
+    from(bridgeShadowJar.map { (it as Jar).archiveFile }) {
+        into(".cache/dependencies")
+    }
 }
 
 
