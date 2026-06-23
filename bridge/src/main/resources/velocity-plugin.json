@@ -1,0 +1,9 @@
+{
+  "id": "polocloud-bridge",
+  "name": "Polocloud Bridge",
+  "version": "${version}",
+  "description": "Connects this proxy to the Polocloud node.",
+  "authors": ["polocloud"],
+  "main": "de.polocloud.bridge.velocity.VelocityBridgePlugin",
+  "dependencies": []
+}
