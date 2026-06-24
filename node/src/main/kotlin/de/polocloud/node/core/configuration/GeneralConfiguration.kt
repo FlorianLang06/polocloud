@@ -12,5 +12,6 @@ import java.util.*
 data class GeneralConfiguration(
     @Serializable(with = LocaleSerializer::class) var locale: Locale = Locale.US,
     var bindAddress: Address = GLOBAL_ADDRESS.withPort(4240),
+    var apiAddress: Address = GLOBAL_ADDRESS.withPort(4241),
     var hostname: String = publicIpAddress() ?: localIpAddress()
 )

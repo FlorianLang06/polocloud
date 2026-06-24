@@ -10,6 +10,7 @@ import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.cli.session.ICliSessionManager
 import de.polocloud.node.communication.grpc.NodeGrpcClient
 import de.polocloud.node.communication.grpc.NodeGrpcEndpoint
+import de.polocloud.node.communication.grpc.ServiceGrpcEndpoint
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
@@ -51,6 +52,11 @@ class NodeIdentityService(
             groupService
         )
 
+        val serviceGrpc = ServiceGrpcEndpoint(
+            Address(holder.value.general.apiAddress.hostname, holder.value.general.apiAddress.port),
+            groupService
+        )
+
         if (NodeRepository.count() == 0L) {
             logger.trInfo("cluster", "cluster.node.identity.created")
 
@@ -70,8 +76,9 @@ class NodeIdentityService(
             )
 
             grpc.start()
+            serviceGrpc.start()
 
-            return NodeRuntimeContext(holder, container, registrationManager, grpc, null, groupService)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, null, groupService)
         }
 
         val possibleNode = NodeRepository.find(localId)
@@ -85,8 +92,9 @@ class NodeIdentityService(
             NodeRepository.save(container.data)
 
             grpc.start()
+            serviceGrpc.start()
 
-            return NodeRuntimeContext(holder, container, registrationManager, grpc, null, groupService)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, null, groupService)
         }
 
         if (launchProperties.clusterRegistration == null) {
@@ -98,6 +106,7 @@ class NodeIdentityService(
         registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, launchProperties.group)
 
         grpc.start()
+        serviceGrpc.start()
 
         val headConnection = NodeGrpcClient()
         headConnection.connect(launchProperties.clusterRegistration.address)
@@ -105,7 +114,7 @@ class NodeIdentityService(
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
 
-        return NodeRuntimeContext(holder, container, registrationManager, grpc, headConnection, groupService)
+        return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, headConnection, groupService)
     }
 
     /**

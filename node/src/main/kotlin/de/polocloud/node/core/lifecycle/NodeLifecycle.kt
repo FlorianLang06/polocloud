@@ -95,6 +95,10 @@ class NodeLifecycle(
             context.serviceProvider.shutdown()
         }
 
+        safe("serviceGrpcEndpoint") {
+            context.serviceGrpcEndpoint.close(mode)
+        }
+
         safe("registrationManager") {
             context.registrationManager.close(mode)
         }

@@ -5,7 +5,7 @@ import de.polocloud.node.services.factory.FactoryService
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.services.queue.ServiceQueue
 
-class ServiceProvider(nodePort: Int = 4240) {
+class ServiceProvider(nodePort: Int = 4241) {
 
     val localServices = ArrayList<LocalService>()
 

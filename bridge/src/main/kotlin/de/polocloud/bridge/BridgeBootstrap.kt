@@ -25,6 +25,10 @@ object BridgeBootstrap {
         runCatching { Polocloud.groupService }
             .onSuccess { log("Polocloud bridge ready — API linked successfully") }
             .onFailure { log("Polocloud bridge failed to initialise the API: ${it.message}") }
+
+        Polocloud.groupService.findAll().forEach { it ->
+            println(it.name)
+        }
     }
 
     /**

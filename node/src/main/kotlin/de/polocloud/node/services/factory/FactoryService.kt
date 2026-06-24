@@ -13,7 +13,7 @@ import java.io.File
 class FactoryService(
     private val platformService: PlatformService,
     private val serviceProvider: ServiceProvider,
-    private val nodePort: Int = 4240,
+    private val nodePort: Int = 4241,
 ) {
 
     private val logger = LoggerFactory.getLogger(FactoryService::class.java)

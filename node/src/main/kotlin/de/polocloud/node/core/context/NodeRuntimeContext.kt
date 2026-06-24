@@ -4,6 +4,7 @@ import de.polocloud.common.configuration.ConfigurationHolder
 import de.polocloud.node.cluster.node.LocalNodeContainer
 import de.polocloud.node.communication.grpc.NodeGrpcClient
 import de.polocloud.node.communication.grpc.NodeGrpcEndpoint
+import de.polocloud.node.communication.grpc.ServiceGrpcEndpoint
 import de.polocloud.node.communication.registration.node.RegistrationManager
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.group.GroupService
@@ -15,9 +16,10 @@ class NodeRuntimeContext(
     val localNodeContainer: LocalNodeContainer,
     val registrationManager: RegistrationManager,
     val grpcEndpoint: NodeGrpcEndpoint,
+    val serviceGrpcEndpoint: ServiceGrpcEndpoint,
     val headNodeConnection: NodeGrpcClient?,
     val groupService: GroupService,
-    val serviceProvider: ServiceProvider = ServiceProvider(holder.value.general.bindAddress.port)
+    val serviceProvider: ServiceProvider = ServiceProvider(holder.value.general.apiAddress.port)
 ) {
 
     val cli: CliTerminal = CliTerminal(this)
