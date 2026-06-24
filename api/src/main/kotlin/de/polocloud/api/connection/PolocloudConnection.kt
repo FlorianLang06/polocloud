@@ -58,7 +58,11 @@ class PolocloudConnection(
         /**
          * Resolves the node address from `polocloud.node.host` / `polocloud.node.port`
          * system properties, the `POLOCLOUD_NODE_HOST` / `POLOCLOUD_NODE_PORT`
-         * environment variables, or defaults to `127.0.0.1:4239`.
+         * environment variables, or defaults to `127.0.0.1:4240`.
+         *
+         * Note: `4240` is the node's **mTLS cluster port**, not the plaintext
+         * registration port (`4239`). The standalone API speaks mTLS, so it must
+         * target the cluster endpoint.
          */
         fun resolveNodeAddress(): Address {
             val host = System.getProperty("polocloud.node.host")
@@ -66,7 +70,7 @@ class PolocloudConnection(
                 ?: "127.0.0.1"
             val port = (System.getProperty("polocloud.node.port")
                 ?: System.getenv("POLOCLOUD_NODE_PORT"))
-                ?.toIntOrNull() ?: 4239
+                ?.toIntOrNull() ?: 4240
             return Address(host, port)
         }
     }

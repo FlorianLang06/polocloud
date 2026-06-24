@@ -17,7 +17,7 @@ class NodeRuntimeContext(
     val grpcEndpoint: NodeGrpcEndpoint,
     val headNodeConnection: NodeGrpcClient?,
     val groupService: GroupService,
-    val serviceProvider: ServiceProvider = ServiceProvider()
+    val serviceProvider: ServiceProvider = ServiceProvider(holder.value.general.bindAddress.port)
 ) {
 
     val cli: CliTerminal = CliTerminal(this)

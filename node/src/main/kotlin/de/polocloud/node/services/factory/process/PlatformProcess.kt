@@ -54,11 +54,16 @@ class PlatformProcess(
      * If a range matches, [JavaRuntimeManager] downloads the appropriate JRE
      * automatically. Falls back to the system `java` when no range is configured.
      *
+     * Any entries in [environment] are added to the child process environment —
+     * this is how the provisioned mTLS identity directory is handed to the
+     * service via `POLOCLOUD_IDENTITY_DIR`.
+     *
      * @param jarFile The JAR file to execute.
+     * @param environment Extra environment variables to expose to the process.
      * @return The running [Process].
      * @throws IllegalStateException if no runtime is registered for the platform language.
      */
-    fun start(jarFile: File): Process {
+    fun start(jarFile: File, environment: Map<String, String> = emptyMap()): Process {
         val executable = resolveExecutable()
         val runtime = PlatformRuntime.Companion.forLanguage(platform.language)
         val command = runtime.buildCommand(executable, jarFile, platform.globalArgs)
@@ -66,6 +71,7 @@ class PlatformProcess(
         return ProcessBuilder(command)
             .directory(jarFile.parentFile)
             .redirectErrorStream(true)
+            .apply { environment().putAll(environment) }
             .start()
     }
 

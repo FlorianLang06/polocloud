@@ -31,4 +31,6 @@ class PlatformService {
     }
 
     fun find(name: String): Platform? = platforms[name]
+
+    fun all(): Collection<Platform> = platforms.values
 }

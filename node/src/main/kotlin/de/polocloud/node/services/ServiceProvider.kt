@@ -5,12 +5,12 @@ import de.polocloud.node.services.factory.FactoryService
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.services.queue.ServiceQueue
 
-class ServiceProvider {
+class ServiceProvider(nodePort: Int = 4240) {
 
     val localServices = ArrayList<LocalService>()
 
-    private val platformService = PlatformService()
-    private val factory = FactoryService(platformService, this)
+    val platformService = PlatformService()
+    private val factory = FactoryService(platformService, this, nodePort)
     private val queue = ServiceQueue(factory, GroupRepository())
 
     fun run() {

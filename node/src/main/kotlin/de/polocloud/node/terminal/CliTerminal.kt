@@ -37,6 +37,7 @@ class CliTerminal(val context: NodeRuntimeContext) {
 
     private val lineReader: LineReaderImpl = LineReaderBuilder.builder()
         .terminal(this.terminal)
+        .completer(CommandCompleter(this.commandService))
         .option(LineReader.Option.AUTO_MENU_LIST, true)
         .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
         .option(LineReader.Option.AUTO_PARAM_SLASH, false)
@@ -51,7 +52,9 @@ class CliTerminal(val context: NodeRuntimeContext) {
     val readingThread = ReadingThread(this, this.lineReader, this.commandService)
 
     init {
-        this.commandService.registerCommand(GroupCommand(this.context.groupService))
+        this.commandService.registerCommand(
+            GroupCommand(this.context.groupService, this.context.serviceProvider.platformService)
+        )
     }
 
     /**

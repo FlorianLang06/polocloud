@@ -11,7 +11,8 @@ data class Group (
     val minOnline: Long,
     val maxOnline: Long,
     val platform: String,
-    val version: String
+    val version: String,
+    var static: Boolean = false,
 ) {
 
 }

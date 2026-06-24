@@ -6,10 +6,15 @@ import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.platform.Platform
 import de.polocloud.node.services.factory.process.PlatformProcess
+import de.polocloud.node.security.ServiceIdentityProvisioner
 import org.slf4j.LoggerFactory
 import java.io.File
 
-class FactoryService(private val platformService: PlatformService, private val serviceProvider: ServiceProvider) {
+class FactoryService(
+    private val platformService: PlatformService,
+    private val serviceProvider: ServiceProvider,
+    private val nodePort: Int = 4240,
+) {
 
     private val logger = LoggerFactory.getLogger(FactoryService::class.java)
 
@@ -28,7 +33,17 @@ class FactoryService(private val platformService: PlatformService, private val s
 
         installBridgePlugin(platform, workDir)
 
-        val proc = process.start(jar)
+        val identityDir = File(workDir, "identity/service")
+        ServiceIdentityProvisioner.provision(identityDir, service.id.toString(), group.name)
+
+        val proc = process.start(
+            jar,
+            environment = mapOf(
+                "POLOCLOUD_IDENTITY_DIR" to identityDir.absolutePath,
+                "POLOCLOUD_NODE_HOST" to "127.0.0.1",
+                "POLOCLOUD_NODE_PORT" to nodePort.toString(),
+            ),
+        )
 
         service.process = proc
         service.workDir = workDir.toPath()
