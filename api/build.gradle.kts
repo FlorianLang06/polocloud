@@ -7,9 +7,11 @@ plugins {
 }
 
 dependencies {
-    // exposed to SDK consumers: proto stubs/messages, common (Address, mTLS, channel factory)
+    // exposed to SDK consumers: proto stubs/messages, common (Address, mTLS, channel factory),
+    // shared (cluster event contracts + codec)
     api(projects.proto)
     api(projects.common)
+    api(projects.shared)
 
     // BouncyCastle is required at runtime by the inherited CertificateStorage
     implementation(libs.bundles.tls)

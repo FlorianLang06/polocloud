@@ -5,6 +5,7 @@ import de.polocloud.common.Closeable
 import de.polocloud.common.ShutdownMode
 import de.polocloud.common.communication.GrpcEndpoint
 import de.polocloud.common.communication.tls.MtlsConfig
+import de.polocloud.node.communication.impl.event.EventProviderServiceImpl
 import de.polocloud.node.communication.impl.group.GroupApiServiceImpl
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.security.NodeCertificateStorage
@@ -29,6 +30,7 @@ class ServiceGrpcEndpoint(
 
     private val executor = GrpcModule.createExecutor(groupService)
     private val groupApiService = GroupApiServiceImpl(executor)
+    private val eventProviderService = EventProviderServiceImpl()
 
     private val server = GrpcEndpoint.Builder(address)
         .tls(
@@ -39,6 +41,7 @@ class ServiceGrpcEndpoint(
             )
         )
         .service(groupApiService)
+        .service(eventProviderService)
         .build()
 
     fun start() = server.start()

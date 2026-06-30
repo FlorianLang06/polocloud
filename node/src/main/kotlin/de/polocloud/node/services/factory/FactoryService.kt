@@ -1,12 +1,15 @@
 package de.polocloud.node.services.factory
 
 import de.polocloud.common.version.PolocloudVersion
+import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.group.Group
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.platform.Platform
 import de.polocloud.node.services.factory.process.PlatformProcess
 import de.polocloud.node.security.ServiceIdentityProvisioner
+import de.polocloud.shared.event.server.ServerStartedEvent
+import de.polocloud.shared.event.server.ServerStoppedEvent
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -49,6 +52,8 @@ class FactoryService(
         service.workDir = workDir.toPath()
         serviceProvider.localServices.add(service)
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())
+
+        ClusterEventService.call(ServerStartedEvent("${group.name}-${service.index}", group.name))
     }
 
     /**
@@ -92,6 +97,12 @@ class FactoryService(
     }
 
     private fun pruneDeadProcesses() {
-        serviceProvider.localServices.removeIf { it.process?.isAlive != true }
+        serviceProvider.localServices.removeIf { service ->
+            val dead = service.process?.isAlive != true
+            if (dead) {
+                ClusterEventService.call(ServerStoppedEvent("${service.group}-${service.index}", service.group))
+            }
+            dead
+        }
     }
 }

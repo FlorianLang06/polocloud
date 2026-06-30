@@ -35,15 +35,15 @@ class PlatformProcess(
         targetDir.mkdirs()
         val file = File(targetDir, jarName)
         if (file.exists()) {
-            logger.info("  ↩ $jarName already cached")
+            logger.info("$jarName already cached")
             return file
         }
-        logger.info("  ↓ Downloading $jarName ...")
+        logger.info("Downloading $jarName ...")
         System.out.flush()
         URI(version.downloadUrl).toURL().openStream().use { input ->
             file.outputStream().use { output -> input.copyTo(output) }
         }
-        logger.info("  done (${file.length() / 1024} KB)")
+        logger.info("done (${file.length() / 1024} KB)")
         return file
     }
 
@@ -65,9 +65,9 @@ class PlatformProcess(
      */
     fun start(jarFile: File, environment: Map<String, String> = emptyMap()): Process {
         val executable = resolveExecutable()
-        val runtime = PlatformRuntime.Companion.forLanguage(platform.language)
-        val command = runtime.buildCommand(executable, jarFile, platform.globalArgs)
-        logger.info("  ▶ Starting ${platform.name} ${version.version} (build ${version.build})")
+        val runtime = PlatformRuntime.forLanguage(platform.language)
+        val command = runtime.buildCommand(executable, jarFile, platform.jvmArgs, platform.globalArgs)
+        logger.info("Starting ${platform.name} ${version.version} (build ${version.build})")
         return ProcessBuilder(command)
             .directory(jarFile.parentFile)
             .redirectErrorStream(true)

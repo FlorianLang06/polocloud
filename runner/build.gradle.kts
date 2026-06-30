@@ -23,6 +23,7 @@ tasks.named<Jar>("jar") {
         "cli",
         "node",
         "proto",
+        "shared",
     )
 
     dependsOn(subprojects.map { ":$it:jar" })

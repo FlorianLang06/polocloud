@@ -12,7 +12,7 @@ data class Group (
     val maxOnline: Long,
     val platform: String,
     val version: String,
-    var static: Boolean = false,
+    var static: Boolean = false
 ) {
 
 }

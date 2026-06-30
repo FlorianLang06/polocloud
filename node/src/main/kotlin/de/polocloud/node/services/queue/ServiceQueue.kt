@@ -56,8 +56,7 @@ class ServiceQueue(
                 val index = nextIndex(group)
                 val service = LocalService(Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED))
                 queue.offer(Pair(service, group))
-                logger.info(
-                    "  Queued {}-{} [memory: {}MB, platform: {}/{}]",
+                logger.info("Queued {}-{} [memory: {}MB, platform: {}/{}]",
                     group.name, index, group.memory, group.platform, group.version
                 )
             }

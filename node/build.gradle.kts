@@ -45,7 +45,7 @@ dependencies {
 
     compileOnly(projects.common)
     implementation(projects.proto)
-    implementation(projects.api)
+    implementation(projects.shared)
 
     // testing
     testImplementation(projects.common)

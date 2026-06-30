@@ -1,6 +1,9 @@
 package de.polocloud.bridge
 
 import de.polocloud.api.Polocloud
+import de.polocloud.api.event.subscribe
+import de.polocloud.shared.event.server.ServerStartedEvent
+import de.polocloud.shared.event.server.ServerStoppedEvent
 
 /**
  * Shared entry point for both proxy plugin variants (Velocity and Waterfall).
@@ -28,6 +31,15 @@ object BridgeBootstrap {
 
         Polocloud.groupService.findAll().forEach { it ->
             println(it.name)
+        }
+
+        // Listen for cluster lifecycle events pushed by the node, so this proxy
+        // (e.g. proxy-1) gets notified whenever a server starts or stops.
+        Polocloud.eventService.subscribe<ServerStartedEvent> { event ->
+            log("Server started in cluster: ${event.serviceName} (group: ${event.group})")
+        }
+        Polocloud.eventService.subscribe<ServerStoppedEvent> { event ->
+            log("Server stopped in cluster: ${event.serviceName} (group: ${event.group})")
         }
     }
 

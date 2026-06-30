@@ -1,6 +1,7 @@
 package de.polocloud.api
 
 import de.polocloud.api.connection.PolocloudConnection
+import de.polocloud.api.event.EventService
 import de.polocloud.api.group.GroupApiClient
 import de.polocloud.api.group.GroupService
 import de.polocloud.api.group.GrpcGroupApiClient
@@ -25,7 +26,16 @@ object Polocloud {
     val groupService = GroupService(groupClient)
 
     /**
+     * Cluster-wide event bus. Subscribe to cloud events such as
+     * [de.polocloud.shared.event.server.ServerStartedEvent].
+     */
+    val eventService = EventService(channelProvider = { connection.channel() })
+
+    /**
      * Closes the underlying connection. A subsequent API call re-opens it.
      */
-    fun close() = connection.close()
+    fun close() {
+        eventService.close()
+        connection.close()
+    }
 }

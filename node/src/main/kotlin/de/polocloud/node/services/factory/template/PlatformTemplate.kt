@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * @param name            Unique platform identifier (e.g. "paper", "velocity").
  * @param type            Platform role: SERVER or PROXY.
  * @param language        Runtime language used to launch the platform (e.g. JAVA).
+ * @param jvmArgs         JVM arguments placed before `-jar` (e.g. "-Dcom.mojang.eula.agree=true").
  * @param globalArgs      JVM and program arguments passed when starting a process.
  * @param tasks               Optional tasks applied to specific version ranges.
  * @param javaVersionRanges   Ordered breakpoints mapping platform version ranges to required Java versions.
@@ -19,6 +20,7 @@ data class PlatformTemplate(
     val name: String,
     val type: String,
     val language: String,
+    val jvmArgs: List<String> = emptyList(),
     val globalArgs: List<String> = emptyList(),
     val tasks: List<ServiceTask>,
     val javaVersionRanges: List<JavaVersionRange> = emptyList(),

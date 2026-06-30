@@ -20,10 +20,11 @@ interface PlatformRuntime {
      *
      * @param executable Absolute path or name of the runtime executable (e.g. "java" or "/runtimes/java-21/bin/java").
      * @param jarFile    The artifact to execute.
+     * @param jvmArgs    JVM arguments placed before `-jar`, sourced from the platform configuration.
      * @param args       Global arguments sourced from the platform configuration.
      * @return Ordered list of command tokens passed to [ProcessBuilder].
      */
-    fun buildCommand(executable: String, jarFile: File, args: List<String>): List<String>
+    fun buildCommand(executable: String, jarFile: File, jvmArgs: List<String>, args: List<String>): List<String>
 
     companion object {
 
