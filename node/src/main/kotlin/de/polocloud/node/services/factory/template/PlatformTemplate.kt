@@ -22,22 +22,41 @@ data class PlatformTemplate(
     val language: String,
     val jvmArgs: List<String> = emptyList(),
     val globalArgs: List<String> = emptyList(),
-    val tasks: List<ServiceTask>,
+    val tasks: List<ServiceTask> = emptyList(),
     val javaVersionRanges: List<JavaVersionRange> = emptyList(),
     val versionDetection: VersionDetection
 )
 
 /**
- * A named task that targets a specific range of platform versions.
+ * References a reusable task definition that should be applied to a platform,
+ * constrained to a range of platform versions.
  *
- * @param name     Human-readable task identifier.
- * @param versions Version constraint expression (e.g. ">1.13 && <1.21").
+ * The actual steps are not stored here — they live in a separate task definition
+ * file (under `tasks/` in the platform cache) identified by [key]. This keeps a
+ * task ("set up server.properties") reusable across multiple platforms.
+ *
+ * @param key   Identifier of the task definition to apply (e.g. "server_properties").
+ * @param from  Lowest platform version (inclusive) the task applies to, or null for no lower bound.
+ * @param until Highest platform version (inclusive) the task applies to, or null for no upper bound.
  */
 @Serializable
 data class ServiceTask(
-    val name: String,
-    val versions: String
-)
+    val key: String,
+    val from: String? = null,
+    val until: String? = null
+) {
+
+    /**
+     * Returns true if this task applies to the given platform [version], i.e. the
+     * version falls within the inclusive `[from, until]` range. Missing bounds are
+     * treated as open.
+     */
+    fun appliesTo(version: String): Boolean {
+        if (from != null && compareVersions(version, from) < 0) return false
+        if (until != null && compareVersions(version, until) > 0) return false
+        return true
+    }
+}
 
 /**
  * Describes how versions are detected for a platform.

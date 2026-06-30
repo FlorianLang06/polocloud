@@ -1,5 +1,6 @@
 package de.polocloud.node.services.factory.template
 
+import de.polocloud.node.services.factory.task.TASK_DIRECTORY
 import kotlinx.serialization.json.Json
 import java.io.File
 
@@ -14,8 +15,9 @@ private val json = Json { ignoreUnknownKeys = true }
  */
 fun loadTemplatesFromCache(cacheDir: File = File(".cache/platforms")): List<PlatformTemplate> {
     if (!cacheDir.exists() || !cacheDir.isDirectory) return emptyList()
+    val taskDir = File(cacheDir, TASK_DIRECTORY)
     return cacheDir.walkTopDown()
-        .filter { it.isFile && it.extension == "json" }
+        .filter { it.isFile && it.extension == "json" && !it.startsWith(taskDir) }
         .mapNotNull { runCatching { json.decodeFromString<PlatformTemplate>(it.readText()) }.getOrNull() }
         .toList()
 }

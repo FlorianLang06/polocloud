@@ -23,6 +23,7 @@ fun convertTemplatesToPlatform(items: List<PlatformTemplate>): List<Platform> {
             language = template.language,
             jvmArgs = template.jvmArgs,
             globalArgs = template.globalArgs,
+            tasks = template.tasks,
             javaVersionRanges = template.javaVersionRanges,
             versions = scanVersions(template)
         )

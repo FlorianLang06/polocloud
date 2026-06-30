@@ -71,7 +71,7 @@ class GrpcEndpoint private constructor(
             return
         }
 
-        logger.trInfo("grpc", "grpc.start.starting", "address" to address)
+        logger.trDebug("grpc", "grpc.start.starting", "address" to address)
 
         val builder = NettyServerBuilder.forAddress(address.toInetSocketAddress())
             .addService(healthManager.healthService)

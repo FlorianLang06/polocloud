@@ -30,28 +30,3 @@ fun resolveJavaVersion(version: String, ranges: List<JavaVersionRange>): Int? {
         .lastOrNull()
         ?.java
 }
-
-/**
- * Parses a version string into a list of integer segments.
- * Pre-release suffixes such as `-SNAPSHOT`, `-rc1`, or `-pre2` are stripped before parsing.
- *
- * @param version Raw version string (e.g. "1.20.5", "1.21.9-pre2", "26.1").
- * @return Numeric segments, e.g. `[1, 20, 5]` or `[26, 1]`.
- */
-private fun parseVersionSegments(version: String): List<Int> =
-    version.substringBefore("-").split(".").mapNotNull { it.toIntOrNull() }
-
-/**
- * Compares two parsed version segment lists lexicographically.
- * Shorter lists are padded with zeros for comparison purposes.
- *
- * @return Negative if [a] < [b], zero if equal, positive if [a] > [b].
- */
-private fun compareSegments(a: List<Int>, b: List<Int>): Int {
-    val len = maxOf(a.size, b.size)
-    for (i in 0 until len) {
-        val diff = a.getOrElse(i) { 0 } - b.getOrElse(i) { 0 }
-        if (diff != 0) return diff
-    }
-    return 0
-}

@@ -6,7 +6,9 @@ import de.polocloud.node.group.Group
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.platform.Platform
+import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.process.PlatformProcess
+import de.polocloud.node.services.factory.task.TaskExecutor
 import de.polocloud.node.security.ServiceIdentityProvisioner
 import de.polocloud.shared.event.server.ServerStartedEvent
 import de.polocloud.shared.event.server.ServerStoppedEvent
@@ -21,6 +23,10 @@ class FactoryService(
 
     private val logger = LoggerFactory.getLogger(FactoryService::class.java)
 
+    private companion object {
+        const val SERVER_BASE_PORT = 30000
+        const val PROXY_BASE_PORT = 25565
+    }
 
     fun start(service: LocalService, group: Group) {
         val platform = platformService.find(group.platform)
@@ -35,6 +41,7 @@ class FactoryService(
         val jar = process.download(workDir)
 
         installBridgePlugin(platform, workDir)
+        applyTasks(platform, version, service, group, workDir)
 
         val identityDir = File(workDir, "identity/service")
         ServiceIdentityProvisioner.provision(identityDir, service.id.toString(), group.name)
@@ -54,6 +61,46 @@ class FactoryService(
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())
 
         ClusterEventService.call(ServerStartedEvent("${group.name}-${service.index}", group.name))
+    }
+
+    /**
+     * Applies the platform's pre-start configuration tasks to the service work directory.
+     *
+     * Only tasks whose version range matches [version] are applied. Step values may
+     * reference placeholders (e.g. `%server_port%`) which are resolved from the
+     * service-specific values built here.
+     */
+    private fun applyTasks(
+        platform: Platform,
+        version: PlatformVersion,
+        service: LocalService,
+        group: Group,
+        workDir: File,
+    ) {
+        if (platform.tasks.isEmpty()) return
+        TaskExecutor.apply(
+            workDir = workDir,
+            tasks = platform.tasks,
+            version = version.version,
+            definitions = platformService.taskDefinitions(),
+            placeholders = mapOf(
+                "server_port" to assignPort(platform, service.index).toString(),
+                "service_name" to "${group.name}-${service.index}",
+                "service_id" to service.id.toString(),
+                "group_name" to group.name,
+            ),
+        )
+    }
+
+    /**
+     * Derives a deterministic port for a service from its platform role and index.
+     *
+     * Proxies start at [PROXY_BASE_PORT], all other platforms at [SERVER_BASE_PORT];
+     * the 1-based service index is added so co-located services never collide.
+     */
+    private fun assignPort(platform: Platform, index: Int): Int {
+        val base = if (platform.type.equals("PROXY", ignoreCase = true)) PROXY_BASE_PORT else SERVER_BASE_PORT
+        return base + (index - 1)
     }
 
     /**

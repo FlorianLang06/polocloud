@@ -19,6 +19,8 @@ class ServiceProvider(nodePort: Int = 4241) {
     }
 
     fun shutdown() {
+        queue.close()
+
         this.localServices.forEach {
             it.shutdown()
         }

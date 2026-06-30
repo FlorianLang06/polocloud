@@ -16,11 +16,12 @@ class ServiceQueue(
     private val groupRepository: GroupRepository
 ) {
 
+    private lateinit var thread: Thread
     private val logger = LoggerFactory.getLogger(ServiceQueue::class.java)
     private val queue: Queue<Pair<LocalService, Group>> = LinkedList()
 
     fun run() {
-        val thread = Thread({
+        thread = Thread({
             while (!Thread.currentThread().isInterrupted) {
                 try {
                     tick()
@@ -33,6 +34,10 @@ class ServiceQueue(
         thread.isDaemon = true
         thread.start()
         logger.info("Service queue started")
+    }
+
+    fun close() {
+        thread.interrupt()
     }
 
     private fun tick() {
