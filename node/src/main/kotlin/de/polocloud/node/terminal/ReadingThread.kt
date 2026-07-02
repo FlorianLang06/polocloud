@@ -1,7 +1,6 @@
 package de.polocloud.node.terminal
 
 import de.polocloud.common.commands.CommandService
-import org.jline.jansi.Ansi
 import org.jline.reader.LineReader
 import org.jline.reader.UserInterruptException
 import org.slf4j.LoggerFactory
@@ -47,7 +46,7 @@ class ReadingThread(
 
                 if (line.isBlank()) {
                     // we reset the terminal prompt as message -> we have a clean console
-                    println(Ansi.ansi().cursorUpLine().eraseLine().toString() + Ansi.ansi().cursorUp(1).toString())
+                    this.terminal.clearCurrentLine()
                     continue
                 }
 

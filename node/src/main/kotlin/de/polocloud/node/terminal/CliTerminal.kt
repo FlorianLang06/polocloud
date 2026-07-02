@@ -3,6 +3,8 @@ package de.polocloud.node.terminal
 import de.polocloud.common.commands.CommandService
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.terminal.impl.GroupCommand
+import de.polocloud.node.terminal.impl.ShutdownCommand
+import org.jline.jansi.Ansi
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.LineReaderImpl
@@ -51,52 +53,57 @@ class CliTerminal(val context: NodeRuntimeContext) {
      */
     val readingThread = ReadingThread(this, this.lineReader, this.commandService)
 
+    // Guards every write to the terminal (prompt redraw + log/output printing) so that
+    // concurrent callers (the log appender, service log tailing threads, etc.) can't
+    // interleave their escape sequences and corrupt the prompt line.
+    private val writeLock = Any()
+
     init {
         this.commandService.registerCommand(
             GroupCommand(this.context.groupService, this.context.serviceProvider.platformService)
         )
+        this.commandService.registerCommand(ShutdownCommand())
     }
 
     /**
      * Clears the entire terminal screen.
      */
-    fun clearScreen() {
+    fun clearScreen() = synchronized(writeLock) {
         this.terminal.puts(InfoCmp.Capability.clear_screen)
         this.terminal.flush()
     }
 
     /**
-     * Prints [message] to the terminal, moving the cursor to the beginning of
-     * the line first to avoid prompt overlap. Triggers a prompt redraw afterwards.
+     * Prints [message] above the current input line. Kept as a separate name for
+     * call-site clarity, but routed through the same lock-guarded, JLine-safe path as
+     * [displayApproved] so it can never race with it and corrupt the prompt.
      */
-    fun display(message: String) {
-        this.terminal.puts(InfoCmp.Capability.carriage_return)
-        this.terminal.writer().println(message)
-        this.terminal.flush()
-        this.update()
-    }
+    fun display(message: String) = displayApproved(message)
 
     /**
      * Prints a single blank line above the current input line.
      */
-    fun emptyLine() {
+    fun emptyLine() = synchronized(writeLock) {
         this.lineReader.printAbove(" ")
     }
 
     /**
      * Prints [message] above the current input line without disturbing the prompt.
-     * Prefer this over [display] when the reading loop is active.
      */
-    fun displayApproved(message: String) {
+    fun displayApproved(message: String) = synchronized(writeLock) {
         this.lineReader.printAbove(message)
-        this.update()
+        this.updateLocked()
     }
 
     /**
      * Forces the JLine prompt to redraw if the reader is currently active.
      * Called automatically after display operations to keep the UI consistent.
      */
-    fun update() {
+    fun update() = synchronized(writeLock) {
+        updateLocked()
+    }
+
+    private fun updateLocked() {
         if (this.lineReader.isReading) {
             this.lineReader.callWidget(LineReader.REDRAW_LINE)
             this.lineReader.callWidget(LineReader.REDISPLAY)
@@ -108,10 +115,21 @@ class CliTerminal(val context: NodeRuntimeContext) {
      *
      * @param prompt The new prompt string with optional color codes.
      */
-    fun updatePrompt(prompt: String) {
+    fun updatePrompt(prompt: String) = synchronized(writeLock) {
         this.prompt = AnsiColors.translate(prompt)
         this.lineReader.setPrompt(this.prompt)
-        this.update()
+        this.updateLocked()
+    }
+
+    /**
+     * Clears the current (possibly blank) input line above the prompt in a way that's
+     * safe to call concurrently with [display]/[displayApproved].
+     */
+    fun clearCurrentLine() = synchronized(writeLock) {
+        this.terminal.writer().print(
+            Ansi.ansi().cursorUpLine().eraseLine().toString() + Ansi.ansi().cursorUp(1).toString()
+        )
+        this.terminal.writer().flush()
     }
 
     /**

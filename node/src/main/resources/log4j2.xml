@@ -11,9 +11,9 @@
     </Properties>
 
     <Appenders>
-        <Console name="console" target="SYSTEM_OUT">
+        <LoggingNode name="console">
             <PatternLayout pattern="${CONSOLE_PATTERN}" charset="UTF-8"/>
-        </Console>
+        </LoggingNode>
         <RollingFile name="file"
                      fileName="logs/application.log"
                      filePattern="logs/application-%d{yyyy-MM-dd}-%i.log.gz">
