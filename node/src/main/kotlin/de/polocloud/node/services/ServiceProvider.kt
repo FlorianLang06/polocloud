@@ -19,10 +19,13 @@ class ServiceProvider(nodePort: Int = 4241) {
     }
 
     fun shutdown() {
-        queue.close()
+        runCatching { queue.close() }
 
-        this.localServices.forEach {
-            it.shutdown()
+        // Isolate each service: one that hangs or throws must not stop the rest
+        // from being terminated.
+        this.localServices.forEach { service ->
+            runCatching { service.shutdown() }
         }
+        this.localServices.clear()
     }
 }

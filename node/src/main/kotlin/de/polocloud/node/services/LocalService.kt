@@ -13,42 +13,32 @@ class LocalService(val service: Service) : Service(service.id, service.index, se
     @OptIn(ExperimentalPathApi::class)
     fun shutdown() {
         process?.let { process ->
-            try {
-                //  if (shutdownCommand.isNotEmpty() && shutdownCleanUp && service.executeCommand(shutdownCommand)) {
-                // Wait a short time for graceful exit
-                if (process.waitFor(5, TimeUnit.SECONDS)) {
-                    service.state = ServiceState.STOPPED
-                }
-                //}
-            } catch (_: Exception) {
-                // Ignore exceptions, we only care about stopping the process
-            }
+            val handle = process.toHandle()
 
-            // Force-stop any remaining processes if still running
-            if (service.state != ServiceState.STOPPED) {
-                process.toHandle().children().forEach { child ->
-                    try {
-                        child.destroy()
-                    } catch (_: Exception) { /* ignore */
-                    }
-                }
-                process.toHandle().destroyForcibly()
-                process.waitFor()
-//                process = null
-                service.state = ServiceState.STOPPED
-            }
+            // Capture the full process tree up front: once the root exits its
+            // descendants can no longer be enumerated, and Windows does not
+            // cascade termination — leftover children would be orphaned.
+            val tree = handle.descendants().toList() + handle
+
+            // Ask the whole tree to terminate gracefully, then give it a moment.
+            tree.forEach { runCatching { it.destroy() } }
+            runCatching { process.waitFor(5, TimeUnit.SECONDS) }
+
+            // Force-kill anything that ignored the graceful request.
+            tree.filter { it.isAlive }.forEach { runCatching { it.destroyForcibly() } }
+            runCatching { process.waitFor(2, TimeUnit.SECONDS) }
+
+            service.state = ServiceState.STOPPED
         }
 
-
-        // Give Windows a small delay to ensure process termination
+        // Give the OS a moment to release file handles before deleting the work
+        // directory (Windows keeps the jar locked briefly after the process exits).
         if (!Thread.currentThread().isVirtual) {
             Thread.sleep(200)
         }
 
-        // Delete service files if not static
-        //  if (!service.isStatic()) {
+        // TODO: keep the work directory for static services once that flag exists.
         workDir?.deleteRecursively()
-        //}
     }
 
 }
