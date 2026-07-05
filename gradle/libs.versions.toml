@@ -4,7 +4,7 @@
 kotlin-jvm                 = "2.3.10"
 kotlinSerializationPlugin = "2.3.10"
 kotlinxSerialization    = "1.10.0"
-kotlinxCoroutines       = "1.10.2"
+kotlinxCoroutines       = "1.11.0"
 kotlin-reflect          = "2.3.10"
 
 # ── gRPC / Protobuf ───────────────────────────────────────────────────────────
