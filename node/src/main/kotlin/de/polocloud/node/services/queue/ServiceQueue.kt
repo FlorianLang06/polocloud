@@ -25,10 +25,14 @@ class ServiceQueue(
             while (!Thread.currentThread().isInterrupted) {
                 try {
                     tick()
+                    Thread.sleep(2000)
+                } catch (_: InterruptedException) {
+                    // Interrupted by close() during shutdown — exit the loop quietly.
+                    Thread.currentThread().interrupt()
+                    break
                 } catch (e: Exception) {
                     logger.error("Service queue tick failed", e)
                 }
-                Thread.sleep(2000)
             }
         }, "service-queue")
         thread.isDaemon = true

@@ -15,8 +15,10 @@ import org.apache.logging.log4j.core.layout.PatternLayout
  * line-editing buffer and corrupt the interactive prompt whenever a log message arrives while
  * the user is typing a command.
  *
- * Before the node's runtime/terminal is fully initialized (e.g. during early bootstrap), this
- * falls back to a plain [print] since there's no terminal to route through yet.
+ * When there's no terminal to route through — either before the runtime/terminal is fully
+ * initialized during early bootstrap, or after it has already been closed during shutdown —
+ * this falls back to a plain [print]. The appender must never propagate an exception back
+ * into log4j, otherwise log4j reports it as "An exception occurred processing Appender".
  */
 @Plugin(name = "LoggingNode", category = "Core", elementType = "appender")
 class LoggingNode(
@@ -30,7 +32,10 @@ class LoggingNode(
 
         try {
             NodeEnvironment.instance.context.cli.displayApproved(formatted)
-        } catch (_: UninitializedPropertyAccessException) {
+        } catch (_: Exception) {
+            // No usable terminal: not yet initialized (early bootstrap) or already
+            // closed (shutdown, when JLine tears the terminal down). Fall back to
+            // stdout so the message survives and the appender never throws back.
             print(formatted)
         }
     }

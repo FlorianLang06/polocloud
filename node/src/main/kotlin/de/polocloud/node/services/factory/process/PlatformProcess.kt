@@ -24,27 +24,54 @@ class PlatformProcess(
     private val logger = LoggerFactory.getLogger(PlatformProcess::class.java)
     private val jarName = "${platform.name}-${version.version}-${version.build}.jar"
 
+    private companion object {
+        /** Shared cache holding downloaded platform JARs, reused across services. */
+        val CACHE_DIR = File(".cache/platforms/versions")
+    }
+
     /**
-     * Downloads the platform JAR into [targetDir] if not already cached.
-     * The download is skipped when a file with the expected name already exists.
+     * Ensures the platform JAR is available inside [targetDir].
      *
-     * @param targetDir Directory where the JAR file will be stored.
-     * @return The downloaded or already-cached JAR [File].
+     * The JAR is downloaded once into a shared cache ([CACHE_DIR]) and reused across
+     * services; on each start it is copied from that cache into [targetDir] (the
+     * service work directory, which is wiped on shutdown, so the JAR itself must live
+     * there for the process to run in the right directory).
+     *
+     * @param targetDir Directory the JAR is placed into (the service work directory).
+     * @return The JAR [File] inside [targetDir].
      */
     fun download(targetDir: File): File {
         targetDir.mkdirs()
-        val file = File(targetDir, jarName)
-        if (file.exists()) {
+        val target = File(targetDir, jarName)
+        if (target.exists()) return target
+
+        val cached = cachedJar()
+        cached.copyTo(target, overwrite = true)
+        return target
+    }
+
+    /**
+     * Returns the JAR from the shared cache, downloading it there once if missing.
+     * The download goes to a temporary file that is only moved into place on success,
+     * so an interrupted download never leaves a corrupt JAR in the cache.
+     */
+    private fun cachedJar(): File {
+        CACHE_DIR.mkdirs()
+        val cached = File(CACHE_DIR, jarName)
+        if (cached.exists()) {
             logger.info("$jarName already cached")
-            return file
+            return cached
         }
+
         logger.info("Downloading $jarName ...")
-        System.out.flush()
+        val tmp = File(CACHE_DIR, "$jarName.tmp")
         URI(version.downloadUrl).toURL().openStream().use { input ->
-            file.outputStream().use { output -> input.copyTo(output) }
+            tmp.outputStream().use { output -> input.copyTo(output) }
         }
-        logger.info("done (${file.length() / 1024} KB)")
-        return file
+        tmp.copyTo(cached, overwrite = true)
+        tmp.delete()
+        logger.info("done (${cached.length() / 1024} KB)")
+        return cached
     }
 
     /**
