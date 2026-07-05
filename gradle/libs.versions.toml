@@ -8,7 +8,7 @@ kotlinxCoroutines       = "1.10.2"
 kotlin-reflect          = "2.3.10"
 
 # ── gRPC / Protobuf ───────────────────────────────────────────────────────────
-grpc                    = "1.81.0"
+grpc                    = "1.82.1"
 grpcKotlinVersion       = "1.5.0"
 protobuf-java           = "3.25.3"
 protobuf-kotlin         = "3.25.3"
