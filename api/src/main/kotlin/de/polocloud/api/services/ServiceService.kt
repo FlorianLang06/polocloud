@@ -1,13 +1,19 @@
 package de.polocloud.api.services
 
+import de.polocloud.shared.service.Service
+import de.polocloud.shared.service.ServiceState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 
 /**
- * Public, blocking entry point to the cluster's service API.
+ * Public, blocking entry point to the service API.
  *
  * Backed by a [ServiceApiClient] (gRPC in production). Obtain the shared instance
  * via [de.polocloud.api.Polocloud.serviceService].
+ *
+ * The results reflect the services known to the **connected node**. In a
+ * multi-node cluster this is that node's local view, not a cluster-wide
+ * aggregate — cross-node aggregation is not yet implemented.
  *
  * Calls run on [Dispatchers.IO] rather than the caller's thread: callers such as
  * the proxy bridge invoke these from a platform lifecycle thread, and confining
@@ -18,7 +24,7 @@ class ServiceService internal constructor(
     private val client: ServiceApiClient,
 ) {
 
-    /** All services currently known to the cluster. */
+    /** All services currently known to the connected node. */
     fun findAll(): List<Service> =
         runBlocking(Dispatchers.IO) { client.findServices(null, null) }.map(ServiceMapper::toApi)
 
@@ -30,13 +36,19 @@ class ServiceService internal constructor(
     fun findByGroup(group: String): List<Service> =
         runBlocking(Dispatchers.IO) { client.findServices(group, null) }.map(ServiceMapper::toApi)
 
-    /** All services currently in [state] (e.g. `RUNNING`). */
-    fun findByState(state: String): List<Service> =
-        runBlocking(Dispatchers.IO) { client.findServices(null, state) }.map(ServiceMapper::toApi)
+    /** All services currently in [state] (e.g. [ServiceState.RUNNING]). */
+    fun findByState(state: ServiceState): List<Service> =
+        runBlocking(Dispatchers.IO) { client.findServices(null, state.name) }.map(ServiceMapper::toApi)
 
-    /** Number of services currently known to the cluster. */
-    fun count(): Int = findAll().size
+    /**
+     * Number of services currently known to the connected node.
+     *
+     * Skips mapping to [Service] since only the count is needed. A dedicated
+     * server-side count RPC would avoid transferring the full list; add one if
+     * this becomes a hot path.
+     */
+    fun count(): Int = runBlocking(Dispatchers.IO) { client.findServices(null, null) }.size
 
     /** Number of services belonging to [group]. */
-    fun count(group: String): Int = findByGroup(group).size
+    fun count(group: String): Int = runBlocking(Dispatchers.IO) { client.findServices(group, null) }.size
 }

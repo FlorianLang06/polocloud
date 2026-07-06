@@ -13,6 +13,9 @@ class LocalService(val service: Service) : Service(service.id, service.index, se
     /** Port the service was assigned and binds to; -1 until it has been started. */
     var port: Int = -1
 
+    /** Host the service is reachable on; set to the node host when it is started. */
+    var host: String = "127.0.0.1"
+
     @OptIn(ExperimentalPathApi::class)
     fun shutdown() {
         process?.let { process ->

@@ -1,9 +1,11 @@
 package de.polocloud.api.services
 
 import de.polocloud.proto.ServiceData
+import de.polocloud.shared.service.Service
+import de.polocloud.shared.service.ServiceState
 
 /**
- * Maps the protobuf [ServiceData] wire type to the public API [Service].
+ * Maps the protobuf [ServiceData] wire type to the shared [Service] model.
  */
 object ServiceMapper {
 
@@ -11,8 +13,9 @@ object ServiceMapper {
         id = data.id,
         index = data.index,
         group = data.group,
-        state = data.state,
+        state = ServiceState.fromWire(data.state),
         port = data.port,
+        host = data.host,
         pid = data.pid,
     )
 }

@@ -10,7 +10,7 @@ import com.velocitypowered.api.plugin.Plugin
 import com.velocitypowered.api.proxy.ProxyServer
 import com.velocitypowered.api.proxy.server.RegisteredServer
 import com.velocitypowered.api.proxy.server.ServerInfo
-import de.polocloud.api.services.Service
+import de.polocloud.shared.service.Service
 import de.polocloud.bridge.BridgeBootstrap
 import de.polocloud.bridge.BridgeInstance
 import org.slf4j.Logger
@@ -60,7 +60,7 @@ class VelocityBridgePlugin @Inject constructor(
         info: ServerInfo,
         service: Service
     ) {
-        println("Registering service ${service.name()} on ${info.address}")
+        logger.info("Registering service ${service.name()} on ${info.address}")
         server.registerServer(info)
     }
 
@@ -68,10 +68,11 @@ class VelocityBridgePlugin @Inject constructor(
         info: ServerInfo,
         service: Service
     ) {
-        TODO("Not yet implemented")
+        logger.info("Unregistering service ${service.name()} on ${info.address}")
+        server.unregisterServer(info)
     }
 
     override fun mapService(service: Service): ServerInfo {
-        return ServerInfo(service.name(), InetSocketAddress("127.0.0.1", service.port))
+        return ServerInfo(service.name(), InetSocketAddress(service.host, service.port))
     }
 }

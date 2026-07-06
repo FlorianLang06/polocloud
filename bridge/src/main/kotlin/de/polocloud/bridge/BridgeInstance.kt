@@ -1,6 +1,6 @@
 package de.polocloud.bridge
 
-import de.polocloud.api.services.Service
+import de.polocloud.shared.service.Service
 
 abstract class BridgeInstance<T> {
 

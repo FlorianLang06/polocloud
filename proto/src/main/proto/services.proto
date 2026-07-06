@@ -13,8 +13,13 @@ service ServiceManager {
 }
 
 // API-facing service surface used by the standalone Polocloud API (plugins/services).
-// Kept separate from the CLI-oriented ServiceManager above so the two can evolve
-// independently, mirroring GroupApiService in group.proto.
+//
+// Deliberately kept separate from the CLI-oriented ServiceManager above so the two
+// can evolve independently (mirroring GroupApiService in group.proto):
+//   - ServiceManager / ProtoServiceProcessData  -> consumed by the CLI
+//   - ServiceApiService / ServiceData           -> consumed by the plugin/service SDK
+// The message shapes intentionally differ; do not merge them without also reworking
+// both consumers.
 service ServiceApiService {
   rpc FindServices (ServiceListRequest) returns (ServiceListResponse);
 }
@@ -35,6 +40,9 @@ message ServiceData {
   string state = 4;
   int32 port = 5;
   int64 pid = 6;
+  // Host the service is reachable on (e.g. the node's address). Lets a remote
+  // proxy connect to services that are not co-located on its own host.
+  string host = 7;
 }
 
 message ListServicesRequest {

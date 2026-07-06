@@ -4,6 +4,7 @@ import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.group.Group
 import de.polocloud.node.services.LocalService
+import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.platform.Platform
 import de.polocloud.node.services.factory.platform.PlatformVersion
@@ -26,6 +27,11 @@ class FactoryService(
     private companion object {
         const val SERVER_BASE_PORT = 30000
         const val PROXY_BASE_PORT = 25565
+
+        // Host services bind to and are reachable on. Single source of truth for both
+        // the value handed to the service process and the one published to the API,
+        // so a co-located proxy and a remote client always agree on the address.
+        const val NODE_HOST = "127.0.0.1"
     }
 
     fun start(service: LocalService, group: Group) {
@@ -41,6 +47,7 @@ class FactoryService(
         val jar = process.download(workDir)
 
          service.port = assignPort(platform, service.index)
+         service.host = NODE_HOST
 
         installBridgePlugin(platform, workDir)
         applyTasks(platform, version, service, group, workDir)
@@ -52,7 +59,7 @@ class FactoryService(
             jar,
             environment = mapOf(
                 "POLOCLOUD_IDENTITY_DIR" to identityDir.absolutePath,
-                "POLOCLOUD_NODE_HOST" to "127.0.0.1",
+                "POLOCLOUD_NODE_HOST" to NODE_HOST,
                 "POLOCLOUD_NODE_PORT" to nodePort.toString(),
             ),
         )
@@ -62,7 +69,7 @@ class FactoryService(
         serviceProvider.localServices.add(service)
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())
 
-        ClusterEventService.call(ServerStartedEvent("${group.name}-${service.index}", group.name))
+        ClusterEventService.call(ServerStartedEvent(ServiceEventMapper.toShared(service)))
     }
 
     /**
@@ -149,7 +156,7 @@ class FactoryService(
         serviceProvider.localServices.removeIf { service ->
             val dead = service.process?.isAlive != true
             if (dead) {
-                ClusterEventService.call(ServerStoppedEvent("${service.group}-${service.index}", service.group))
+                ClusterEventService.call(ServerStoppedEvent(ServiceEventMapper.toShared(service)))
             }
             dead
         }

@@ -4,6 +4,7 @@ import de.polocloud.api.Polocloud
 import de.polocloud.api.event.subscribe
 import de.polocloud.shared.event.server.ServerStartedEvent
 import de.polocloud.shared.event.server.ServerStoppedEvent
+import de.polocloud.shared.service.Service
 
 /**
  * Shared entry point for both proxy plugin variants (Velocity and Waterfall).
@@ -13,6 +14,13 @@ import de.polocloud.shared.event.server.ServerStoppedEvent
  * work goes through the shipped Polocloud [api][Polocloud].
  */
 class BridgeBootstrap<T>(private val instance: BridgeInstance<T>) {
+
+    private companion object {
+        // The proxy must not register itself as one of its own backend servers.
+        // TODO: derive this from the proxy's own identity/group type instead of a
+        //       hard-coded name so multiple proxies don't register each other.
+        const val OWN_SERVICE_NAME = "proxy-1"
+    }
 
     /**
      * Boots the bridge on the given [platform].
@@ -29,21 +37,27 @@ class BridgeBootstrap<T>(private val instance: BridgeInstance<T>) {
             .onSuccess { log("Polocloud bridge ready — API linked successfully") }
             .onFailure { log("Polocloud bridge failed to initialise the API: ${it.message}") }
 
-        Polocloud.serviceService.findAll().forEach {
+        // Register everything already running when this proxy boots.
+        Polocloud.serviceService.findAll().forEach(::registerIfEligible)
 
-            if(it.name().equals("proxy-1")) return@forEach
-
-            instance.registerService(instance.mapService(it), it)
-        }
-
-        // Listen for cluster lifecycle events pushed by the node, so this proxy
-        // (e.g. proxy-1) gets notified whenever a server starts or stops.
+        // Then keep the registry in sync: the node pushes a lifecycle event whenever a
+        // server starts or stops, so services that come and go after boot are added and
+        // removed on the proxy instead of only reflecting the boot-time snapshot.
         Polocloud.eventService.subscribe<ServerStartedEvent> { event ->
-            log("Server started in cluster: ${event.serviceName} (group: ${event.group})")
+            log("Server started in cluster: ${event.service.name()} (group: ${event.service.group})")
+            registerIfEligible(event.service)
         }
         Polocloud.eventService.subscribe<ServerStoppedEvent> { event ->
-            log("Server stopped in cluster: ${event.serviceName} (group: ${event.group})")
+            val service = event.service
+            log("Server stopped in cluster: ${service.name()} (group: ${service.group})")
+            instance.unregisterService(instance.mapService(service), service)
         }
+    }
+
+    /** Registers [service] on this proxy unless it is the proxy's own instance. */
+    private fun registerIfEligible(service: Service) {
+        if (service.name().equals(OWN_SERVICE_NAME, ignoreCase = true)) return
+        instance.registerService(instance.mapService(service), service)
     }
 
     /**
