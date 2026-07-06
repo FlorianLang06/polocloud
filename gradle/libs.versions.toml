@@ -43,7 +43,7 @@ junit                   = "6.1.1"
 polocloud-i18n          = "3.0.2"
 polocloud-database      = "3.0.3"
 polocloud-gradle-plugin = "3.0.3"
-gradle-git-properties   = "2.5.7"
+gradle-git-properties   = "4.0.1"
 
 [libraries]
 
