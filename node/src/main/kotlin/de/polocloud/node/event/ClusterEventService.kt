@@ -41,11 +41,9 @@ object ClusterEventService {
     fun subscribe(eventName: String, serviceName: String): Flow<EventContext> = callbackFlow {
         val subscriber = Subscriber(eventName, serviceName) { context -> trySend(context) }
         subscribers += subscriber
-        logger.debug("Event subscriber registered (event='{}', service='{}')", eventName, serviceName)
 
         awaitClose {
             subscribers.remove(subscriber)
-            logger.debug("Event subscriber removed (event='{}', service='{}')", eventName, serviceName)
         }
     }
 

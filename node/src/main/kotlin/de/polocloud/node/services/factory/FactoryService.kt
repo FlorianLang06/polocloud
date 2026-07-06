@@ -2,6 +2,7 @@ package de.polocloud.node.services.factory
 
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.event.ClusterEventService
+import de.polocloud.node.forwarding.ForwardingHandler
 import de.polocloud.node.group.Group
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceEventMapper
@@ -23,6 +24,10 @@ class FactoryService(
 ) {
 
     private val logger = LoggerFactory.getLogger(FactoryService::class.java)
+
+    // Owns the shared player-forwarding secret; the same token is written into every
+    // backend server and the proxy so modern forwarding can be established.
+    private val forwardingHandler = ForwardingHandler()
 
     private companion object {
         const val SERVER_BASE_PORT = 30000
@@ -76,8 +81,9 @@ class FactoryService(
      * Applies the platform's pre-start configuration tasks to the service work directory.
      *
      * Only tasks whose version range matches [version] are applied. Step values may
-     * reference placeholders (e.g. `%server_port%`) which are resolved from the
-     * service-specific values built here.
+     * reference placeholders (e.g. `%server_port%` or `%FORWARDING_SECRET%`) which are
+     * resolved from the service-specific values built here. The forwarding secret comes
+     * from the node-wide [forwardingHandler] so every service and the proxy share it.
      */
     private fun applyTasks(
         platform: Platform,
@@ -97,6 +103,7 @@ class FactoryService(
                 "service_name" to "${group.name}-${service.index}",
                 "service_id" to service.id.toString(),
                 "group_name" to group.name,
+                "FORWARDING_SECRET" to forwardingHandler.secret,
             ),
         )
     }

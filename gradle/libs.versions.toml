@@ -35,6 +35,8 @@ bctls                   = "1.84"
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 gson                    = "2.13.2"
+snakeyaml               = "2.4"
+toml4j                  = "0.7.2"
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 junit                   = "6.1.1"
@@ -87,6 +89,8 @@ bctls                       = { group = "org.bouncycastle", name = "bctls-jdk18o
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 gson                        = { group = "com.google.code.gson", name = "gson",            version.ref = "gson" }
+snakeyaml                   = { group = "org.yaml",             name = "snakeyaml",       version.ref = "snakeyaml" }
+toml4j                      = { group = "com.moandjiezana.toml", name = "toml4j",          version.ref = "toml4j" }
 
 # ── Testing ───────────────────────────────────────────────────────────────────
 junit-jupiter               = { group = "org.junit.jupiter",  name = "junit-jupiter",            version.ref = "junit" }

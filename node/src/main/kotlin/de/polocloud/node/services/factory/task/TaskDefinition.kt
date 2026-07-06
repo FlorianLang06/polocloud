@@ -36,14 +36,41 @@ data class TaskDefinition(
 /**
  * A single mutation applied to a configuration [file] of a service.
  *
- * The target file format is detected from its extension (`.json` vs. `.properties`),
- * so the same step model works across both layouts: [key] is filtered inside the
- * file and its [value] is set according to [type].
+ * The target file format is detected from its extension (`.json`, `.yml`/`.yaml`,
+ * `.toml` or `.properties`), so the same step model works across every layout: [key]
+ * is located inside the file and its [value] is set according to [type].
+ *
+ * For the structured formats (`.json`, `.yml`/`.yaml`, `.toml`) [key] may address a
+ * nested field using `.` as a path separator, e.g. `proxies.velocity.enabled`; missing
+ * intermediate objects are created. In `.properties` files the `.` is part of the
+ * literal key.
+ *
+ * When [key] is `null` the file is treated as a single opaque value: [value] becomes
+ * the entire file content (regardless of extension). This is used for bare files such
+ * as a `forwarding.secret` that only hold one token.
+ *
+ * Example (`tasks/paper_config.json`):
+ * ```json
+ * {
+ *   "key": "paper_config",
+ *   "steps": [
+ *     {
+ *       "name": "Allow connections over Velocity proxy",
+ *       "file": "config/paper-global.yml",
+ *       "type": "REPLACE",
+ *       "key": "proxies.velocity.enabled",
+ *       "value": "true"
+ *     }
+ *   ]
+ * }
+ * ```
  *
  * @param name  Human-readable description of what the step does.
  * @param file  Relative path (to the service work directory) of the file to edit.
  * @param type  How the value is applied. Currently only [TaskStepType.REPLACE].
- * @param key   The property/field key to locate inside [file].
+ * @param key   The property/field key to locate inside [file]. For structured formats
+ *              this may be a `.`-separated path into nested objects. When `null`, the
+ *              whole file content is replaced with [value].
  * @param value New value to set. May contain placeholders such as `%server_port%`.
  */
 @Serializable
@@ -51,7 +78,7 @@ data class TaskStep(
     val name: String,
     val file: String,
     val type: TaskStepType = TaskStepType.REPLACE,
-    val key: String,
+    val key: String? = null,
     val value: String
 )
 

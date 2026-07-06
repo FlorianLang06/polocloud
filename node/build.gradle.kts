@@ -31,6 +31,10 @@ dependencies {
     //hashing
     polocloudRuntime(libs.argon2)
 
+    //configuration
+    polocloudRuntime(libs.snakeyaml)
+    polocloudRuntime(libs.toml4j)
+
     //security
     polocloudRuntime(libs.bundles.tls)
 

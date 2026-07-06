@@ -7,7 +7,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import com.moandjiezana.toml.Toml
+import com.moandjiezana.toml.TomlWriter
 import org.slf4j.LoggerFactory
+import org.yaml.snakeyaml.DumperOptions
+import org.yaml.snakeyaml.Yaml
 import java.io.File
 
 /**
@@ -18,9 +22,14 @@ import java.io.File
  *  2. For the concrete service version, only the applicable references are kept.
  *  3. Each referenced [TaskDefinition] is resolved from the loaded definitions and
  *     its [TaskStep]s are applied — the file format is auto-detected from the
- *     extension (`.json` vs. `.properties`).
+ *     extension (`.json`, `.yml`/`.yaml`, `.toml` or `.properties`).
  *  4. Placeholders such as `%server_port%` in a step value are substituted from the
  *     provided placeholder map before the value is written.
+ *
+ * For structured formats (`.json`, `.yml`/`.yaml`, `.toml`) a [TaskStep.key] may
+ * address a nested field using `.` as a path separator, e.g. `proxies.velocity.enabled`
+ * creates/updates `enabled` inside `velocity` inside `proxies`. In `.properties`
+ * files the dot is part of the literal key, as usual for that format.
  *
  * Steps are best-effort: a single failing step is logged and skipped so it never
  * blocks a service from starting.
@@ -61,7 +70,10 @@ object TaskExecutor {
     }
 
     /**
-     * Applies a single [step], dispatching to the format handler that matches the
+     * Applies a single [step].
+     *
+     * A keyless step ([TaskStep.key] `null`) writes [TaskStep.value] as the whole file
+     * content. Otherwise the step is dispatched to the format handler that matches the
      * target file's extension.
      */
     private fun applyStep(workDir: File, step: TaskStep, placeholders: Map<String, String>) {
@@ -69,15 +81,24 @@ object TaskExecutor {
         target.parentFile?.mkdirs()
         val value = substitutePlaceholders(step.value, placeholders)
 
+        val key = step.key
+        if (key == null) {
+            target.writeText(value)
+            logger.info("  ↳ {} ({})", step.name, target.name)
+            return
+        }
+
         when (target.extension.lowercase()) {
-            "properties" -> applyProperties(target, step, value)
-            "json" -> applyJson(target, step, value)
+            "properties" -> applyProperties(target, key, value)
+            "json" -> applyJson(target, key, value)
+            "yml", "yaml" -> applyYaml(target, key, value)
+            "toml" -> applyToml(target, key, value)
             else -> logger.warn(
-                "Unsupported task file type '{}' for step '{}' — only .properties and .json are handled",
+                "Unsupported task file type '{}' for step '{}' — only .properties, .json, .yml/.yaml and .toml are handled",
                 target.extension, step.name
             )
         }
-        logger.info("  ↳ {} ({} {}={})", step.name, target.name, step.key, value)
+        logger.info("  ↳ {} ({} {}={})", step.name, target.name, key, value)
     }
 
     /**
@@ -88,13 +109,13 @@ object TaskExecutor {
      * — this is the common case, as servers like Spigot only generate
      * `server.properties` on first launch.
      */
-    private fun applyProperties(target: File, step: TaskStep, value: String) {
-        val newLine = "${step.key}=$value"
+    private fun applyProperties(target: File, key: String, value: String) {
+        val newLine = "$key=$value"
         val lines = if (target.exists()) target.readLines().toMutableList() else mutableListOf()
 
         val index = lines.indexOfFirst { line ->
             val trimmed = line.trimStart()
-            !trimmed.startsWith("#") && trimmed.substringBefore('=').trim() == step.key
+            !trimmed.startsWith("#") && trimmed.substringBefore('=').trim() == key
         }
         if (index >= 0) lines[index] = newLine else lines.add(newLine)
 
@@ -102,23 +123,135 @@ object TaskExecutor {
     }
 
     /**
-     * Applies a [TaskStepType.REPLACE] to a JSON file by setting a top-level [TaskStep.key].
+     * Applies a [TaskStepType.REPLACE] to a JSON file by setting the [TaskStep.key].
      *
-     * A missing or unreadable file is treated as an empty object so the key can still
-     * be created. Existing sibling fields are preserved.
+     * The key may be a `.`-separated path (e.g. `proxies.velocity.enabled`); missing
+     * intermediate objects are created. A missing or unreadable file is treated as an
+     * empty object so the key can still be created, and existing sibling fields are
+     * preserved. Values are always written as JSON strings.
      */
-    private fun applyJson(target: File, step: TaskStep, value: String) {
+    private fun applyJson(target: File, key: String, value: String) {
         val root = if (target.exists()) {
             runCatching { json.parseToJsonElement(target.readText()).jsonObject }.getOrElse { JsonObject(emptyMap()) }
         } else {
             JsonObject(emptyMap())
         }
 
-        val updated = buildJsonObject {
-            root.forEach { (k, v: JsonElement) -> if (k != step.key) put(k, v) }
-            put(step.key, JsonPrimitive(value))
-        }
+        val updated = setNestedJson(root, keyPath(key), JsonPrimitive(value))
         target.writeText(json.encodeToString(JsonObject.serializer(), updated))
+    }
+
+    /**
+     * Returns a copy of [obj] with [path] set to [value], creating any missing
+     * intermediate objects and preserving every sibling field along the way.
+     */
+    private fun setNestedJson(obj: JsonObject, path: List<String>, value: JsonElement): JsonObject {
+        val head = path.first()
+        return buildJsonObject {
+            obj.forEach { (k, v: JsonElement) -> if (k != head) put(k, v) }
+            if (path.size == 1) {
+                put(head, value)
+            } else {
+                val child = obj[head] as? JsonObject ?: JsonObject(emptyMap())
+                put(head, setNestedJson(child, path.drop(1), value))
+            }
+        }
+    }
+
+    /**
+     * Applies a [TaskStepType.REPLACE] to a YAML file by setting the [TaskStep.key].
+     *
+     * As with JSON, the key may be a `.`-separated path (e.g.
+     * `proxies.velocity.enabled`) and missing intermediate maps are created. A missing
+     * or unreadable file is treated as an empty document, and existing sibling entries
+     * are preserved. Scalar values that look like a boolean or number are written as
+     * their native YAML type so consumers (e.g. Paper) read `enabled: true`, not
+     * `enabled: "true"`.
+     *
+     * Note: comments in an existing file are not preserved — the document is
+     * re-serialized. In practice these files are generated by the server on first
+     * launch, so the task typically writes a fresh partial file that the server merges.
+     */
+    private fun applyYaml(target: File, key: String, value: String) {
+        val options = DumperOptions().apply {
+            defaultFlowStyle = DumperOptions.FlowStyle.BLOCK
+            isPrettyFlow = true
+        }
+        val yaml = Yaml(options)
+
+        @Suppress("UNCHECKED_CAST")
+        val root: MutableMap<String, Any?> = if (target.exists()) {
+            runCatching { yaml.load<Any?>(target.readText()) as? MutableMap<String, Any?> }
+                .getOrNull() ?: linkedMapOf()
+        } else {
+            linkedMapOf()
+        }
+
+        setNestedMap(root, keyPath(key), coerceScalar(value))
+        target.writeText(yaml.dump(root))
+    }
+
+    /**
+     * Applies a [TaskStepType.REPLACE] to a TOML file (e.g. Velocity's `velocity.toml`)
+     * by setting the [key], which may be a `.`-separated path into nested tables.
+     *
+     * Like the YAML handler this loads the document into a map, sets the value and
+     * re-serializes it; a missing or unreadable file starts from an empty document and
+     * existing entries are preserved. Scalars are written with their native TOML type,
+     * so a string stays quoted (`player-info-forwarding-mode = "modern"`) while
+     * booleans/integers are unquoted.
+     *
+     * Note: comments in an existing file are not preserved. In practice `velocity.toml`
+     * is generated by the proxy on first launch, so the task writes a fresh partial file
+     * that the proxy merges with its defaults.
+     */
+    private fun applyToml(target: File, key: String, value: String) {
+        val root: MutableMap<String, Any?> = if (target.exists()) {
+            runCatching { Toml().read(target).toMap() as MutableMap<String, Any?> }.getOrElse { linkedMapOf() }
+        } else {
+            linkedMapOf()
+        }
+
+        setNestedMap(root, keyPath(key), coerceScalar(value))
+        target.writeText(TomlWriter().write(root))
+    }
+
+    /**
+     * Sets [path] to [value] inside [map], creating any missing intermediate maps and
+     * preserving sibling entries. A non-map value encountered mid-path is replaced by a
+     * fresh map so the remaining path can be written. Shared by the YAML and TOML
+     * handlers, which both model a document as nested maps.
+     */
+    private fun setNestedMap(map: MutableMap<String, Any?>, path: List<String>, value: Any?) {
+        val head = path.first()
+        if (path.size == 1) {
+            map[head] = value
+            return
+        }
+        @Suppress("UNCHECKED_CAST")
+        val child = map[head] as? MutableMap<String, Any?> ?: linkedMapOf<String, Any?>().also { map[head] = it }
+        setNestedMap(child, path.drop(1), value)
+    }
+
+    /**
+     * Splits a [TaskStep.key] into its `.`-separated path segments. Blank segments
+     * (e.g. from a leading/trailing dot) are dropped; a key without a dot yields a
+     * single-element path.
+     */
+    private fun keyPath(key: String): List<String> =
+        key.split('.').filter { it.isNotBlank() }.ifEmpty { listOf(key) }
+
+    /**
+     * Converts a string [value] to a native boolean or integer when it unambiguously
+     * represents one, so structured formats keep the intended type (e.g. Paper reads
+     * `enabled: true`, not `"true"`). Everything else — including secrets and any value
+     * that does not round-trip as a canonical integer — is kept as a string, so a token
+     * like an all-digit forwarding secret is never rewritten as a number.
+     */
+    private fun coerceScalar(value: String): Any = when {
+        value.equals("true", ignoreCase = true) -> true
+        value.equals("false", ignoreCase = true) -> false
+        else -> value.toLongOrNull()?.takeIf { it.toString() == value } ?: value
     }
 
     /**
