@@ -10,6 +10,9 @@ class LocalService(val service: Service) : Service(service.id, service.index, se
     var process: Process? = null
     var workDir: Path? = null
 
+    /** Port the service was assigned and binds to; -1 until it has been started. */
+    var port: Int = -1
+
     @OptIn(ExperimentalPathApi::class)
     fun shutdown() {
         process?.let { process ->

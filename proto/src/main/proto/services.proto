@@ -12,6 +12,31 @@ service ServiceManager {
   rpc ListServices (ListServicesRequest) returns (ListServicesResponse);
 }
 
+// API-facing service surface used by the standalone Polocloud API (plugins/services).
+// Kept separate from the CLI-oriented ServiceManager above so the two can evolve
+// independently, mirroring GroupApiService in group.proto.
+service ServiceApiService {
+  rpc FindServices (ServiceListRequest) returns (ServiceListResponse);
+}
+
+message ServiceListRequest {
+  optional string group_filter = 1;
+  optional string state_filter = 2;
+}
+
+message ServiceListResponse {
+  repeated ServiceData services = 1;
+}
+
+message ServiceData {
+  string id = 1;
+  int32 index = 2;
+  string group = 3;
+  string state = 4;
+  int32 port = 5;
+  int64 pid = 6;
+}
+
 message ListServicesRequest {
   // optional Filter
   string plan_name = 1;

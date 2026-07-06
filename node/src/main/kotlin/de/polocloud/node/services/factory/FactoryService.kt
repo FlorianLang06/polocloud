@@ -40,6 +40,8 @@ class FactoryService(
         val process = PlatformProcess(platform, version)
         val jar = process.download(workDir)
 
+         service.port = assignPort(platform, service.index)
+
         installBridgePlugin(platform, workDir)
         applyTasks(platform, version, service, group, workDir)
 
@@ -84,7 +86,7 @@ class FactoryService(
             version = version.version,
             definitions = platformService.taskDefinitions(),
             placeholders = mapOf(
-                "server_port" to assignPort(platform, service.index).toString(),
+                "server_port" to service.port.toString(),
                 "service_name" to "${group.name}-${service.index}",
                 "service_id" to service.id.toString(),
                 "group_name" to group.name,

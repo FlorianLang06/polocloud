@@ -15,6 +15,7 @@ import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.security.NodeCertificateStorage
+import de.polocloud.node.services.ServiceProvider
 
 /**
  * gRPC endpoint for the cluster node.
@@ -34,9 +35,10 @@ class NodeGrpcEndpoint(
     cliRegistrationService: CliRegistrationService,
     cliSessionManager: ICliSessionManager,
     groupService: GroupService,
+    serviceProvider: ServiceProvider,
 ) : Closeable {
 
-    private val executor = GrpcModule.createExecutor(groupService)
+    private val executor = GrpcModule.createExecutor(groupService, serviceProvider)
 
     private val nodeService = NodeServiceImpl(executor)
     private val clusterService = ClusterServiceImpl(executor)

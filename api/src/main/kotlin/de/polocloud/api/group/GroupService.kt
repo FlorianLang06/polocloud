@@ -1,5 +1,6 @@
 package de.polocloud.api.group
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.util.function.Consumer
 
@@ -14,10 +15,10 @@ class GroupService internal constructor(
 ) {
 
     fun findAll(): List<Group> =
-        runBlocking { client.findGroups(null, null) }.map(GroupMapper::toApi)
+        runBlocking(Dispatchers.IO) { client.findGroups(null, null) }.map(GroupMapper::toApi)
 
     fun find(name: String): Group? =
-        runBlocking { client.findGroups(name, null) }
+        runBlocking(Dispatchers.IO) { client.findGroups(name, null) }
             .map(GroupMapper::toApi)
             .firstOrNull { it.name.equals(name, ignoreCase = true) }
 
@@ -27,7 +28,7 @@ class GroupService internal constructor(
     fun count(): Int = findAll().size
 
     fun delete(name: String) {
-        runBlocking { client.deleteGroup(name) }
+        runBlocking(Dispatchers.IO) { client.deleteGroup(name) }
     }
 
     fun delete(group: Group) = delete(group.name)

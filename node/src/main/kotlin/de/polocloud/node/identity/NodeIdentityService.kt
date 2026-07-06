@@ -17,6 +17,7 @@ import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.identity.provider.NodeIdProvider
+import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.security.NodeCertificateStorage
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -44,17 +45,20 @@ class NodeIdentityService(
         val bindAddress = resolveBindAddress(launchProperties)
 
         val groupService = GroupService()
+        val serviceProvider = ServiceProvider(holder.value.general.apiAddress.port)
 
         val grpc = NodeGrpcEndpoint(
             bindAddress,
             cliRegistrationService,
             cliSessionManager,
-            groupService
+            groupService,
+            serviceProvider
         )
 
         val serviceGrpc = ServiceGrpcEndpoint(
             Address(holder.value.general.apiAddress.hostname, holder.value.general.apiAddress.port),
-            groupService
+            groupService,
+            serviceProvider
         )
 
         if (NodeRepository.count() == 0L) {
@@ -78,7 +82,7 @@ class NodeIdentityService(
             grpc.start()
             serviceGrpc.start()
 
-            return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, null, groupService)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, null, groupService, serviceProvider)
         }
 
         val possibleNode = NodeRepository.find(localId)
@@ -94,7 +98,7 @@ class NodeIdentityService(
             grpc.start()
             serviceGrpc.start()
 
-            return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, null, groupService)
+            return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, null, groupService, serviceProvider)
         }
 
         if (launchProperties.clusterRegistration == null) {
@@ -114,7 +118,7 @@ class NodeIdentityService(
         val nodeData = NodeRepository.find(localId)
         container = LocalNodeContainer(nodeData!!)
 
-        return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, headConnection, groupService)
+        return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, headConnection, groupService, serviceProvider)
     }
 
     /**

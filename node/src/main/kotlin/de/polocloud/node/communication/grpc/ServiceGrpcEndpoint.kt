@@ -7,8 +7,10 @@ import de.polocloud.common.communication.GrpcEndpoint
 import de.polocloud.common.communication.tls.MtlsConfig
 import de.polocloud.node.communication.impl.event.EventProviderServiceImpl
 import de.polocloud.node.communication.impl.group.GroupApiServiceImpl
+import de.polocloud.node.communication.impl.services.ServiceApiServiceImpl
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.security.NodeCertificateStorage
+import de.polocloud.node.services.ServiceProvider
 
 /**
  * Dedicated mTLS gRPC endpoint for **services and plugins** that use the
@@ -26,10 +28,12 @@ import de.polocloud.node.security.NodeCertificateStorage
 class ServiceGrpcEndpoint(
     address: Address,
     groupService: GroupService,
+    serviceProvider: ServiceProvider,
 ) : Closeable {
 
-    private val executor = GrpcModule.createExecutor(groupService)
+    private val executor = GrpcModule.createExecutor(groupService, serviceProvider)
     private val groupApiService = GroupApiServiceImpl(executor)
+    private val serviceApiService = ServiceApiServiceImpl(executor)
     private val eventProviderService = EventProviderServiceImpl()
 
     private val server = GrpcEndpoint.Builder(address)
@@ -41,6 +45,7 @@ class ServiceGrpcEndpoint(
             )
         )
         .service(groupApiService)
+        .service(serviceApiService)
         .service(eventProviderService)
         .build()
 

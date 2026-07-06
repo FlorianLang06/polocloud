@@ -5,6 +5,9 @@ import de.polocloud.api.event.EventService
 import de.polocloud.api.group.GroupApiClient
 import de.polocloud.api.group.GroupService
 import de.polocloud.api.group.GrpcGroupApiClient
+import de.polocloud.api.services.GrpcServiceApiClient
+import de.polocloud.api.services.ServiceApiClient
+import de.polocloud.api.services.ServiceService
 
 /**
  * Standalone entry point to the PoloCloud API.
@@ -22,8 +25,12 @@ object Polocloud {
     private val connection = PolocloudConnection()
 
     private val groupClient: GroupApiClient = GrpcGroupApiClient { connection.channel() }
+    private val serviceClient: ServiceApiClient = GrpcServiceApiClient { connection.channel() }
 
     val groupService = GroupService(groupClient)
+
+    /** Blocking access to the cluster's services (`findAll`, `find`, …). */
+    val serviceService = ServiceService(serviceClient)
 
     /**
      * Cluster-wide event bus. Subscribe to cloud events such as

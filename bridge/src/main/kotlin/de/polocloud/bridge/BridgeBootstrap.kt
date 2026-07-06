@@ -12,7 +12,7 @@ import de.polocloud.shared.event.server.ServerStoppedEvent
  * platform lifecycle into a single [start] call and forward logging. All actual
  * work goes through the shipped Polocloud [api][Polocloud].
  */
-object BridgeBootstrap {
+class BridgeBootstrap<T>(private val instance: BridgeInstance<T>) {
 
     /**
      * Boots the bridge on the given [platform].
@@ -29,8 +29,11 @@ object BridgeBootstrap {
             .onSuccess { log("Polocloud bridge ready — API linked successfully") }
             .onFailure { log("Polocloud bridge failed to initialise the API: ${it.message}") }
 
-        Polocloud.groupService.findAll().forEach { it ->
-            println(it.name)
+        Polocloud.serviceService.findAll().forEach {
+
+            if(it.name().equals("proxy-1")) return@forEach
+
+            instance.registerService(instance.mapService(it), it)
         }
 
         // Listen for cluster lifecycle events pushed by the node, so this proxy
