@@ -18,19 +18,12 @@ class FindServicesServerHandler(
     private val serviceProvider: ServiceProvider,
 ) : GrpcServerHandler<ServiceListRequest, ServiceListResponse> {
 
-    private val logger = LoggerFactory.getLogger(javaClass)
-
     override suspend fun handle(
         request: ServiceListRequest,
         context: GrpcServerContext,
     ): ServiceListResponse {
         // Snapshot first: the list is mutated by the queue and prune threads.
         val snapshot = serviceProvider.localServices.toList()
-        logger.info(
-            "FindServices: {} local service(s) known: {}",
-            snapshot.size,
-            snapshot.joinToString { "${it.group}-${it.index}(${it.state})" },
-        )
         var services = snapshot.asSequence()
 
         if (request.hasGroupFilter() && request.groupFilter.isNotBlank()) {
