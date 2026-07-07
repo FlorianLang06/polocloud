@@ -10,9 +10,11 @@ import java.util.UUID
 open class Service(
     @EntryIdentifier val id: UUID,
     val index: Int,
-    @EntryRef(clazz = Group::class) val group: String,
+    @EntryRef(clazz = Group::class) val groupName: String,
     var state: ServiceState = ServiceState.QUEUED,
+    var hostname: String,
+    var port: Int,
 ) {
 
-    fun name() = group + "-" + index
+    fun name() = groupName + "-" + index
 }

@@ -1,17 +1,15 @@
 package de.polocloud.node.services
 
+import de.polocloud.node.cluster.node.NodeRepository
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
-class LocalService(val service: Service) : Service(service.id, service.index, service.group, service.state) {
+class LocalService(private val service: Service) : Service(service.id, service.index, service.groupName, service.state, service.hostname, service.port) {
 
     var process: Process? = null
     var workDir: Path? = null
-
-    /** Port the service was assigned and binds to; -1 until it has been started. */
-    var port: Int = -1
 
     /** Host the service is reachable on; set to the node host when it is started. */
     var host: String = "127.0.0.1"
@@ -35,6 +33,8 @@ class LocalService(val service: Service) : Service(service.id, service.index, se
 
             service.state = ServiceState.STOPPED
         }
+
+        ServiceRepository.delete(service)
 
         // Give the OS a moment to release file handles before deleting the work
         // directory (Windows keeps the jar locked briefly after the process exits).

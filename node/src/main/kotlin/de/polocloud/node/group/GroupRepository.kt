@@ -3,7 +3,7 @@ package de.polocloud.node.group
 import de.polocloud.database.DatabaseAccess
 import de.polocloud.database.DatabaseKey
 
-class GroupRepository {
+object GroupRepository {
 
     private val groupDatabaseKey = DatabaseKey(Group::class)
 

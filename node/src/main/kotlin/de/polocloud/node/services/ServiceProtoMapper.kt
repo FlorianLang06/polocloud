@@ -11,7 +11,7 @@ object ServiceProtoMapper {
     fun toProto(service: LocalService): ServiceData = ServiceData.newBuilder()
         .setId(service.id.toString())
         .setIndex(service.index)
-        .setGroup(service.group)
+        .setGroup(service.groupName)
         .setState(service.state.name)
         .setPort(service.port)
         .setPid(service.process?.pid() ?: -1L)

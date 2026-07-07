@@ -4,6 +4,7 @@ import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupRepository
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.Service
+import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.ServiceState
 import de.polocloud.node.services.factory.FactoryService
 import org.slf4j.LoggerFactory
@@ -13,7 +14,7 @@ import java.util.UUID
 
 class ServiceQueue(
     private val factory: FactoryService,
-    private val groupRepository: GroupRepository
+    private val serviceProvider: ServiceProvider
 ) {
 
     private lateinit var thread: Thread
@@ -50,7 +51,7 @@ class ServiceQueue(
     }
 
     private fun enqueueRequired() {
-        for (group in groupRepository.findAll()) {
+        for (group in GroupRepository.findAll()) {
             val running = factory.runningCount(group.name)
             val queued = queue.count { it.second.name == group.name }.toLong()
             val needed = (group.minOnline - running - queued).coerceAtLeast(0)
@@ -63,7 +64,9 @@ class ServiceQueue(
             )
             repeat(needed.toInt()) {
                 val index = nextIndex(group)
-                val service = LocalService(Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED))
+                val service = LocalService(Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED, "127.0.0.1", -1))
+
+                serviceProvider.update(service)
                 queue.offer(Pair(service, group))
                 logger.info("Queued {}-{} [memory: {}MB, platform: {}/{}]",
                     group.name, index, group.memory, group.platform, group.version

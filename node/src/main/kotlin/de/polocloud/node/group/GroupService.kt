@@ -5,42 +5,41 @@ import org.slf4j.LoggerFactory
 open class GroupService {
 
     private var logger = LoggerFactory.getLogger(GroupService::class.java)
-    private var groupRepository = GroupRepository()
 
     fun run() {
-        logger.info("Found {} groups", groupRepository.count())
+        logger.info("Found {} groups", GroupRepository.count())
     }
 
-    open fun findAll() = groupRepository.findAll()
+    open fun findAll() = GroupRepository.findAll()
 
-    open fun exists(name: String) = groupRepository.exists(name)
+    open fun exists(name: String) = GroupRepository.exists(name)
 
-    open fun find(name: String) = groupRepository.find(name)
+    open fun find(name: String) = GroupRepository.find(name)
 
     fun create(name: String, memory: Int, startThreshold: Double, minOnline: Long, maxOnline: Long, platform: String, version: String) : Group {
         val group = Group(name, memory, startThreshold, minOnline, maxOnline, platform, version)
 
-        groupRepository.save(group)
+        GroupRepository.save(group)
         return group
     }
 
     open fun create(group: Group): Group {
-        groupRepository.save(group)
+        GroupRepository.save(group)
         return group
     }
 
     open fun update(group: Group): Group {
-        groupRepository.save(group)
+        GroupRepository.save(group)
         return group
     }
 
-    fun list() = groupRepository.findAll()
+    fun list() = GroupRepository.findAll()
 
     open fun delete(group: Group) {
 
         // TODO shutdown all services on ervery node
         // TODO CLEAN QUEUE
 
-        groupRepository.delete(group)
+        GroupRepository.delete(group)
     }
 }

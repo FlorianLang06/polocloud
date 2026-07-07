@@ -27,7 +27,7 @@ class FindServicesServerHandler(
         var services = snapshot.asSequence()
 
         if (request.hasGroupFilter() && request.groupFilter.isNotBlank()) {
-            services = services.filter { it.group.equals(request.groupFilter, ignoreCase = true) }
+            services = services.filter { it.groupName.equals(request.groupFilter, ignoreCase = true) }
         }
 
         if (request.hasStateFilter() && request.stateFilter.isNotBlank()) {

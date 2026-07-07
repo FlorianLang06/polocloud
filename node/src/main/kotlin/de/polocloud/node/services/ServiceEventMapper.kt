@@ -15,7 +15,7 @@ object ServiceEventMapper {
     fun toShared(service: LocalService): Service = Service(
         id = service.id.toString(),
         index = service.index,
-        group = service.group,
+        group = service.groupName,
         state = ServiceState.fromWire(service.state.name),
         port = service.port,
         host = service.host,

@@ -1,10 +1,12 @@
 package de.polocloud.node.services
 
+import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.group.GroupRepository
 import de.polocloud.node.services.factory.FactoryService
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.services.ping.ServicePingFactory
 import de.polocloud.node.services.queue.ServiceQueue
+import de.polocloud.shared.event.server.ServerStoppedEvent
 import java.util.concurrent.CopyOnWriteArrayList
 
 class ServiceProvider(nodePort: Int = 4241) {
@@ -16,7 +18,7 @@ class ServiceProvider(nodePort: Int = 4241) {
 
     val platformService = PlatformService()
     private val factory = FactoryService(platformService, this, nodePort)
-    private val queue = ServiceQueue(factory, GroupRepository())
+    private val queue = ServiceQueue(factory, this)
 
     // Pings starting services and flips them to RUNNING once they are reachable.
     private val pingFactory = ServicePingFactory(this)
@@ -40,13 +42,14 @@ class ServiceProvider(nodePort: Int = 4241) {
     }
 
     fun find(name: String) : Service? {
-        return this.localServices.stream()
-            .filter { service -> service.name() == name }
-            .findFirst()
-            .orElse(null)
+        return ServiceRepository.find(name)
     }
 
-    fun findAll() = this.localServices.toList()
+    fun findAll() = ServiceRepository.findAll()
 
-    fun exists(name: String) = this.localServices.stream().anyMatch { service -> service.name() == name }
+    fun exists(name: String) = ServiceRepository.exists(name)
+
+    fun update(service: Service) {
+        ServiceRepository.save(service)
+    }
 }

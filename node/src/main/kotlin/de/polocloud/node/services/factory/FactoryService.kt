@@ -150,13 +150,13 @@ class FactoryService(
 
     fun runningCount(groupName: String): Long {
         pruneDeadProcesses()
-        return serviceProvider.localServices.count { it.group == groupName }.toLong()
+        return serviceProvider.localServices.count { it.groupName == groupName }.toLong()
     }
 
     fun runningIndexes(groupName: String): Set<Int> {
         pruneDeadProcesses()
         return serviceProvider.localServices
-            .filter { it.group == groupName }
+            .filter { it.groupName == groupName }
             .map { it.index }
             .toSet()
     }
