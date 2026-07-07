@@ -3,6 +3,7 @@ package de.polocloud.node.terminal
 import de.polocloud.common.commands.CommandService
 import de.polocloud.node.core.context.NodeRuntimeContext
 import de.polocloud.node.terminal.impl.GroupCommand
+import de.polocloud.node.terminal.impl.ServiceCommand
 import de.polocloud.node.terminal.impl.ShutdownCommand
 import org.jline.jansi.Ansi
 import org.jline.reader.LineReader
@@ -61,6 +62,9 @@ class CliTerminal(val context: NodeRuntimeContext) {
     init {
         this.commandService.registerCommand(
             GroupCommand(this.context.groupService, this.context.serviceProvider.platformService)
+        )
+        this.commandService.registerCommand(
+            ServiceCommand(this.context.serviceProvider)
         )
         this.commandService.registerCommand(ShutdownCommand())
     }

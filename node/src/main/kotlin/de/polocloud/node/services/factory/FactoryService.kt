@@ -7,12 +7,12 @@ import de.polocloud.node.group.Group
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
+import de.polocloud.node.services.ServiceState
 import de.polocloud.node.services.factory.platform.Platform
 import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.process.PlatformProcess
 import de.polocloud.node.services.factory.task.TaskExecutor
 import de.polocloud.node.security.ServiceIdentityProvisioner
-import de.polocloud.shared.event.server.ServerStartedEvent
 import de.polocloud.shared.event.server.ServerStoppedEvent
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -71,10 +71,12 @@ class FactoryService(
 
         service.process = proc
         service.workDir = workDir.toPath()
+        // The process is alive but the server is still loading — it only counts as online
+        // once ServicePingFactory can reach it, which then flips the state to RUNNING and
+        // fires ServerStartedEvent.
+        service.state = ServiceState.STARTING
         serviceProvider.localServices.add(service)
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())
-
-        ClusterEventService.call(ServerStartedEvent(ServiceEventMapper.toShared(service)))
     }
 
     /**

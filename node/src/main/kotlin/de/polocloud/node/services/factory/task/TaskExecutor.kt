@@ -84,7 +84,7 @@ object TaskExecutor {
         val key = step.key
         if (key == null) {
             target.writeText(value)
-            logger.info("  ↳ {} ({})", step.name, target.name)
+            logger.info("  &8↳ {} ({})", step.name, target.name)
             return
         }
 

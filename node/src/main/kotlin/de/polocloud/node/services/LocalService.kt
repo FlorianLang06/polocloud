@@ -20,7 +20,6 @@ class LocalService(val service: Service) : Service(service.id, service.index, se
     fun shutdown() {
         process?.let { process ->
             val handle = process.toHandle()
-
             // Capture the full process tree up front: once the root exits its
             // descendants can no longer be enumerated, and Windows does not
             // cascade termination — leftover children would be orphaned.

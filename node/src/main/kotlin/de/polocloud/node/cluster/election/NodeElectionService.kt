@@ -44,7 +44,9 @@ class NodeElectionService(
         }
 
         val winner = strategy.elect(candidates) ?: run {
-            logger.error("No candidates for election — cluster has no head!")
+            if (NodeRepository.count() > 1) {
+                logger.error("No candidates for election — cluster has no head!")
+            }
             return
         }
 
