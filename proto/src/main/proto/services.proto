@@ -27,6 +27,10 @@ service ServiceApiService {
 message ServiceListRequest {
   optional string group_filter = 1;
   optional string state_filter = 2;
+  // When true, the receiving node returns only its own local services and does not
+  // fan out to peers — set by an aggregating node to prevent recursion (mirrors
+  // ListServicesRequest.local_only).
+  bool local_only = 3;
 }
 
 message ServiceListResponse {
@@ -52,6 +56,10 @@ message ListServicesRequest {
   string plan_name = 1;
   string node_id = 2;
   common.ServiceState state = 3;
+  // When true, the receiving node returns only its own local services and does not
+  // fan out to peers. Set by a node aggregating the cluster-wide view to prevent
+  // infinite recursion between nodes.
+  bool local_only = 4;
 }
 
 message ListServicesResponse {
@@ -65,7 +73,10 @@ message ProtoServiceProcessData {
   string node_id = 4;
   int32 bound_port = 5;
   int32 pid = 6;
-  common.ServiceState state = 7;
+  // Lifecycle state name (e.g. RUNNING). A string — like ServiceData.state — so the
+  // node/shared ServiceState maps losslessly without squeezing into the coarser
+  // common.ServiceState enum.
+  string state = 7;
   // Free-form key/value properties attached to this service.
   map<string, string> properties = 8;
 }

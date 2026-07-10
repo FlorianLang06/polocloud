@@ -1,5 +1,6 @@
 package de.polocloud.node.services
 
+import de.polocloud.shared.service.ServiceState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -112,5 +113,33 @@ class LocalServiceTest {
         val service = localService()
         service.process = FakeProcess("", alive = false)
         assertFalse(service.executeCommand("noop"))
+    }
+
+    @Test
+    fun `shutdown wipes an ephemeral work directory`() {
+        val dir = java.nio.file.Files.createTempDirectory("polocloud-svc")
+        java.nio.file.Files.writeString(dir.resolve("world.dat"), "data")
+        val service = localService()
+        service.workDir = dir
+        service.static = false
+
+        service.shutdown()
+        assertFalse(java.nio.file.Files.exists(dir))
+    }
+
+    @Test
+    fun `shutdown keeps a static service's work directory`() {
+        val dir = java.nio.file.Files.createTempDirectory("polocloud-static")
+        java.nio.file.Files.writeString(dir.resolve("world.dat"), "data")
+        val service = localService()
+        service.workDir = dir
+        service.static = true
+
+        try {
+            service.shutdown()
+            assertTrue(java.nio.file.Files.exists(dir))
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
     }
 }

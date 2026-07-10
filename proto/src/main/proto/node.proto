@@ -37,6 +37,19 @@ message NodeVersion {
 service NodeService {
   rpc GetNodeInformation (NodeInformationRequest) returns (NodeInformationResponse);
   rpc ListenForEvents (NodeEventRequest) returns (stream NodeEvent);
+  // Node-to-node relay of a cluster event: the origin node pushes each locally-fired
+  // event to its peers, which re-broadcast it to their own local subscribers only
+  // (no re-relay), giving the cluster a single live event view without loops.
+  rpc RelayEvent (RelayEventRequest) returns (RelayEventResponse);
+}
+
+message RelayEventRequest {
+  string event_name = 1;
+  string event_data = 2;
+}
+
+message RelayEventResponse {
+  bool success = 1;
 }
 
 message NodeInformationRequest {}

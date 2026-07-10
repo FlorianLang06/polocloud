@@ -1,6 +1,6 @@
 package de.polocloud.node.services
 
-import de.polocloud.proto.ServiceState as ProtoServiceState
+import de.polocloud.shared.service.ServiceState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -14,8 +14,7 @@ class ServiceMappersTest {
         group: String = "lobby",
         port: Int = 30000,
     ): LocalService {
-        val service = LocalService(Service(UUID.randomUUID(), index, group, state, "127.0.0.1", port))
-        service.host = "10.0.0.5"
+        val service = LocalService(Service(UUID.randomUUID(), index, group, state, "10.0.0.5", port))
         service.properties["fallback"] = "true"
         return service
     }
@@ -41,34 +40,30 @@ class ServiceMappersTest {
         val shared = ServiceEventMapper.toShared(service)
 
         assertEquals("lobby-1", shared.name())
-        assertEquals(de.polocloud.shared.service.ServiceState.STARTING, shared.state)
+        assertEquals(ServiceState.STARTING, shared.state)
         assertEquals("10.0.0.5", shared.host)
         assertEquals(-1L, shared.pid)
         assertTrue(shared.isFallback())
     }
 
     @Test
-    fun `ServiceProcessProtoMapper maps state and properties`() {
+    fun `ServiceProcessProtoMapper maps fields, state name, node id and properties`() {
         val service = local(state = ServiceState.RUNNING, index = 3, group = "proxy", port = 25565)
-        val proto = ServiceProcessProtoMapper.toProto(service)
+        val proto = ServiceProcessProtoMapper.toProto(service, nodeId = "node-1")
 
         assertEquals(service.id.toString(), proto.uuid)
         assertEquals(3, proto.index)
         assertEquals("proxy", proto.plan)
+        assertEquals("node-1", proto.nodeId)
         assertEquals(25565, proto.boundPort)
-        assertEquals(ProtoServiceState.RUNNING, proto.state)
+        assertEquals("RUNNING", proto.state)
         assertEquals("true", proto.propertiesMap["fallback"])
     }
 
     @Test
-    fun `ServiceProcessProtoMapper maps every node state to a proto state`() {
-        assertEquals(ProtoServiceState.LOADING, stateOf(ServiceState.QUEUED))
-        assertEquals(ProtoServiceState.BOOTING, stateOf(ServiceState.STARTING))
-        assertEquals(ProtoServiceState.RUNNING, stateOf(ServiceState.RUNNING))
-        assertEquals(ProtoServiceState.UNCONTROLLED, stateOf(ServiceState.STOPPING))
-        assertEquals(ProtoServiceState.UNCONTROLLED, stateOf(ServiceState.STOPPED))
+    fun `ServiceProcessProtoMapper carries every state name losslessly`() {
+        ServiceState.entries.forEach { state ->
+            assertEquals(state.name, ServiceProcessProtoMapper.toProto(local(state = state)).state)
+        }
     }
-
-    private fun stateOf(state: ServiceState): ProtoServiceState =
-        ServiceProcessProtoMapper.toProto(local(state = state)).state
 }

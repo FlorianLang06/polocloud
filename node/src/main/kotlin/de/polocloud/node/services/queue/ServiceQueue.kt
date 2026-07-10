@@ -5,7 +5,7 @@ import de.polocloud.node.group.GroupRepository
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.Service
 import de.polocloud.node.services.ServiceProvider
-import de.polocloud.node.services.ServiceState
+import de.polocloud.shared.service.ServiceState
 import de.polocloud.node.services.factory.FactoryService
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
@@ -43,6 +43,19 @@ class ServiceQueue(
 
     fun close() {
         thread.interrupt()
+    }
+
+    /**
+     * Drops every still-queued service of [groupName] (e.g. when the group is deleted),
+     * so no new services of a removed group get started.
+     *
+     * Synchronised on the queue because it is invoked from the terminal/gRPC thread while
+     * the queue thread also mutates the list.
+     */
+    fun removeGroup(groupName: String) {
+        synchronized(queue) {
+            queue.removeIf { it.second.name.equals(groupName, ignoreCase = true) }
+        }
     }
 
     private fun tick() {

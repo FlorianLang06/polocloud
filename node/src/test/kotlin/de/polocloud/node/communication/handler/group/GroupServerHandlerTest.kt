@@ -3,6 +3,7 @@ package de.polocloud.node.communication.handler.group
 import de.polocloud.common.communication.server.context.GrpcServerContext
 import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupService
+import de.polocloud.node.services.ServiceProvider
 import de.polocloud.proto.CreateGroupRequest
 import de.polocloud.proto.DeleteGroupRequest
 import de.polocloud.proto.GroupData
@@ -142,7 +143,7 @@ class GroupServerHandlerTest {
     @Test
     fun `delete removes an existing group and reports success`() = runBlocking {
         val service = service()
-        val handler = DeleteGroupServerHandler(service)
+        val handler = DeleteGroupServerHandler(service, ServiceProvider())
 
         val response = handler.handle(
             DeleteGroupRequest.newBuilder().setName("Lobby").build(),
@@ -155,7 +156,7 @@ class GroupServerHandlerTest {
 
     @Test
     fun `delete reports failure for an unknown group`() = runBlocking {
-        val handler = DeleteGroupServerHandler(service())
+        val handler = DeleteGroupServerHandler(service(), ServiceProvider())
 
         val response = handler.handle(
             DeleteGroupRequest.newBuilder().setName("Ghost").build(),

@@ -20,7 +20,9 @@ class EventProviderServiceImpl : EventProviderGrpcKt.EventProviderCoroutineImplB
         ClusterEventService.subscribe(request.eventName, request.serviceName)
 
     override suspend fun call(request: EventContext): CallEventResponse {
-        ClusterEventService.broadcast(request)
+        // Publish (not just broadcast) so an event fired through the SDK reaches the whole
+        // cluster's subscribers, not only those connected to this node.
+        ClusterEventService.publish(request)
         return CallEventResponse.newBuilder().setSuccess(true).build()
     }
 

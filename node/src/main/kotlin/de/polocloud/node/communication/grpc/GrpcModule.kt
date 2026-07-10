@@ -38,7 +38,7 @@ object GrpcModule {
             register(GroupListRequest::class.java, GetGroupInformationServerHandler(groupService))
             register(CreateGroupRequest::class.java, CreateGroupServerHandler(groupService))
             register(UpdateGroupRequest::class.java, UpdateGroupServerHandler(groupService))
-            register(DeleteGroupRequest::class.java, DeleteGroupServerHandler(groupService))
+            register(DeleteGroupRequest::class.java, DeleteGroupServerHandler(groupService, serviceProvider))
         }
 
         return GrpcServerExecutor(

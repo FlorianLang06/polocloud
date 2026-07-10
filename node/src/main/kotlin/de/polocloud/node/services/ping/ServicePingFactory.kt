@@ -4,7 +4,7 @@ import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
-import de.polocloud.node.services.ServiceState
+import de.polocloud.shared.service.ServiceState
 import de.polocloud.shared.event.server.ServerStartedEvent
 import org.slf4j.LoggerFactory
 
@@ -56,7 +56,10 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
             if (service.process?.isAlive != true) continue
             if (service.port <= 0) continue
 
-            val result = MinecraftServerPing.ping(service.host, service.port) ?: continue
+            // Pinged over loopback: the pinger is co-located with the service on this node,
+            // so it never depends on the (possibly public) advertised hostname being reachable
+            // from here.
+            val result = MinecraftServerPing.ping(PING_HOST, service.port) ?: continue
             markOnline(service, result)
         }
     }
@@ -67,6 +70,9 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
     private fun markOnline(service: LocalService, result: MinecraftPingResult) {
         service.state = ServiceState.RUNNING
+        // Persist the RUNNING transition so the database no longer shows the service as
+        // STARTING once it is actually online.
+        serviceProvider.persist(service)
         logger.info(
             "Service {} is ONLINE — {} (protocol {}), {}/{} players, {}ms",
             service.name(), result.versionName, result.protocol,
@@ -80,5 +86,8 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
     private companion object {
         const val POLL_INTERVAL_MILLIS = 1000L
+
+        /** Loopback host used to reach co-located services from the node's own ping thread. */
+        const val PING_HOST = "127.0.0.1"
     }
 }

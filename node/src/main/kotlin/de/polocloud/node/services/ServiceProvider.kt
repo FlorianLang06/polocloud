@@ -8,7 +8,13 @@ import de.polocloud.node.services.queue.ServiceQueue
 import de.polocloud.shared.event.server.ServerStoppedEvent
 import java.util.concurrent.CopyOnWriteArrayList
 
-class ServiceProvider(nodePort: Int = 4241) {
+class ServiceProvider(
+    nodePort: Int = 4241,
+    // Host services advertise to the API (the node's reachable hostname).
+    nodeHost: String = "127.0.0.1",
+    /** Id of the node this provider runs on; attached to services in the API view. */
+    val nodeId: String = "",
+) {
 
     // Concurrent by design: the queue and prune threads mutate this list while API
     // handlers iterate it. A plain ArrayList would risk ConcurrentModificationException
@@ -16,7 +22,7 @@ class ServiceProvider(nodePort: Int = 4241) {
     val localServices = CopyOnWriteArrayList<LocalService>()
 
     val platformService = PlatformService()
-    private val factory = FactoryService(platformService, this, nodePort)
+    private val factory = FactoryService(platformService, this, nodePort, nodeHost)
     private val queue = ServiceQueue(factory, this)
 
     // Pings starting services and flips them to RUNNING once they are reachable.
@@ -59,6 +65,16 @@ class ServiceProvider(nodePort: Int = 4241) {
         ServiceRepository.save(service)
     }
 
+    /** Persists the current state of [service] (port/host/state) to the database. */
+    fun persist(service: Service) {
+        ServiceRepository.save(service)
+    }
+
+    /** Removes [service] from the database (e.g. once its process has exited). */
+    fun remove(service: Service) {
+        ServiceRepository.delete(service)
+    }
+
     /** The live [LocalService] with the given `group-index` [name], or `null` if not running here. */
     fun findLocal(name: String): LocalService? =
         localServices.firstOrNull { it.name().equals(name, ignoreCase = true) }
@@ -72,5 +88,16 @@ class ServiceProvider(nodePort: Int = 4241) {
         runCatching { service.shutdown() }
         localServices.remove(service)
         ClusterEventService.call(ServerStoppedEvent(ServiceEventMapper.toShared(service)))
+    }
+
+    /**
+     * Stops every running service of [groupName] and drops any of its still-queued
+     * services. Used when a group is deleted so it leaves no orphaned processes behind.
+     */
+    fun shutdownGroup(groupName: String) {
+        queue.removeGroup(groupName)
+        localServices
+            .filter { it.groupName.equals(groupName, ignoreCase = true) }
+            .forEach { shutdownLocal(it) }
     }
 }

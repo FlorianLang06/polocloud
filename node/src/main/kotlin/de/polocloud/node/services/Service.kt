@@ -4,6 +4,7 @@ import de.polocloud.database.EntryIdentifier
 import de.polocloud.database.EntryRef
 import de.polocloud.database.RepositoryName
 import de.polocloud.node.group.Group
+import de.polocloud.shared.service.ServiceState
 import java.util.UUID
 
 @RepositoryName("services")

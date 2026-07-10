@@ -2,7 +2,6 @@ package de.polocloud.node.services
 
 import de.polocloud.shared.property.Properties
 import de.polocloud.shared.service.Service
-import de.polocloud.shared.service.ServiceState
 
 /**
  * Maps a running [LocalService] to the shared [Service] model carried on cluster
@@ -17,9 +16,10 @@ object ServiceEventMapper {
         id = service.id.toString(),
         index = service.index,
         group = service.groupName,
-        state = ServiceState.fromWire(service.state.name),
+        // Node and shared now share the same ServiceState enum, so no conversion is needed.
+        state = service.state,
         port = service.port,
-        host = service.host,
+        host = service.hostname,
         pid = service.process?.pid() ?: -1L,
         properties = Properties.of(service.properties),
     )

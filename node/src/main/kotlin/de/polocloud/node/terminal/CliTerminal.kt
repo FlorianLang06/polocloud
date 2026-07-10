@@ -61,7 +61,11 @@ class CliTerminal(val context: NodeRuntimeContext) {
 
     init {
         this.commandService.registerCommand(
-            GroupCommand(this.context.groupService, this.context.serviceProvider.platformService)
+            GroupCommand(
+                this.context.groupService,
+                this.context.serviceProvider.platformService,
+                this.context.serviceProvider,
+            )
         )
         this.commandService.registerCommand(
             ServiceCommand(this.context.serviceProvider, this)

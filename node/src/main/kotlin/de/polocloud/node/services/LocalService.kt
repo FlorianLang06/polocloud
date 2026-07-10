@@ -1,5 +1,6 @@
 package de.polocloud.node.services
 
+import de.polocloud.shared.service.ServiceState
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.nio.file.Path
@@ -22,8 +23,11 @@ class LocalService(private val service: Service) : Service(
     var process: Process? = null
     var workDir: Path? = null
 
-    /** Host the service is reachable on; set to the node host when it is started. */
-    var host: String = "127.0.0.1"
+    /**
+     * Whether this service belongs to a static group. Static services keep their work
+     * directory (world/config) across restarts instead of being wiped on shutdown.
+     */
+    var static: Boolean = false
 
     /**
      * Free-form key/value properties, seeded from the owning group when the service
@@ -120,7 +124,8 @@ class LocalService(private val service: Service) : Service(
             service.state = ServiceState.STOPPED
         }
 
-        ServiceRepository.delete(service)
+        // Best-effort: a failing repository delete must not skip the work-directory cleanup below.
+        runCatching { ServiceRepository.delete(service) }
 
         // Give the OS a moment to release file handles before deleting the work
         // directory (Windows keeps the jar locked briefly after the process exits).
@@ -128,8 +133,11 @@ class LocalService(private val service: Service) : Service(
             Thread.sleep(200)
         }
 
-        // TODO: keep the work directory for static services once that flag exists.
-        workDir?.deleteRecursively()
+        // Static services keep their work directory (persistent world/config); only
+        // ephemeral services get their directory wiped on shutdown.
+        if (!static) {
+            workDir?.deleteRecursively()
+        }
     }
 
 }

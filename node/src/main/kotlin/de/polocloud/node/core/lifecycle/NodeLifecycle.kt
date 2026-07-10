@@ -11,6 +11,7 @@ import de.polocloud.node.bootstrap.time.StartupTimer
 import de.polocloud.node.core.NodeRuntime
 import de.polocloud.node.core.configuration.NodeConfigurations
 import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.event.ClusterEventRelay
 import org.apache.logging.log4j.LogManager
 import org.slf4j.LoggerFactory
 
@@ -23,6 +24,9 @@ class NodeLifecycle(
 
     lateinit var context: NodeRuntimeContext
         private set
+
+    // Forwards this node's events to peers while it is running (cluster-wide live events).
+    private var eventRelay: ClusterEventRelay? = null
 
     fun initialize() {
         val props = runtime.launchProperties
@@ -62,6 +66,10 @@ class NodeLifecycle(
         context.groupService.run()
         context.serviceProvider.run()
 
+        // Start relaying local events to peers so subscribers on any node see the whole
+        // cluster's service lifecycle live. No-op while this is the only node.
+        eventRelay = ClusterEventRelay(context.serviceProvider.nodeId).also { it.install() }
+
         logger.trInfo(
             "cluster",
             "cluster.node.started",
@@ -81,6 +89,10 @@ class NodeLifecycle(
 
         logger.trInfo("node", "node.shutdown.stopping")
         container.markStopping()
+
+        safe("eventRelay") {
+            eventRelay?.close()
+        }
 
         safe("heartBeatMonitor") {
             runtime.heartBeatMonitor.stop()

@@ -45,7 +45,13 @@ class NodeIdentityService(
         val bindAddress = resolveBindAddress(launchProperties)
 
         val groupService = GroupService()
-        val serviceProvider = ServiceProvider(holder.value.general.apiAddress.port)
+        val serviceProvider = ServiceProvider(
+            nodePort = holder.value.general.apiAddress.port,
+            // Host services are advertised under. Loopback by default (single-host);
+            // set general.serviceHostname to the node's reachable address for a cluster.
+            nodeHost = holder.value.general.serviceHostname,
+            nodeId = localId.toString(),
+        )
 
         val grpc = NodeGrpcEndpoint(
             bindAddress,

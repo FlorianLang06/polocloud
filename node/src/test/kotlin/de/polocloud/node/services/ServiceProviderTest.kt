@@ -1,5 +1,6 @@
 package de.polocloud.node.services
 
+import de.polocloud.shared.service.ServiceState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -42,5 +43,25 @@ class ServiceProviderTest {
 
         assertFalse(provider.localServices.contains(lobby))
         assertEquals(0, provider.localServices.size)
+    }
+
+    @Test
+    fun `shutdownGroup stops only the targeted group's services`() {
+        val provider = provider()
+        val lobby1 = local("lobby", 1)
+        val lobby2 = local("lobby", 2)
+        val proxy = local("proxy", 1)
+        provider.localServices += listOf(lobby1, lobby2, proxy)
+
+        provider.shutdownGroup("lobby")
+
+        assertFalse(provider.localServices.contains(lobby1))
+        assertFalse(provider.localServices.contains(lobby2))
+        assertEquals(listOf(proxy), provider.localServices.toList())
+    }
+
+    @Test
+    fun `nodeId is exposed as configured`() {
+        assertEquals("node-42", ServiceProvider(nodeId = "node-42").nodeId)
     }
 }

@@ -7,7 +7,7 @@ import de.polocloud.node.group.Group
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
-import de.polocloud.node.services.ServiceState
+import de.polocloud.shared.service.ServiceState
 import de.polocloud.node.services.factory.platform.Platform
 import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.process.PlatformProcess
@@ -21,6 +21,10 @@ class FactoryService(
     private val platformService: PlatformService,
     private val serviceProvider: ServiceProvider,
     private val nodePort: Int = 4241,
+    // Host services are reachable on / advertise to the API. Derived from the node's
+    // configured hostname (see GeneralConfiguration.hostname) so a remote proxy can
+    // reach services that are not co-located, instead of a hard-coded 127.0.0.1.
+    private val nodeHost: String = "127.0.0.1",
 ) {
 
     private val logger = LoggerFactory.getLogger(FactoryService::class.java)
@@ -33,10 +37,10 @@ class FactoryService(
         const val SERVER_BASE_PORT = 30000
         const val PROXY_BASE_PORT = 25565
 
-        // Host services bind to and are reachable on. Single source of truth for both
-        // the value handed to the service process and the one published to the API,
-        // so a co-located proxy and a remote client always agree on the address.
-        const val NODE_HOST = "127.0.0.1"
+        // A service always connects *back* to its own node over loopback: it is started
+        // by, and co-located with, that node. This is independent of [nodeHost], which is
+        // the address the service is *advertised* under to remote consumers.
+        const val NODE_BACK_CONNECT_HOST = "127.0.0.1"
     }
 
     fun start(service: LocalService, group: Group) {
@@ -52,7 +56,8 @@ class FactoryService(
         val jar = process.download(workDir)
 
          service.port = assignPort(platform, service.index)
-         service.host = NODE_HOST
+         service.hostname = nodeHost
+         service.static = group.static
 
         // Seed the service's properties from its group so group-level flags (e.g. `fallback`)
         // are visible on the service without overwriting any already set on it.
@@ -68,7 +73,9 @@ class FactoryService(
             jar,
             environment = mapOf(
                 "POLOCLOUD_IDENTITY_DIR" to identityDir.absolutePath,
-                "POLOCLOUD_NODE_HOST" to NODE_HOST,
+                // Loopback: the service reaches its own node locally, regardless of the
+                // host it is advertised under.
+                "POLOCLOUD_NODE_HOST" to NODE_BACK_CONNECT_HOST,
                 "POLOCLOUD_NODE_PORT" to nodePort.toString(),
             ),
         )
@@ -83,6 +90,9 @@ class FactoryService(
         // fires ServerStartedEvent.
         service.state = ServiceState.STARTING
         serviceProvider.localServices.add(service)
+        // Persist the now-assigned port/host/state so the database reflects the live
+        // service instead of the placeholder row written while it was still queued.
+        serviceProvider.persist(service)
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())
     }
 
@@ -172,6 +182,9 @@ class FactoryService(
         serviceProvider.localServices.removeIf { service ->
             val dead = service.process?.isAlive != true
             if (dead) {
+                // Drop the persisted row too so a crashed/exited service does not linger
+                // in the database with a stale state after it is gone.
+                serviceProvider.remove(service)
                 ClusterEventService.call(ServerStoppedEvent(ServiceEventMapper.toShared(service)))
             }
             dead

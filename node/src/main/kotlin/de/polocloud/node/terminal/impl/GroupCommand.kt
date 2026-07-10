@@ -11,6 +11,7 @@ import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.group.PropertyCodec
+import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.terminal.types.GroupArgument
 import de.polocloud.node.terminal.types.PlatformArgument
@@ -19,7 +20,8 @@ import org.slf4j.LoggerFactory
 
 class GroupCommand(
     val groupService: GroupService,
-    platformService: PlatformService
+    platformService: PlatformService,
+    private val serviceProvider: ServiceProvider,
 ) : Command("group", "Manage all group things here") {
 
     private val logger = LoggerFactory.getLogger(GroupCommand::class.java)
@@ -54,6 +56,9 @@ class GroupCommand(
 
         syntax({
             val group = it.arg(groupArgument)
+            // Stop the group's running services and clear its queue before removing it,
+            // so deleting a group never leaves orphaned processes behind.
+            serviceProvider.shutdownGroup(group.name)
             groupService.delete(group)
             logger.trInfo("node", "node.command.group.deleted", Pair("name", group.name))
         }, "Delete a group", KeywordArgument("delete"), groupArgument)
@@ -73,6 +78,10 @@ class GroupCommand(
                 )
             }
         }, "List all groups", KeywordArgument("list"))
+
+        syntax({
+            info(it.arg(groupArgument))
+        }, "Show detailed information about a group", KeywordArgument("info"), groupArgument)
 
         // --- edit: change a single group parameter -----------------------------------
         val propertyKeyArgument = TextArgument("key")
@@ -119,6 +128,22 @@ class GroupCommand(
             val properties = group.properties.apply { remove(key) }
             update(group.copy(propertiesJson = PropertyCodec.encode(properties)), "property $key", "(removed)")
         }, "Remove a group property", KeywordArgument("edit"), groupArgument, KeywordArgument("unset"), propertyKeyArgument)
+    }
+
+    private fun info(group: Group) {
+        val running = serviceProvider.findAll().count { it.groupName.equals(group.name, ignoreCase = true) }
+        logger.info("Group ${group.name}:")
+        logger.info("  platform: ${group.platform}/${group.version}")
+        logger.info("  memory: ${group.memory}MB")
+        logger.info("  online: ${group.minOnline}-${group.maxOnline} (start threshold: ${group.startThreshold})")
+        logger.info("  static: ${group.static}")
+        logger.info("  services: $running running")
+        if (group.properties.isEmpty()) {
+            logger.info("  properties: (none)")
+        } else {
+            logger.info("  properties:")
+            group.properties.forEach { (key, value) -> logger.info("    - $key=$value") }
+        }
     }
 
     private fun update(group: Group, field: String, value: Any) {

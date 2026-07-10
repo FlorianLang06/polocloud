@@ -1,6 +1,7 @@
 package de.polocloud.node.event
 
 import de.polocloud.proto.EventContext
+import de.polocloud.shared.event.EncodedEvent
 import de.polocloud.shared.event.Event
 import de.polocloud.shared.event.EventCodec
 import kotlinx.coroutines.channels.awaitClose
@@ -33,6 +34,18 @@ object ClusterEventService {
     private val subscribers = CopyOnWriteArrayList<Subscriber>()
 
     /**
+     * Optional hook that forwards a locally-fired event to peer nodes. Installed by
+     * [de.polocloud.node.event.ClusterEventRelay] once the node joins the cluster; left
+     * `null` for a single node, in which case [call] behaves purely locally.
+     *
+     * Only invoked from [call] (locally-originated events), never from [broadcast], so an
+     * event relayed *in* from a peer is delivered to local subscribers without being
+     * relayed back out — that is the loop guard.
+     */
+    @Volatile
+    var peerRelay: ((EncodedEvent) -> Unit)? = null
+
+    /**
      * Opens a stream for a remote subscriber. Emits every matching event until the
      * client disconnects, at which point the subscriber is removed automatically.
      *
@@ -52,17 +65,36 @@ object ClusterEventService {
         subscribers.removeIf { it.eventName == eventName && it.serviceName == serviceName }
     }
 
-    /** Broadcasts a pre-encoded context to all matching subscribers. */
+    /**
+     * Delivers a pre-encoded context to all matching **local** subscribers.
+     *
+     * Local-only by design: this is also the path used to re-deliver an event relayed
+     * *in* from a peer, so it must never fan back out to peers (that is the loop guard).
+     */
     fun broadcast(context: EventContext) {
         subscribers
             .filter { it.eventName.isBlank() || it.eventName == context.eventName }
             .forEach { it.send(context) }
     }
 
-    /** Encodes and broadcasts a typed [event] originating from the node. */
+    /**
+     * Publishes an event that originates on this node — to local subscribers and, if a
+     * cluster is present, to peer nodes via [peerRelay]. Used both for node-internal
+     * events ([call]) and for events published through the SDK
+     * ([de.polocloud.node.communication.impl.event.EventProviderServiceImpl.call]).
+     */
+    fun publish(context: EventContext) {
+        broadcast(context)
+        // Fan out to peers only for locally-originated events. Isolated so a relay
+        // failure never affects local delivery.
+        runCatching { peerRelay?.invoke(EncodedEvent(context.eventName, context.eventData)) }
+            .onFailure { logger.warn("Failed to relay event '${context.eventName}' to peers: ${it.message}") }
+    }
+
+    /** Encodes a typed [event] originating from this node and [publish]es it. */
     fun call(event: Event) {
         val encoded = EventCodec.encode(event)
-        broadcast(
+        publish(
             EventContext.newBuilder()
                 .setEventName(encoded.name)
                 .setEventData(encoded.data)
