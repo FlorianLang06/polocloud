@@ -21,6 +21,17 @@ dependencies {
 
     //database
     polocloudRuntime(libs.polocloud.database)
+
+    // testing — the command framework logs via slf4j and the i18n helpers, so both
+    // must be on the test runtime classpath (they are compileOnly for main).
+    testImplementation(libs.bundles.testing)
+    testImplementation(libs.bundles.logging)
+    testImplementation(libs.polocloud.i18n)
+    testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 gitProperties {

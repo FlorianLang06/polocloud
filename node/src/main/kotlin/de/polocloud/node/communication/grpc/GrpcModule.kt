@@ -32,7 +32,7 @@ object GrpcModule {
         val registry = GrpcServerHandlerRegistry().apply {
             register(ListNodesRequest::class.java, ListNodesServerHandler())
             register(NodeInformationRequest::class.java, GetNodeInformationServerHandler())
-            register(ListServicesRequest::class.java, ListServicesServerHandler())
+            register(ListServicesRequest::class.java, ListServicesServerHandler(serviceProvider))
             register(ServiceListRequest::class.java, FindServicesServerHandler(serviceProvider))
             register(CreateTokenRequest::class.java, CreateTokenServerHandler())
             register(GroupListRequest::class.java, GetGroupInformationServerHandler(groupService))

@@ -14,3 +14,16 @@ allprojects {
         }
     }
 }
+
+/**
+ * Project-wide test suite: runs the `test` task of every module in one go.
+ *
+ * Usage: `./gradlew allTests`. This is the cross-module entry point — JUnit's own
+ * `@Suite` only aggregates tests within a single module's classpath, so Gradle is
+ * the right layer to run everything at once.
+ */
+tasks.register("allTests") {
+    group = "verification"
+    description = "Runs the test task of every module (project-wide test suite)."
+    dependsOn(subprojects.map { "${it.path}:test" })
+}

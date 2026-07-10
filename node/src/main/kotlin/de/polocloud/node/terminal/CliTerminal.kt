@@ -64,7 +64,7 @@ class CliTerminal(val context: NodeRuntimeContext) {
             GroupCommand(this.context.groupService, this.context.serviceProvider.platformService)
         )
         this.commandService.registerCommand(
-            ServiceCommand(this.context.serviceProvider)
+            ServiceCommand(this.context.serviceProvider, this)
         )
         this.commandService.registerCommand(ShutdownCommand())
     }
@@ -135,6 +135,19 @@ class CliTerminal(val context: NodeRuntimeContext) {
         )
         this.terminal.writer().flush()
     }
+
+    /**
+     * Reads a single line of input using the given [prompt].
+     *
+     * Used by interactive sub-modes (e.g. `service <name> logs` tailing) that need to
+     * block for user input while log output is printed above via [displayApproved].
+     * Not lock-guarded on purpose: the call blocks until the user submits a line, and
+     * holding [writeLock] would stall concurrent output the whole time.
+     *
+     * @throws org.jline.reader.UserInterruptException on Ctrl+C, which callers may catch
+     *         to leave the sub-mode without terminating the node.
+     */
+    fun awaitInput(prompt: String): String = this.lineReader.readLine(AnsiColors.translate(prompt))
 
     /**
      * Closes the terminal and interrupts the [readingThread] thread.

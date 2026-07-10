@@ -18,6 +18,7 @@ class UpdateGroupServerHandler(private val groupService: GroupService) : GrpcSer
         check(group.name.isNotBlank()) { "Group name must not be blank" }
         check(groupService.exists(group.name)) { "No group with the name '${group.name}' exists" }
 
+        // GroupService.update publishes the GroupUpdatedEvent for every update path.
         return GroupProtoMapper.toProto(groupService.update(group))
     }
 }

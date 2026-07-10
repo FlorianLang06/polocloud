@@ -53,7 +53,13 @@ class VelocityBridgePlugin @Inject constructor(
 
     @Subscribe
     fun onConnect(event: PlayerChooseInitialServerEvent) {
-        event.setInitialServer(server.allServers.firstOrNull()!!)
+        // Prefer a running service from a fallback group; fall back to any registered
+        // server so a player is never left without a target if none is flagged.
+        val fallback = bootstrap.fallbackService()
+            ?.let { service -> server.getServer(service.name()).orElse(null) }
+            ?: server.allServers.firstOrNull()
+
+        fallback?.let { event.setInitialServer(it) }
     }
 
     override fun registerService(

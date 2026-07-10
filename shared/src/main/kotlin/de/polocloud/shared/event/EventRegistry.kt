@@ -1,5 +1,6 @@
 package de.polocloud.shared.event
 
+import de.polocloud.shared.event.group.GroupUpdatedEvent
 import de.polocloud.shared.event.server.ServerStartedEvent
 import de.polocloud.shared.event.server.ServerStoppedEvent
 import kotlinx.serialization.KSerializer
@@ -16,6 +17,7 @@ object EventRegistry {
     private val serializers: Map<String, KSerializer<out Event>> = mapOf(
         nameOf<ServerStartedEvent>() to ServerStartedEvent.serializer(),
         nameOf<ServerStoppedEvent>() to ServerStoppedEvent.serializer(),
+        nameOf<GroupUpdatedEvent>() to GroupUpdatedEvent.serializer(),
     )
 
     /** Returns the serializer registered under [name], or `null` if unknown. */

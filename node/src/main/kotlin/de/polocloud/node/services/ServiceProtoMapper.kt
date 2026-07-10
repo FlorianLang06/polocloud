@@ -16,5 +16,6 @@ object ServiceProtoMapper {
         .setPort(service.port)
         .setPid(service.process?.pid() ?: -1L)
         .setHost(service.host)
+        .putAllProperties(service.properties)
         .build()
 }

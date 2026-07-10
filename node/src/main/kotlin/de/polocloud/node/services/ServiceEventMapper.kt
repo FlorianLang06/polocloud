@@ -1,5 +1,6 @@
 package de.polocloud.node.services
 
+import de.polocloud.shared.property.Properties
 import de.polocloud.shared.service.Service
 import de.polocloud.shared.service.ServiceState
 
@@ -20,5 +21,6 @@ object ServiceEventMapper {
         port = service.port,
         host = service.host,
         pid = service.process?.pid() ?: -1L,
+        properties = Properties.of(service.properties),
     )
 }

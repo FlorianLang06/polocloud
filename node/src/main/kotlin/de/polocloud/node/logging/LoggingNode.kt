@@ -1,6 +1,7 @@
 package de.polocloud.node.logging
 
 import de.polocloud.node.core.environment.NodeEnvironment
+import de.polocloud.node.terminal.AnsiColors
 import org.apache.logging.log4j.core.Appender
 import org.apache.logging.log4j.core.Filter
 import org.apache.logging.log4j.core.Layout
@@ -28,7 +29,9 @@ class LoggingNode(
 ) : AbstractAppender(name, filter, layout, true, null) {
 
     override fun append(event: LogEvent) {
-        val formatted = layout.toSerializable(event).toString()
+        // Translate legacy `&x` colour codes (used in command help and command output)
+        // into ANSI here, on the console path only — the file appender keeps the raw text.
+        val formatted = AnsiColors.translate(layout.toSerializable(event).toString())
 
         try {
             NodeEnvironment.instance.context.cli.displayApproved(formatted)

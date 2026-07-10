@@ -1,7 +1,6 @@
 package de.polocloud.node.services
 
 import de.polocloud.node.event.ClusterEventService
-import de.polocloud.node.group.GroupRepository
 import de.polocloud.node.services.factory.FactoryService
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.services.ping.ServicePingFactory
@@ -41,15 +40,37 @@ class ServiceProvider(nodePort: Int = 4241) {
         this.localServices.clear()
     }
 
+    /**
+     * Finds a service by its cluster-wide `group-index` [name] (e.g. `lobby-1`).
+     *
+     * Not a repository `findById`: the persisted identifier is the service UUID, so
+     * looking a service up by name means scanning by [Service.name] instead — passing a
+     * name to `findById` would hit the UUID id column and fail to convert.
+     */
     fun find(name: String) : Service? {
-        return ServiceRepository.find(name)
+        return findAll().firstOrNull { it.name().equals(name, ignoreCase = true) }
     }
 
     fun findAll() = ServiceRepository.findAll()
 
-    fun exists(name: String) = ServiceRepository.exists(name)
+    fun exists(name: String) = find(name) != null
 
     fun update(service: Service) {
         ServiceRepository.save(service)
+    }
+
+    /** The live [LocalService] with the given `group-index` [name], or `null` if not running here. */
+    fun findLocal(name: String): LocalService? =
+        localServices.firstOrNull { it.name().equals(name, ignoreCase = true) }
+
+    /**
+     * Shuts down a single running service: terminates the process, removes it from the
+     * live list and publishes [ServerStoppedEvent] so the bridge/API drop it immediately
+     * (rather than only on the next prune pass).
+     */
+    fun shutdownLocal(service: LocalService) {
+        runCatching { service.shutdown() }
+        localServices.remove(service)
+        ClusterEventService.call(ServerStoppedEvent(ServiceEventMapper.toShared(service)))
     }
 }

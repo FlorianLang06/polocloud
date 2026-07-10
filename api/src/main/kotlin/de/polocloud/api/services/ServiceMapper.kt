@@ -1,6 +1,7 @@
 package de.polocloud.api.services
 
 import de.polocloud.proto.ServiceData
+import de.polocloud.shared.property.Properties
 import de.polocloud.shared.service.Service
 import de.polocloud.shared.service.ServiceState
 
@@ -17,5 +18,6 @@ object ServiceMapper {
         port = data.port,
         host = data.host,
         pid = data.pid,
+        properties = Properties.of(data.propertiesMap),
     )
 }

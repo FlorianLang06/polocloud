@@ -1,6 +1,7 @@
 package de.polocloud.api.group
 
 import de.polocloud.proto.GroupData
+import de.polocloud.shared.property.Properties
 
 /**
  * Maps between the protobuf [GroupData] wire type and the public API [Group].
@@ -15,6 +16,7 @@ object GroupMapper {
         maxOnline = data.maxOnline,
         platform = data.platform,
         version = data.version,
+        properties = Properties.of(data.propertiesMap),
     )
 
     fun toProto(group: Group): GroupData = GroupData.newBuilder()
@@ -25,5 +27,6 @@ object GroupMapper {
         .setMaxOnline(group.maxOnline)
         .setPlatform(group.platform)
         .setVersion(group.version)
+        .putAllProperties(group.properties.asMap())
         .build()
 }

@@ -46,8 +46,12 @@ class CommandParser(private val commandService: CommandService) {
 
             for (i in arguments.indices) {
                 val argument = arguments[i]
+                // A greedy last argument (StringArrayArgument) lets a syntax accept more
+                // tokens than it declares; guard the index so a shorter input simply fails
+                // to match instead of throwing.
+                val rawInput = args.getOrNull(i) ?: break
 
-                if (!argument.predication(args[i])) {
+                if (!argument.predication(rawInput)) {
                     break
                 }
 
@@ -57,7 +61,7 @@ class CommandParser(private val commandService: CommandService) {
                         argument.buildResult(args.sliceArray(i until args.size).joinToString(" "), inputContext)
                     )
                 } else {
-                    inputContext.append(argument, argument.buildResult(args[i], inputContext))
+                    inputContext.append(argument, argument.buildResult(rawInput, inputContext))
                 }
 
                 if (arguments.last() == argument) {

@@ -1,12 +1,23 @@
 package de.polocloud.node.services
 
-import de.polocloud.node.cluster.node.NodeRepository
+import org.slf4j.LoggerFactory
+import java.io.BufferedReader
 import java.nio.file.Path
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
-class LocalService(private val service: Service) : Service(service.id, service.index, service.groupName, service.state, service.hostname, service.port) {
+class LocalService(private val service: Service) : Service(
+    service.id, service.index, service.groupName, service.state, service.hostname, service.port
+) {
+
+    private companion object {
+        val logger = LoggerFactory.getLogger(LocalService::class.java)
+
+        /** How many recent log lines are retained per service for the `logs` tail. */
+        const val LOG_BUFFER_CAPACITY = 300
+    }
 
     var process: Process? = null
     var workDir: Path? = null
@@ -14,8 +25,83 @@ class LocalService(private val service: Service) : Service(service.id, service.i
     /** Host the service is reachable on; set to the node host when it is started. */
     var host: String = "127.0.0.1"
 
+    /**
+     * Free-form key/value properties, seeded from the owning group when the service
+     * starts. Kept in-memory only (not a persisted [Service] column) — services are
+     * ephemeral and re-seed their properties from the group on every start.
+     */
+    val properties: MutableMap<String, String> = mutableMapOf()
+
+    // Ring buffer of recent stdout/stderr lines (the process is started with
+    // redirectErrorStream=true, so both arrive on the same stream).
+    private val logBuffer = ArrayDeque<String>(LOG_BUFFER_CAPACITY)
+
+    // Live consumers (e.g. an open `service <name> logs` stream). CopyOnWrite so the
+    // reader thread can iterate while a CLI stream subscribes/unsubscribes concurrently.
+    private val logListeners = CopyOnWriteArrayList<(String) -> Unit>()
+
+    private var logReader: Thread? = null
+
+    /**
+     * Starts a daemon thread that pumps the process output into [logBuffer] and to
+     * every registered [logListeners] entry. Call once, right after the process starts.
+     */
+    fun startLogCapture() {
+        val proc = process ?: return
+        val reader = Thread({
+            runCatching {
+                proc.inputStream.bufferedReader().use { buffered: BufferedReader ->
+                    buffered.forEachLine { line ->
+                        appendLog(line)
+                    }
+                }
+            }
+        }, "service-log-${name()}").apply { isDaemon = true }
+        logReader = reader
+        reader.start()
+    }
+
+    private fun appendLog(line: String) {
+        synchronized(logBuffer) {
+            if (logBuffer.size >= LOG_BUFFER_CAPACITY) logBuffer.removeFirst()
+            logBuffer.addLast(line)
+        }
+        // Isolate listeners: a slow/failing consumer must not stall log capture.
+        logListeners.forEach { listener -> runCatching { listener(line) } }
+    }
+
+    /** A snapshot of the currently buffered recent log lines. */
+    fun recentLogs(): List<String> = synchronized(logBuffer) { logBuffer.toList() }
+
+    fun addLogListener(listener: (String) -> Unit) {
+        logListeners += listener
+    }
+
+    fun removeLogListener(listener: (String) -> Unit) {
+        logListeners -= listener
+    }
+
+    /**
+     * Writes [command] to the process's stdin (followed by a newline) so the service
+     * executes it in its own console. Returns `false` if the process is not running.
+     */
+    fun executeCommand(command: String): Boolean {
+        val proc = process ?: return false
+        if (!proc.isAlive) return false
+        return runCatching {
+            val stdin = proc.outputStream
+            stdin.write((command + System.lineSeparator()).toByteArray())
+            stdin.flush()
+            true
+        }.getOrElse {
+            logger.warn("Failed to write command to {}: {}", name(), it.message)
+            false
+        }
+    }
+
     @OptIn(ExperimentalPathApi::class)
     fun shutdown() {
+        logListeners.clear()
         process?.let { process ->
             val handle = process.toHandle()
             // Capture the full process tree up front: once the root exits its

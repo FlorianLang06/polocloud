@@ -43,6 +43,8 @@ message ServiceData {
   // Host the service is reachable on (e.g. the node's address). Lets a remote
   // proxy connect to services that are not co-located on its own host.
   string host = 7;
+  // Free-form key/value properties attached to this service.
+  map<string, string> properties = 8;
 }
 
 message ListServicesRequest {
@@ -64,6 +66,8 @@ message ProtoServiceProcessData {
   int32 bound_port = 5;
   int32 pid = 6;
   common.ServiceState state = 7;
+  // Free-form key/value properties attached to this service.
+  map<string, string> properties = 8;
 }
 
 message ProtoServiceControlPlan {

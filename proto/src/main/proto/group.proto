@@ -46,4 +46,6 @@ message GroupData {
   int64 maxOnline = 5;
   string platform = 6;
   string version = 7;
+  // Free-form key/value properties (e.g. `fallback=true`).
+  map<string, string> properties = 8;
 }

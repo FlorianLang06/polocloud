@@ -1,5 +1,7 @@
 package de.polocloud.api.group
 
+import de.polocloud.shared.property.Properties
+
 /**
  * Fluent builder used to create or edit a [Group].
  *
@@ -18,6 +20,7 @@ class GroupBuilder internal constructor(
     private var maxOnline: Long = 1
     private var platform: String = ""
     private var version: String = ""
+    private val properties: Properties = Properties()
 
     fun name(name: String): GroupBuilder = apply { this.name = name }
     fun memory(memory: Int): GroupBuilder = apply { this.memory = memory }
@@ -27,9 +30,20 @@ class GroupBuilder internal constructor(
     fun platform(platform: String): GroupBuilder = apply { this.platform = platform }
     fun version(version: String): GroupBuilder = apply { this.version = version }
 
+    /** Sets a single key/value property on the group. */
+    fun property(key: String, value: String): GroupBuilder = apply { this.properties.set(key, value) }
+
+    /** Adds all entries of [properties] to the group's properties. */
+    fun properties(properties: Map<String, String>): GroupBuilder =
+        apply { properties.forEach { (key, value) -> this.properties.set(key, value) } }
+
+    /** Marks this group as a fallback target for the bridge (`fallback=true`). */
+    fun fallback(fallback: Boolean = true): GroupBuilder =
+        apply { this.properties.set(Properties.FALLBACK, fallback.toString()) }
+
     internal fun toGroup(): Group {
         require(name.isNotBlank()) { "Group name must be set" }
-        return Group(name, memory, startThreshold, minOnline, maxOnline, platform, version)
+        return Group(name, memory, startThreshold, minOnline, maxOnline, platform, version, properties)
     }
 
     /**

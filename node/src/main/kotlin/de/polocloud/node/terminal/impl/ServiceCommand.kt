@@ -2,22 +2,124 @@ package de.polocloud.node.terminal.impl
 
 import de.polocloud.common.commands.Command
 import de.polocloud.common.commands.type.KeywordArgument
-import de.polocloud.common.commands.type.TextArgument
+import de.polocloud.common.commands.type.StringArrayArgument
+import de.polocloud.node.services.Service
 import de.polocloud.node.services.ServiceProvider
+import de.polocloud.node.terminal.CliTerminal
+import de.polocloud.node.terminal.types.ServiceArgument
+import org.jline.reader.UserInterruptException
 import org.slf4j.LoggerFactory
 
-class ServiceCommand(val serviceProvider: ServiceProvider) : Command("service", "Manage all your cloud services", "ser") {
+/**
+ * Terminal command for inspecting and controlling the services running on this node.
+ *
+ * Runs in-process, so it talks to the [ServiceProvider] directly (no gRPC): `list`,
+ * `<name> info`, `<name> shutdown`, `<name> logs` (live tail) and `<name> execute <command>`.
+ */
+class ServiceCommand(
+    private val serviceProvider: ServiceProvider,
+    private val terminal: CliTerminal,
+) : Command("service", "Manage all your cloud services", "ser") {
 
     private val logger = LoggerFactory.getLogger(ServiceCommand::class.java)
 
-    private val nameArgument = TextArgument("name")
+    private val serviceArgument = ServiceArgument("name", serviceProvider)
+    private val commandArgument = StringArrayArgument("command")
 
     init {
         syntax({
-            serviceProvider.findAll().forEach { service ->
-                logger.info("Service: ${service.name()} | State: ${service.state} | Port: ${service.port}")
+            val services = serviceProvider.findAll()
+            if (services.isEmpty()) {
+                logger.info("There are no services.")
+                return@syntax
             }
-        }, TextArgument("list"))
+            logger.info("Services (${services.size}):")
+            services.forEach { service ->
+                logger.info("  ${service.name()} | state: ${service.state} | port: ${service.port}")
+            }
+        }, "List all services", KeywordArgument("list"))
 
+        syntax({ context ->
+            info(context.arg(serviceArgument))
+        }, "Show detailed information about a service", serviceArgument, KeywordArgument("info"))
+
+        syntax({ context ->
+            shutdown(context.arg(serviceArgument))
+        }, "Shutdown a service", serviceArgument, KeywordArgument("shutdown"))
+
+        syntax({ context ->
+            tailLogs(context.arg(serviceArgument))
+        }, "Live-tail the console of a service", serviceArgument, KeywordArgument("logs"))
+
+        syntax({ context ->
+            execute(context.arg(serviceArgument), context.arg(commandArgument))
+        }, "Execute a command in a service's console", serviceArgument, KeywordArgument("execute"), commandArgument)
+    }
+
+    private fun info(service: Service) {
+        val local = serviceProvider.findLocal(service.name())
+        logger.info("Service ${service.name()}:")
+        logger.info("  id: ${service.id}")
+        logger.info("  group: ${service.groupName}")
+        logger.info("  state: ${service.state}")
+        logger.info("  host: ${service.hostname}:${service.port}")
+        logger.info("  pid: ${local?.process?.pid() ?: "-"}")
+        val properties = local?.properties.orEmpty()
+        if (properties.isEmpty()) {
+            logger.info("  properties: (none)")
+        } else {
+            logger.info("  properties:")
+            properties.forEach { (key, value) -> logger.info("    - $key=$value") }
+        }
+    }
+
+    private fun shutdown(service: Service) {
+        val local = serviceProvider.findLocal(service.name())
+        if (local == null) {
+            logger.info("Service ${service.name()} is not running on this node.")
+            return
+        }
+        logger.info("Shutting down ${service.name()} ...")
+        serviceProvider.shutdownLocal(local)
+        logger.info("Service ${service.name()} was stopped.")
+    }
+
+    private fun execute(service: Service, command: String) {
+        val local = serviceProvider.findLocal(service.name())
+        if (local == null) {
+            logger.info("Service ${service.name()} is not running on this node.")
+            return
+        }
+        if (local.executeCommand(command)) {
+            logger.info("Executed '$command' in ${service.name()}.")
+        } else {
+            logger.info("Could not send the command to ${service.name()} (process not running).")
+        }
+    }
+
+    private fun tailLogs(service: Service) {
+        val local = serviceProvider.findLocal(service.name())
+        if (local == null) {
+            logger.info("Service ${service.name()} is not running on this node.")
+            return
+        }
+
+        logger.info("Tailing logs of ${service.name()} — press Ctrl+C or type 'exit' to stop.")
+        // Print the buffered history first, then follow live lines above the input prompt.
+        local.recentLogs().forEach { terminal.display(it) }
+
+        val listener: (String) -> Unit = { line -> terminal.display(line) }
+        local.addLogListener(listener)
+        try {
+            while (true) {
+                val input = terminal.awaitInput("&8[logs:${service.name()}]&r ").trim()
+                if (input.equals("exit", ignoreCase = true)) break
+            }
+        } catch (_: UserInterruptException) {
+            // Ctrl+C leaves the tail without terminating the node.
+        } finally {
+            local.removeLogListener(listener)
+            logger.info("Stopped tailing ${service.name()}.")
+        }
     }
 }

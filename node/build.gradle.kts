@@ -55,6 +55,9 @@ dependencies {
     testImplementation(projects.common)
     testImplementation(libs.bundles.testing)
     testImplementation(libs.kotlinx.coroutines.core)
+    // The terminal commands reference the i18n helpers; needed on the test classpath
+    // so command classes load when exercised in tests.
+    testImplementation(libs.polocloud.i18n)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 

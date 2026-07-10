@@ -5,9 +5,12 @@ import de.polocloud.common.commands.type.DoubleArgument
 import de.polocloud.common.commands.type.IntArgument
 import de.polocloud.common.commands.type.KeywordArgument
 import de.polocloud.common.commands.type.LongArgument
+import de.polocloud.common.commands.type.StringArrayArgument
 import de.polocloud.common.commands.type.TextArgument
 import de.polocloud.i18n.api.trInfo
+import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupService
+import de.polocloud.node.group.PropertyCodec
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.terminal.types.GroupArgument
 import de.polocloud.node.terminal.types.PlatformArgument
@@ -54,5 +57,72 @@ class GroupCommand(
             groupService.delete(group)
             logger.trInfo("node", "node.command.group.deleted", Pair("name", group.name))
         }, "Delete a group", KeywordArgument("delete"), groupArgument)
+
+        syntax({
+            val groups = groupService.findAll()
+            if (groups.isEmpty()) {
+                logger.info("There are no groups.")
+                return@syntax
+            }
+            logger.info("Groups (${groups.size}):")
+            groups.forEach { group ->
+                val fallback = if (group.properties.containsKey("fallback")) " | fallback: ${group.properties["fallback"]}" else ""
+                logger.info(
+                    "  ${group.name} | platform: ${group.platform}/${group.version} " +
+                        "| memory: ${group.memory}MB | online: ${group.minOnline}-${group.maxOnline}$fallback"
+                )
+            }
+        }, "List all groups", KeywordArgument("list"))
+
+        // --- edit: change a single group parameter -----------------------------------
+        val propertyKeyArgument = TextArgument("key")
+        val propertyValueArgument = StringArrayArgument("value")
+
+        syntax({
+            val group = it.arg(groupArgument)
+            update(group.copy(memory = it.arg(memoryArgument)), "memory", it.arg(memoryArgument))
+        }, "Edit a group's memory", KeywordArgument("edit"), groupArgument, KeywordArgument("memory"), memoryArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            update(group.copy(minOnline = it.arg(minOnlineArgument)), "minOnline", it.arg(minOnlineArgument))
+        }, "Edit a group's minimum online count", KeywordArgument("edit"), groupArgument, KeywordArgument("minOnline"), minOnlineArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            update(group.copy(maxOnline = it.arg(maxOnlineArgument)), "maxOnline", it.arg(maxOnlineArgument))
+        }, "Edit a group's maximum online count", KeywordArgument("edit"), groupArgument, KeywordArgument("maxOnline"), maxOnlineArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            update(group.copy(startThreshold = it.arg(startThresholdArgument)), "startThreshold", it.arg(startThresholdArgument))
+        }, "Edit a group's start threshold", KeywordArgument("edit"), groupArgument, KeywordArgument("startThreshold"), startThresholdArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val platform = it.arg(platformArgument)
+            val version = it.arg(versionArgument)
+            update(group.copy(platform = platform.name, version = version.version), "platform", "${platform.name}/${version.version}")
+        }, "Edit a group's platform and version", KeywordArgument("edit"), groupArgument, KeywordArgument("platform"), platformArgument, versionArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val key = it.arg(propertyKeyArgument)
+            val value = it.arg(propertyValueArgument)
+            val properties = group.properties.apply { put(key, value) }
+            update(group.copy(propertiesJson = PropertyCodec.encode(properties)), "property $key", value)
+        }, "Set a group property", KeywordArgument("edit"), groupArgument, KeywordArgument("property"), propertyKeyArgument, propertyValueArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val key = it.arg(propertyKeyArgument)
+            val properties = group.properties.apply { remove(key) }
+            update(group.copy(propertiesJson = PropertyCodec.encode(properties)), "property $key", "(removed)")
+        }, "Remove a group property", KeywordArgument("edit"), groupArgument, KeywordArgument("unset"), propertyKeyArgument)
+    }
+
+    private fun update(group: Group, field: String, value: Any) {
+        groupService.update(group)
+        logger.info("Updated ${group.name}: $field = $value")
     }
 }

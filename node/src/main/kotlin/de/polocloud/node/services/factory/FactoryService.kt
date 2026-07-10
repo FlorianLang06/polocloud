@@ -54,6 +54,10 @@ class FactoryService(
          service.port = assignPort(platform, service.index)
          service.host = NODE_HOST
 
+        // Seed the service's properties from its group so group-level flags (e.g. `fallback`)
+        // are visible on the service without overwriting any already set on it.
+        group.properties.forEach { (key, value) -> service.properties.putIfAbsent(key, value) }
+
         installBridgePlugin(platform, workDir)
         applyTasks(platform, version, service, group, workDir)
 
@@ -71,6 +75,9 @@ class FactoryService(
 
         service.process = proc
         service.workDir = workDir.toPath()
+        // Start pumping the process console into the service log buffer so `service <name> logs`
+        // can tail it.
+        service.startLogCapture()
         // The process is alive but the server is still loading — it only counts as online
         // once ServicePingFactory can reach it, which then flips the state to RUNNING and
         // fires ServerStartedEvent.

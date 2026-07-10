@@ -1,5 +1,7 @@
 package de.polocloud.shared.service
 
+import de.polocloud.shared.property.Properties
+import de.polocloud.shared.property.PropertyHolder
 import kotlinx.serialization.Serializable
 
 /**
@@ -24,7 +26,9 @@ data class Service(
     /** Host the service is reachable on, e.g. `127.0.0.1`. */
     val host: String,
     val pid: Long,
-) {
+    /** Free-form key/value properties attached to this service. */
+    override val properties: Properties = Properties(),
+) : PropertyHolder() {
 
     /** Cluster-wide service name, e.g. `lobby-1`. */
     fun name() = "$group-$index"

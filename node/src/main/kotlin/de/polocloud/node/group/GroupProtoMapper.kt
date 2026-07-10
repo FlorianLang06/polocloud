@@ -15,6 +15,7 @@ object GroupProtoMapper {
         .setMaxOnline(group.maxOnline)
         .setPlatform(group.platform)
         .setVersion(group.version)
+        .putAllProperties(group.properties)
         .build()
 
     fun toDomain(data: GroupData): Group = Group(
@@ -25,5 +26,6 @@ object GroupProtoMapper {
         maxOnline = data.maxOnline,
         platform = data.platform,
         version = data.version,
+        propertiesJson = PropertyCodec.encode(data.propertiesMap),
     )
 }
