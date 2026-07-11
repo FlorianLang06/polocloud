@@ -21,6 +21,7 @@ class GroupBuilder internal constructor(
     private var platform: String = ""
     private var version: String = ""
     private val properties: Properties = Properties()
+    private val nodes: MutableList<String> = mutableListOf()
 
     fun name(name: String): GroupBuilder = apply { this.name = name }
     fun memory(memory: Int): GroupBuilder = apply { this.memory = memory }
@@ -41,9 +42,18 @@ class GroupBuilder internal constructor(
     fun fallback(fallback: Boolean = true): GroupBuilder =
         apply { this.properties.set(Properties.FALLBACK, fallback.toString()) }
 
+    /** Restricts this group to a single node (by its cluster name, e.g. `node-1`). */
+    fun node(name: String): GroupBuilder = apply { this.nodes.add(name) }
+
+    /**
+     * Restricts this group to the given nodes (by their cluster names). Leave unset (or
+     * empty) to allow the group to start on any online node.
+     */
+    fun nodes(vararg names: String): GroupBuilder = apply { this.nodes.addAll(names) }
+
     internal fun toGroup(): Group {
         require(name.isNotBlank()) { "Group name must be set" }
-        return Group(name, memory, startThreshold, minOnline, maxOnline, platform, version, properties)
+        return Group(name, memory, startThreshold, minOnline, maxOnline, platform, version, properties, nodes.toList())
     }
 
     /**

@@ -20,6 +20,7 @@ object ServiceMapper {
         pid = data.pid,
         onlinePlayers = data.onlinePlayers,
         maxPlayers = data.maxPlayers,
+        motd = data.motd,
         properties = Properties.of(data.propertiesMap),
     )
 }

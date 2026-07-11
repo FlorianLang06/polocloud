@@ -13,11 +13,15 @@ import de.polocloud.node.group.GroupService
 import de.polocloud.node.group.PropertyCodec
 import de.polocloud.node.group.TemplateCodec
 import de.polocloud.node.group.template.GroupTemplateService
+import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.PlatformService
+import de.polocloud.node.services.queue.GroupNodeEligibility
 import de.polocloud.node.terminal.types.GroupArgument
+import de.polocloud.node.terminal.types.NodeArgument
 import de.polocloud.node.terminal.types.PlatformArgument
 import de.polocloud.node.terminal.types.PlatformVersionArgument
+import de.polocloud.proto.NodeState
 import org.slf4j.LoggerFactory
 
 class GroupCommand(
@@ -156,6 +160,31 @@ class GroupCommand(
             val templates = group.templates - name
             update(group.copy(templatesJson = TemplateCodec.encode(templates)), "template", "-$name")
         }, "Remove a template from a group", KeywordArgument("edit"), groupArgument, KeywordArgument("template"), KeywordArgument("remove"), templateNameArgument)
+
+        // --- edit: node whitelist -------------------------------------------------------
+        val nodeArgument = NodeArgument("node")
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val node = it.arg(nodeArgument)
+            if (node.name() in group.nodes) {
+                logger.info("${group.name} is already restricted to node '${node.name()}'.")
+                return@syntax
+            }
+            val nodes = group.nodes + node.name()
+            update(group.copy(nodesJson = TemplateCodec.encode(nodes)), "node", "+${node.name()}")
+        }, "Restrict a group to an additional node", KeywordArgument("edit"), groupArgument, KeywordArgument("node"), KeywordArgument("add"), nodeArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val node = it.arg(nodeArgument)
+            if (node.name() !in group.nodes) {
+                logger.info("${group.name} is not restricted to node '${node.name()}'.")
+                return@syntax
+            }
+            val nodes = group.nodes - node.name()
+            update(group.copy(nodesJson = TemplateCodec.encode(nodes)), "node", "-${node.name()}")
+        }, "Remove a node restriction from a group", KeywordArgument("edit"), groupArgument, KeywordArgument("node"), KeywordArgument("remove"), nodeArgument)
     }
 
     private fun info(group: Group) {
@@ -169,6 +198,11 @@ class GroupCommand(
         logger.info("  online: ${group.minOnline}-${group.maxOnline} (start threshold: ${group.startThreshold})")
         logger.info("  static: ${group.static}")
         logger.info("  services: $running running")
+        logger.info("  nodes: ${if (group.nodes.isEmpty()) "all nodes" else group.nodes.joinToString()}")
+        // Same NodeRepository-not-ready guard as ServiceQueue's onlineNodes default.
+        val onlineNodes = runCatching { NodeRepository.find(NodeState.ONLINE) }.getOrDefault(emptyList())
+        val runtimeNodes = GroupNodeEligibility.eligibleOnlineNodes(group, onlineNodes).map { it.name() }
+        logger.info("  runtime nodes: ${if (runtimeNodes.isEmpty()) "(none online)" else runtimeNodes.joinToString()}")
         logger.info("  templates: ${if (group.templates.isEmpty()) "(none)" else group.templates.joinToString()}")
         if (group.properties.isEmpty()) {
             logger.info("  properties: (none)")

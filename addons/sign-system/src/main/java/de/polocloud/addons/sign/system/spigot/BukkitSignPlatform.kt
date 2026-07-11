@@ -1,29 +1,31 @@
 package de.polocloud.addons.sign.system.spigot
 
-import de.polocloud.addons.sign.system.SignData
+import de.polocloud.addons.sign.system.SignEntryType
 import de.polocloud.addons.sign.system.SignPlatform
-import de.polocloud.addons.sign.system.layout.SignLayout
-import de.polocloud.shared.service.ServiceState
+import de.polocloud.addons.sign.system.spigot.renderer.BukkitBlockMatcher
+import de.polocloud.addons.sign.system.spigot.renderer.BukkitSignRenderer
 import org.bukkit.Material
-import org.bukkit.block.sign.Side
+import org.bukkit.plugin.java.JavaPlugin
+import java.nio.file.Path
 
-class BukkitSignPlatform : SignPlatform() {
+/**
+ * Bukkit implementation of [SignPlatform]. Registers one [de.polocloud.addons.sign.system.SignEntryRenderer]
+ * per supported [SignEntryType] — currently just [SignEntryType.SIGN]; a painting or
+ * banner renderer registers here the same way once it exists.
+ */
+class BukkitSignPlatform(private val plugin: JavaPlugin) : SignPlatform() {
 
-    override fun listSignTypes(): Set<String> {
-        return setOf(Material.OAK_WALL_SIGN.toString())
+    override val dataDirectory: Path = plugin.dataFolder.toPath()
+
+    init {
+        register(BukkitSignRenderer())
     }
 
-    override fun displaySign(data: SignData) {
-        val world = org.bukkit.Bukkit.getWorld(data.position.world) ?: return
-        val block = world.getBlockAt(data.position.x, data.position.y, data.position.z)
-
-        val signState = block.state as? org.bukkit.block.Sign ?: return
-        val signLayout = data.layout as SignLayout
-
-        signLayout.frames[ServiceState.UNKNOWN]?.get(0)?.lines?.forEachIndexed { index, line ->
-            signState.getSide(Side.FRONT).setLine(index, line)
-        }
-
-        signState.update()
+    override fun scheduleRepeating(intervalTicks: Long, task: () -> Unit) {
+        plugin.server.scheduler.runTaskTimer(plugin, Runnable(task), intervalTicks, intervalTicks)
     }
+
+    /** The [SignEntryType] whose block-matcher renderer accepts [material], if any — used by `/signs add`. */
+    fun detectType(material: Material): SignEntryType? =
+        renderers().firstOrNull { it is BukkitBlockMatcher && it.matches(material) }?.type
 }

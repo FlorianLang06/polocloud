@@ -46,6 +46,12 @@ class LocalService(private val service: Service) : Service(
     var onlinePlayers: Int = 0
     var maxPlayers: Int = 0
 
+    /**
+     * MOTD text from the last successful [de.polocloud.node.services.ping.ServicePingFactory]
+     * ping. Empty until the first successful ping. Only ever written by the ping loop.
+     */
+    var motd: String = ""
+
     /** Millis timestamp of the last player-count ping; used to throttle [de.polocloud.node.services.ping.ServicePingFactory] polling of already-running services. */
     var lastPlayerPollAt: Long = 0
 

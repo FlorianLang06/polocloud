@@ -67,6 +67,7 @@ class ServiceCommand(
         // Only a co-located LocalService carries a live ping result; a service known only
         // from the DB (e.g. running on another node) has no player count to report here.
         logger.info("  players: ${local?.let { "${it.onlinePlayers}/${it.maxPlayers}" } ?: "-"}")
+        logger.info("  motd: ${local?.motd?.takeIf { it.isNotEmpty() } ?: "-"}")
         // Templates actually copied into this instance's work directory on start — not
         // re-read from the group, so it stays accurate even if the group's list changed
         // (or the service isn't running here at all) since this service started.

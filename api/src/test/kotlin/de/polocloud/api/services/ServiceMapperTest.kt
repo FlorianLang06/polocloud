@@ -21,6 +21,7 @@ class ServiceMapperTest {
             .setPid(4321)
             .setOnlinePlayers(7)
             .setMaxPlayers(20)
+            .setMotd("A Minecraft Server")
             .putProperties(Properties.FALLBACK, "true")
             .build()
 
@@ -36,6 +37,7 @@ class ServiceMapperTest {
         assertEquals(4321, service.pid)
         assertEquals(7, service.onlinePlayers)
         assertEquals(20, service.maxPlayers)
+        assertEquals("A Minecraft Server", service.motd)
         assertTrue(service.isFallback())
     }
 

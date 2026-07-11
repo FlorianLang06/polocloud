@@ -55,6 +55,9 @@ message ServiceData {
   // Configured player slots, as last reported by the node's SLP ping. 0 until the
   // first successful ping. Read-only: only the node's ping loop updates this.
   int32 max_players = 10;
+  // MOTD text from the last successful SLP ping. Empty until the first successful
+  // ping. Read-only: only the node's ping loop updates this.
+  string motd = 11;
 }
 
 message ListServicesRequest {
@@ -91,6 +94,9 @@ message ProtoServiceProcessData {
   // Configured player slots, as last reported by the node's SLP ping. 0 until the
   // first successful ping. Read-only: only the node's ping loop updates this.
   int32 max_players = 10;
+  // MOTD text from the last successful SLP ping. Empty until the first successful
+  // ping. Read-only: only the node's ping loop updates this.
+  string motd = 11;
 }
 
 message ProtoServiceControlPlan {

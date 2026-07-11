@@ -27,6 +27,13 @@ data class Group (
      * an earlier one's on conflict — see [de.polocloud.node.group.template.GroupTemplateService].
      */
     val templatesJson: String = "[]",
+    /**
+     * Names of the nodes ([de.polocloud.node.cluster.node.NodeData.name]) this group is
+     * allowed to start services on, persisted as JSON for the same reason as
+     * [templatesJson]. Empty means unrestricted — any online node is eligible. See
+     * [de.polocloud.node.services.queue.GroupNodeEligibility].
+     */
+    val nodesJson: String = "[]",
 ) {
 
     /**
@@ -42,4 +49,12 @@ data class Group (
      */
     val templates: List<String>
         get() = TemplateCodec.decode(templatesJson)
+
+    /**
+     * The decoded node whitelist. Computed (no backing field) so it is not turned into
+     * its own SQL column; the persisted representation is [nodesJson]. Empty means the
+     * group may start on any online node.
+     */
+    val nodes: List<String>
+        get() = TemplateCodec.decode(nodesJson)
 }

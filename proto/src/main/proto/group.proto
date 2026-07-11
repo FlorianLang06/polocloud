@@ -51,4 +51,7 @@ message GroupData {
   // Ordered names of the templates applied to a service of this group on start (e.g.
   // `GLOBAL`, `GLOBAL_SERVER`, the group's own name).
   repeated string templates = 9;
+  // Names of the nodes this group may start services on. Empty means unrestricted —
+  // any online node is eligible.
+  repeated string nodes = 10;
 }

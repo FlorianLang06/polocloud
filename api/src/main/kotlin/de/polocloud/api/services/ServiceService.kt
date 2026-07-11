@@ -11,9 +11,10 @@ import kotlinx.coroutines.runBlocking
  * Backed by a [ServiceApiClient] (gRPC in production). Obtain the shared instance
  * via [de.polocloud.api.Polocloud.serviceService].
  *
- * The results reflect the services known to the **connected node**. In a
- * multi-node cluster this is that node's local view, not a cluster-wide
- * aggregate — cross-node aggregation is not yet implemented.
+ * The results are cluster-wide: the connected node aggregates its own local services
+ * with every other online node's local services before responding, so a proxy or
+ * plugin only ever needs to talk to one node to see the whole cluster (see
+ * `FindServicesServerHandler` on the node side).
  *
  * Calls run on [Dispatchers.IO] rather than the caller's thread: callers such as
  * the proxy bridge invoke these from a platform lifecycle thread, and confining

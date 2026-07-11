@@ -13,4 +13,6 @@ data class Group (
     val version: String,
     /** Free-form key/value properties attached to this group (e.g. `fallback=true`). */
     override val properties: Properties = Properties(),
+    /** Names of the nodes this group may start on. Empty means any online node is eligible. */
+    val nodes: List<String> = emptyList(),
 ) : PropertyHolder()

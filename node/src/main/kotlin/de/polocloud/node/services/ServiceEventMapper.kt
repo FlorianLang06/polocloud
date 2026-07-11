@@ -23,6 +23,7 @@ object ServiceEventMapper {
         pid = service.process?.pid() ?: -1L,
         onlinePlayers = service.onlinePlayers,
         maxPlayers = service.maxPlayers,
+        motd = service.motd,
         properties = Properties.of(service.properties),
     )
 }

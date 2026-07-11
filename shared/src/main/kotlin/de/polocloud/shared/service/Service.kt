@@ -33,6 +33,11 @@ data class Service(
      */
     val onlinePlayers: Int = 0,
     val maxPlayers: Int = 0,
+    /**
+     * MOTD text from the node's last successful Minecraft Server List Ping. Empty
+     * until the first successful ping. Read-only: only the node's ping loop updates this.
+     */
+    val motd: String = "",
     /** Free-form key/value properties attached to this service. */
     override val properties: Properties = Properties(),
 ) : PropertyHolder() {

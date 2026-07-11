@@ -17,6 +17,7 @@ object GroupMapper {
         platform = data.platform,
         version = data.version,
         properties = Properties.of(data.propertiesMap),
+        nodes = data.nodesList,
     )
 
     fun toProto(group: Group): GroupData = GroupData.newBuilder()
@@ -28,5 +29,6 @@ object GroupMapper {
         .setPlatform(group.platform)
         .setVersion(group.version)
         .putAllProperties(group.properties.asMap())
+        .addAllNodes(group.nodes)
         .build()
 }

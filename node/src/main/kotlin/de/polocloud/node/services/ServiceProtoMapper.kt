@@ -19,5 +19,6 @@ object ServiceProtoMapper {
         .putAllProperties(service.properties)
         .setOnlinePlayers(service.onlinePlayers)
         .setMaxPlayers(service.maxPlayers)
+        .setMotd(service.motd)
         .build()
 }

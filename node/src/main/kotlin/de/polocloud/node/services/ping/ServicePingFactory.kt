@@ -94,6 +94,7 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
         val changed = service.onlinePlayers != result.onlinePlayers || service.maxPlayers != result.maxPlayers
         service.onlinePlayers = result.onlinePlayers
         service.maxPlayers = result.maxPlayers
+        service.motd = result.description
 
         if (changed) {
             ClusterEventService.call(PlayerCountChangedEvent(ServiceEventMapper.toShared(service)))
@@ -108,6 +109,7 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
         service.state = ServiceState.RUNNING
         service.onlinePlayers = result.onlinePlayers
         service.maxPlayers = result.maxPlayers
+        service.motd = result.description
         service.lastPlayerPollAt = System.currentTimeMillis()
         // Persist the RUNNING transition so the database no longer shows the service as
         // STARTING once it is actually online.

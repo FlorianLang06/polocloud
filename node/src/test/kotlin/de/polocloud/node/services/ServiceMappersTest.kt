@@ -44,6 +44,23 @@ class ServiceMappersTest {
     }
 
     @Test
+    fun `mappers carry the motd set by the ping loop`() {
+        val service = local()
+        service.motd = "A Minecraft Server"
+
+        assertEquals("A Minecraft Server", ServiceProtoMapper.toProto(service).motd)
+        assertEquals("A Minecraft Server", ServiceProcessProtoMapper.toProto(service).motd)
+        assertEquals("A Minecraft Server", ServiceEventMapper.toShared(service).motd)
+    }
+
+    @Test
+    fun `motd defaults to empty until a ping has landed`() {
+        val service = local()
+        assertEquals("", ServiceProtoMapper.toProto(service).motd)
+        assertEquals("", ServiceEventMapper.toShared(service).motd)
+    }
+
+    @Test
     fun `ServiceProtoMapper maps fields, host and properties`() {
         val service = local()
         val data = ServiceProtoMapper.toProto(service)
