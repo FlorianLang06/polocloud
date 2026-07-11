@@ -1,0 +1,8 @@
+name: Polocloud-Signsystem
+version: 1.0.0
+api-version: 1.13
+main: de.polocloud.addons.sign.system.spigot.BukkitBootstrap
+commands:
+  signs:
+    description: Sign system command
+    usage: /<command>
