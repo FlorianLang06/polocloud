@@ -1,12 +1,10 @@
 package de.polocloud.node.services.factory
 
 import de.polocloud.common.version.PolocloudVersion
-import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.forwarding.ForwardingHandler
 import de.polocloud.node.group.Group
 import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.LocalService
-import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.shared.service.ServiceState
 import de.polocloud.node.services.factory.platform.Platform
@@ -14,7 +12,6 @@ import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.process.PlatformProcess
 import de.polocloud.node.services.factory.task.TaskExecutor
 import de.polocloud.node.security.ServiceIdentityProvisioner
-import de.polocloud.shared.event.server.ServerStoppedEvent
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -100,6 +97,25 @@ class FactoryService(
         // Persist the now-assigned port/host/state so the database reflects the live
         // service instead of the placeholder row written while it was still queued.
         serviceProvider.persist(service)
+        // The process can end on its own at any time — a crash, or `/stop` typed in the
+        // service's own console — without the node ever commanding it. Without this hook
+        // that was only noticed incidentally, up to 2s later, when the scaling queue
+        // happened to touch this group. React immediately instead: shutdownLocal() is safe
+        // to call from here even if it races an operator-driven shutdown of the same
+        // service — LocalService.shutdown()'s own CAS guard is the dedup point, not this
+        // hook, so whichever side notices first does the cleanup and the other is a no-op.
+        proc.onExit().thenRun {
+            // Only log/react if this callback is actually the one performing cleanup —
+            // an operator-issued `service <name> shutdown` claims LocalService.shutdown()'s
+            // CAS guard first, in which case this is a harmless no-op and logging here
+            // would misleadingly call a commanded stop "unexpected".
+            if (serviceProvider.shutdownLocal(service)) {
+                logger.info(
+                    "Service {} process exited unexpectedly (crash, or `/stop` in its console) — cleaned up",
+                    service.name()
+                )
+            }
+        }
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())
     }
 
@@ -186,16 +202,14 @@ class FactoryService(
             .toSet()
     }
 
+    /**
+     * Safety net for services whose [Process.onExit] hook (wired in [start]) never fired
+     * or hasn't been observed yet — e.g. a service placed before a node restart. Normal
+     * crash/`/stop` cleanup happens immediately via that hook instead of waiting for this.
+     */
     private fun pruneDeadProcesses() {
-        serviceProvider.localServices.removeIf { service ->
-            val dead = service.process?.isAlive != true
-            if (dead) {
-                // Drop the persisted row too so a crashed/exited service does not linger
-                // in the database with a stale state after it is gone.
-                serviceProvider.remove(service)
-                ClusterEventService.call(ServerStoppedEvent(ServiceEventMapper.toShared(service)))
-            }
-            dead
-        }
+        serviceProvider.localServices
+            .filter { it.process?.isAlive != true }
+            .forEach { serviceProvider.shutdownLocal(it) }
     }
 }

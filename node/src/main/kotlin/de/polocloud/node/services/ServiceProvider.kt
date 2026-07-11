@@ -35,8 +35,29 @@ class ServiceProvider(
 
     fun run() {
         platformService.load()
+        reconcileStaleServices()
         queue.run()
         pingFactory.run()
+    }
+
+    /**
+     * Drops every row already in the `services` table before this node starts placing
+     * anything of its own.
+     *
+     * The database only ever holds *this* node's own local services — peers are queried
+     * live over gRPC ([de.polocloud.node.services.cluster.PeerServiceQuery]), not through a
+     * shared table — so on a fresh start, with [localServices] still empty, every existing
+     * row is necessarily left over from a previous run of this same node that never reached
+     * [shutdown] (a forceful kill during development, an OOM-kill, a container restart).
+     * Without this, those rows linger forever showing a stale `RUNNING` state, and the
+     * scaling queue undercounts how many replicas are actually needed since it only counts
+     * [localServices], causing it to place new replicas on top of names/ports the stale
+     * rows still claim.
+     */
+    private fun reconcileStaleServices() {
+        ServiceRepository.findAll().forEach { stale ->
+            runCatching { ServiceRepository.delete(stale) }
+        }
     }
 
     fun shutdown() {
@@ -88,11 +109,25 @@ class ServiceProvider(
      * Shuts down a single running service: terminates the process, removes it from the
      * live list and publishes [ServerStoppedEvent] so the bridge/API drop it immediately
      * (rather than only on the next prune pass).
+     *
+     * Also the single entry point for a service ending on its own (crash, or `/stop`
+     * typed in its console) — [de.polocloud.node.services.factory.FactoryService.start]
+     * wires the process's exit future straight to this method. That path can race an
+     * operator-driven shutdown of the same service; [LocalService.shutdown] itself is the
+     * mutual-exclusion point (guarded internally), so only one caller ever runs cleanup.
+     * Cleanup (including the workDir delete) must fully finish *before* the service is
+     * removed from [localServices] — otherwise the queue can see the slot as free and
+     * restart into the same work directory/port while the old one is still being torn down.
      */
-    fun shutdownLocal(service: LocalService) {
-        runCatching { service.shutdown() }
+    /** Returns whether this call actually performed cleanup (`false` if a concurrent caller already had). */
+    fun shutdownLocal(service: LocalService): Boolean {
+        // A thrown exception is not the same as "a concurrent caller already handled this" —
+        // only a clean `false` (the CAS guard in LocalService.shutdown) means skip.
+        val alreadyHandledElsewhere = !runCatching { service.shutdown() }.getOrDefault(true)
+        if (alreadyHandledElsewhere) return false
         localServices.remove(service)
         ClusterEventService.call(ServerStoppedEvent(ServiceEventMapper.toShared(service)))
+        return true
     }
 
     /**

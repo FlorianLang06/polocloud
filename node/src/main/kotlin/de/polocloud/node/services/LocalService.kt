@@ -6,6 +6,7 @@ import java.io.BufferedReader
 import java.nio.file.Path
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
@@ -74,6 +75,12 @@ class LocalService(private val service: Service) : Service(
 
     private var logReader: Thread? = null
 
+    // Guards [shutdown] against running twice: the process's own exit (crash, or `/stop`
+    // typed in its console) and an operator-issued shutdown can race each other, and the
+    // process-tree kill / workDir deletion below must complete exactly once — running it
+    // twice concurrently could delete files the other invocation is still using.
+    private val cleanedUp = AtomicBoolean(false)
+
     /**
      * Starts a daemon thread that pumps the process output into [logBuffer] and to
      * every registered [logListeners] entry. Call once, right after the process starts.
@@ -131,8 +138,14 @@ class LocalService(private val service: Service) : Service(
         }
     }
 
+    /**
+     * Terminates the process (if any), persists the resulting state and cleans up the
+     * work directory. Returns `false` without doing anything if a concurrent caller is
+     * already running (or has finished) this same cleanup — see [cleanedUp].
+     */
     @OptIn(ExperimentalPathApi::class)
-    fun shutdown() {
+    fun shutdown(): Boolean {
+        if (!cleanedUp.compareAndSet(false, true)) return false
         logListeners.clear()
         process?.let { process ->
             val handle = process.toHandle()
@@ -166,6 +179,7 @@ class LocalService(private val service: Service) : Service(
         if (!static) {
             workDir?.deleteRecursively()
         }
+        return true
     }
 
 }
