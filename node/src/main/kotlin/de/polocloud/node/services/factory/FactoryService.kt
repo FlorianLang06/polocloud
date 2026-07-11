@@ -4,6 +4,7 @@ import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.forwarding.ForwardingHandler
 import de.polocloud.node.group.Group
+import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
@@ -62,6 +63,12 @@ class FactoryService(
         // Seed the service's properties from its group so group-level flags (e.g. `fallback`)
         // are visible on the service without overwriting any already set on it.
         group.properties.forEach { (key, value) -> service.properties.putIfAbsent(key, value) }
+
+        // Templates are laid down first — tasks below then patch specific keys in
+        // whatever files the templates (or the platform itself, on first launch) left
+        // behind, so template content must already be in place before tasks run.
+        service.templates = group.templates
+        GroupTemplateService.copyInto(group.templates, workDir)
 
         installBridgePlugin(platform, workDir)
         applyTasks(platform, version, service, group, workDir)

@@ -48,4 +48,7 @@ message GroupData {
   string version = 7;
   // Free-form key/value properties (e.g. `fallback=true`).
   map<string, string> properties = 8;
+  // Ordered names of the templates applied to a service of this group on start (e.g.
+  // `GLOBAL`, `GLOBAL_SERVER`, the group's own name).
+  repeated string templates = 9;
 }

@@ -49,6 +49,15 @@ class LocalService(private val service: Service) : Service(
     /** Millis timestamp of the last player-count ping; used to throttle [de.polocloud.node.services.ping.ServicePingFactory] polling of already-running services. */
     var lastPlayerPollAt: Long = 0
 
+    /**
+     * Names of the templates applied to this service's work directory on start, in the
+     * order they were copied (see [de.polocloud.node.group.template.GroupTemplateService]).
+     * Snapshotted from the owning group at start time — not re-read from the group
+     * afterwards, so it reflects what this specific instance actually got, even if the
+     * group's template list changes later.
+     */
+    var templates: List<String> = emptyList()
+
     // Ring buffer of recent stdout/stderr lines (the process is started with
     // redirectErrorStream=true, so both arrive on the same stream).
     private val logBuffer = ArrayDeque<String>(LOG_BUFFER_CAPACITY)

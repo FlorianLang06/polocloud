@@ -11,6 +11,8 @@ import de.polocloud.i18n.api.trInfo
 import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.group.PropertyCodec
+import de.polocloud.node.group.TemplateCodec
+import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.terminal.types.GroupArgument
@@ -128,6 +130,32 @@ class GroupCommand(
             val properties = group.properties.apply { remove(key) }
             update(group.copy(propertiesJson = PropertyCodec.encode(properties)), "property $key", "(removed)")
         }, "Remove a group property", KeywordArgument("edit"), groupArgument, KeywordArgument("unset"), propertyKeyArgument)
+
+        // --- edit: templates -----------------------------------------------------------
+        val templateNameArgument = TextArgument("templateName")
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val name = it.arg(templateNameArgument)
+            if (name in group.templates) {
+                logger.info("${group.name} already has template '$name'.")
+                return@syntax
+            }
+            GroupTemplateService.ensure(name)
+            val templates = group.templates + name
+            update(group.copy(templatesJson = TemplateCodec.encode(templates)), "template", "+$name")
+        }, "Add a template to a group", KeywordArgument("edit"), groupArgument, KeywordArgument("template"), KeywordArgument("add"), templateNameArgument)
+
+        syntax({
+            val group = it.arg(groupArgument)
+            val name = it.arg(templateNameArgument)
+            if (name !in group.templates) {
+                logger.info("${group.name} does not have template '$name'.")
+                return@syntax
+            }
+            val templates = group.templates - name
+            update(group.copy(templatesJson = TemplateCodec.encode(templates)), "template", "-$name")
+        }, "Remove a template from a group", KeywordArgument("edit"), groupArgument, KeywordArgument("template"), KeywordArgument("remove"), templateNameArgument)
     }
 
     private fun info(group: Group) {
@@ -141,6 +169,7 @@ class GroupCommand(
         logger.info("  online: ${group.minOnline}-${group.maxOnline} (start threshold: ${group.startThreshold})")
         logger.info("  static: ${group.static}")
         logger.info("  services: $running running")
+        logger.info("  templates: ${if (group.templates.isEmpty()) "(none)" else group.templates.joinToString()}")
         if (group.properties.isEmpty()) {
             logger.info("  properties: (none)")
         } else {

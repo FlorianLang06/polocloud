@@ -20,6 +20,13 @@ data class Group (
      * and cannot persist a `Map` directly. Read [properties] for the decoded view.
      */
     val propertiesJson: String = "{}",
+    /**
+     * Ordered names of the templates applied to a service of this group on start,
+     * persisted as JSON for the same reason as [propertiesJson]. Templates are copied
+     * in this order into the service work directory, so a later entry's files win over
+     * an earlier one's on conflict — see [de.polocloud.node.group.template.GroupTemplateService].
+     */
+    val templatesJson: String = "[]",
 ) {
 
     /**
@@ -28,4 +35,11 @@ data class Group (
      */
     val properties: MutableMap<String, String>
         get() = PropertyCodec.decode(propertiesJson)
+
+    /**
+     * The decoded, ordered template name list. Computed (no backing field) so it is not
+     * turned into its own SQL column; the persisted representation is [templatesJson].
+     */
+    val templates: List<String>
+        get() = TemplateCodec.decode(templatesJson)
 }

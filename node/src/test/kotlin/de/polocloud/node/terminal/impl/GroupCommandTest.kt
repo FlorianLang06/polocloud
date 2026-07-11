@@ -4,8 +4,10 @@ import de.polocloud.common.commands.CommandService
 import de.polocloud.i18n.api.TranslationService
 import de.polocloud.node.group.Group
 import de.polocloud.node.group.GroupService
+import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.PlatformService
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -51,6 +53,11 @@ class GroupCommandTest {
         groups = InMemoryGroupService(listOf(Group("lobby", 512, 0.5, 1, 3, "velocity", "3.5.0")))
         commands = CommandService()
         commands.registerCommand(GroupCommand(groups, PlatformService(), ServiceProvider()))
+    }
+
+    @AfterEach
+    fun cleanupTemplateFolders() {
+        GroupTemplateService.directoryOf("custom").deleteRecursively()
     }
 
     private fun exec(vararg args: String) =
@@ -111,6 +118,33 @@ class GroupCommandTest {
         exec("edit", "lobby", "property", "fallback", "true")
         assertNotNull(exec("edit", "lobby", "unset", "fallback"))
         assertFalse(lobby().properties.containsKey("fallback"))
+    }
+
+    @Test
+    fun `edit template add appends a template and ensures its folder`() {
+        assertNotNull(exec("edit", "lobby", "template", "add", "custom"))
+        assertEquals(listOf("custom"), lobby().templates)
+        assert(GroupTemplateService.directoryOf("custom").isDirectory)
+    }
+
+    @Test
+    fun `edit template add is a no-op for an already-present template`() {
+        exec("edit", "lobby", "template", "add", "custom")
+        exec("edit", "lobby", "template", "add", "custom")
+        assertEquals(listOf("custom"), lobby().templates)
+    }
+
+    @Test
+    fun `edit template remove removes a template`() {
+        exec("edit", "lobby", "template", "add", "custom")
+        assertNotNull(exec("edit", "lobby", "template", "remove", "custom"))
+        assertFalse(lobby().templates.contains("custom"))
+    }
+
+    @Test
+    fun `edit template remove is a no-op for a template that is not present`() {
+        exec("edit", "lobby", "template", "remove", "custom")
+        assertFalse(lobby().templates.contains("custom"))
     }
 
     @Test

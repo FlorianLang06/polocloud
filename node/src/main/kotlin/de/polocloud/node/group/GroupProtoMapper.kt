@@ -16,6 +16,7 @@ object GroupProtoMapper {
         .setPlatform(group.platform)
         .setVersion(group.version)
         .putAllProperties(group.properties)
+        .addAllTemplates(group.templates)
         .build()
 
     fun toDomain(data: GroupData): Group = Group(
@@ -27,5 +28,6 @@ object GroupProtoMapper {
         platform = data.platform,
         version = data.version,
         propertiesJson = PropertyCodec.encode(data.propertiesMap),
+        templatesJson = TemplateCodec.encode(data.templatesList),
     )
 }

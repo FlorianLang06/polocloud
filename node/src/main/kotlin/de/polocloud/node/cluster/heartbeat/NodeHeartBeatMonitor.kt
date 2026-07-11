@@ -16,7 +16,12 @@ import kotlin.time.Duration.Companion.seconds
 
 class NodeHeartBeatMonitor(
     private val electionService: NodeElectionService,
-    private val timeout: Duration = 3.seconds
+    // Heartbeats are saved every 1s (see NodeHeartBeatService), so this used to give a
+    // node only ~2-3 missed beats of slack before being declared CRASHED — easily tripped
+    // by a GC pause or a brief network blip, and a false positive here isn't harmless: it
+    // can trigger a real head re-election. 15s tolerates a much more realistic amount of
+    // jitter while still detecting a genuinely dead node well within human-noticeable time.
+    private val timeout: Duration = 15.seconds
 ) {
 
     private var job: Job? = null

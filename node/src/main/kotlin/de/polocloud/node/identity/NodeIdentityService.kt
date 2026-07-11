@@ -44,7 +44,6 @@ class NodeIdentityService(
 
         val bindAddress = resolveBindAddress(launchProperties)
 
-        val groupService = GroupService()
         val serviceProvider = ServiceProvider(
             nodePort = holder.value.general.apiAddress.port,
             // Host services are advertised under. Loopback by default (single-host);
@@ -52,6 +51,10 @@ class NodeIdentityService(
             nodeHost = holder.value.general.serviceHostname,
             nodeId = localId.toString(),
         )
+        // Shares serviceProvider's PlatformService so a group's default templates are
+        // resolved (proxy vs. server) against the same loaded platform set services start
+        // from, rather than a second, independently-loaded copy.
+        val groupService = GroupService(serviceProvider.platformService)
 
         val grpc = NodeGrpcEndpoint(
             bindAddress,

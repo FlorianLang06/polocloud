@@ -14,6 +14,12 @@ class ServiceProvider(
     nodeHost: String = "127.0.0.1",
     /** Id of the node this provider runs on; attached to services in the API view. */
     val nodeId: String = "",
+    /**
+     * Shared with [de.polocloud.node.group.GroupService] so both agree on the same
+     * loaded platform set (e.g. resolving whether a group's platform is a proxy for its
+     * default templates) instead of each loading its own copy.
+     */
+    val platformService: PlatformService = PlatformService(),
 ) {
 
     // Concurrent by design: the queue and prune threads mutate this list while API
@@ -21,7 +27,6 @@ class ServiceProvider(
     // and torn reads; CopyOnWriteArrayList gives every reader a stable snapshot.
     val localServices = CopyOnWriteArrayList<LocalService>()
 
-    val platformService = PlatformService()
     private val factory = FactoryService(platformService, this, nodePort, nodeHost)
     private val queue = ServiceQueue(factory, this)
 
