@@ -31,6 +31,7 @@ class ServiceQueue(
         runCatching { NodeRepository.find(NodeState.ONLINE) }.getOrDefault(emptyList())
     },
     private val peerQuery: PeerServiceQuery = NodePeerServiceQuery(),
+    private val loadProvider: NodeLoadProvider = HeartbeatNodeLoadProvider,
 ) {
 
     private lateinit var thread: Thread
@@ -87,11 +88,12 @@ class ServiceQueue(
      * independently computes the same eligible-node list and the same cluster-wide
      * running count (via [clusterState], which fans out to peers exactly like
      * [de.polocloud.node.communication.handler.services.ListServicesServerHandler]
-     * does), then deterministically round-robins the outstanding deficit across that
-     * list so only one node claims each missing replica. No locks or leader RPC are
-     * involved — like head election and the heartbeat monitor, this is best-effort and
-     * self-healing rather than transactionally exact; a brief over/under-shoot is
-     * possible only in the sub-second window between two nodes ticking concurrently.
+     * does), then deterministically assigns the outstanding deficit across that list via
+     * [assignReplicas] so only one node claims each missing replica. No locks or leader
+     * RPC are involved — like head election and the heartbeat monitor, this is
+     * best-effort and self-healing rather than transactionally exact; a brief
+     * over/under-shoot is possible only in the sub-second window between two nodes
+     * ticking concurrently.
      */
     /** The groups and indexes currently queued, e.g. `lobby-1`. Exposed for testing. */
     internal fun queuedIndexes(groupName: String): List<Int> =
@@ -101,14 +103,24 @@ class ServiceQueue(
     internal fun enqueueRequiredForTest() = enqueueRequired()
 
     private fun enqueueRequired() {
-        for (group in groups()) {
-            val eligible = GroupNodeEligibility.eligibleOnlineNodes(group, onlineNodes()).sortedBy { it.id.toString() }
+        val allGroups = groups()
+        if (allGroups.isEmpty()) return
+
+        val online = onlineNodes()
+        val groupMemoryMb = allGroups.associate { it.name to it.memory }
+        // Computed once per tick (not per group, unlike clusterState) since a node's
+        // total memory footprint doesn't depend on which group is being placed right
+        // now. Mutable so a placement made earlier in this same tick's loop is reflected
+        // for the next group considered, instead of only becoming visible next tick.
+        val usedMemoryMb = nodeMemoryUsage(online, groupMemoryMb).toMutableMap()
+
+        for (group in allGroups) {
+            val eligible = GroupNodeEligibility.eligibleOnlineNodes(group, online).sortedBy { it.id.toString() }
             if (eligible.isEmpty()) continue
 
-            val selfPosition = eligible.indexOfFirst { it.id.toString() == serviceProvider.nodeId }
             // This node isn't (or is no longer) allowed to run this group — leave it to
             // whichever node(s) are actually eligible.
-            if (selfPosition < 0) continue
+            val self = eligible.firstOrNull { it.id.toString() == serviceProvider.nodeId } ?: continue
 
             val cluster = clusterState(group, eligible)
             val queued = queue.count { it.second.name == group.name }.toLong()
@@ -116,15 +128,22 @@ class ServiceQueue(
 
             if (clusterNeeded <= 0) continue
 
-            val myShare = (0 until clusterNeeded.toInt()).count { k ->
-                (cluster.running.toInt() + k) % eligible.size == selfPosition
-            }
+            val assignment = assignReplicas(eligible, cluster.perNodeRunning, usedMemoryMb, group.memory, clusterNeeded.toInt())
+            val myShare = assignment[self.name()] ?: 0
             if (myShare <= 0) continue
+
+            usedMemoryMb[self.name()] = (usedMemoryMb[self.name()] ?: 0) + myShare * group.memory
 
             logger.info(
                 "Group '{}' needs {} more service(s) cluster-wide (this node: {}) — minOnline: {}, cluster running: {}, queued: {}",
                 group.name, clusterNeeded, myShare, group.minOnline, cluster.running, queued
             )
+            if (assignment.values.sum() < clusterNeeded.toInt()) {
+                logger.warn(
+                    "Group '{}' could only place {}/{} needed replica(s) cluster-wide — every eligible node is at its memory capacity",
+                    group.name, assignment.values.sum(), clusterNeeded
+                )
+            }
             repeat(myShare) {
                 val index = nextIndex(group, cluster.usedIndexes)
                 val service = LocalService(Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED, "127.0.0.1", -1))
@@ -138,38 +157,131 @@ class ServiceQueue(
         }
     }
 
-    private data class ClusterState(val running: Long, val usedIndexes: Set<Int>)
+    /**
+     * Total memory (MB), across every group, that each online node currently runs
+     * locally — used to enforce [NodeData.maxMemory] as a hard placement cap. Computed
+     * once per tick via the same peer-query mechanism as [clusterState], but scoped to
+     * all groups at once (blank plan filter) instead of one node fetch per group.
+     */
+    private fun nodeMemoryUsage(online: List<NodeData>, groupMemoryMb: Map<String, Int>): Map<String, Int> {
+        val self = online.firstOrNull { it.id.toString() == serviceProvider.nodeId }
+        val localUsed = serviceProvider.localServices.sumOf { groupMemoryMb[it.groupName] ?: 0 }
+
+        val others = online.filter { it.id.toString() != serviceProvider.nodeId }
+        val remoteUsed = if (others.isEmpty()) emptyMap() else runBlocking {
+            coroutineScope {
+                others.map { node ->
+                    async {
+                        val used = runCatching { peerQuery.localServicesOf(node, "") }
+                            .onFailure { logger.warn("Failed to query services from node {}: {}", node.name(), it.message) }
+                            .getOrDefault(emptyList())
+                            .sumOf { service -> groupMemoryMb[service.plan] ?: 0 }
+                        node.name() to used
+                    }
+                }.awaitAll().toMap()
+            }
+        }
+
+        return buildMap {
+            self?.let { put(it.name(), localUsed) }
+            putAll(remoteUsed)
+        }
+    }
+
+    /** [perNodeRunning] is keyed by [NodeData.name] and only covers eligible nodes. */
+    private data class ClusterState(val running: Long, val usedIndexes: Set<Int>, val perNodeRunning: Map<String, Int>)
 
     /**
-     * Aggregates [group]'s running-service count and used indexes across every node in
-     * [eligible] besides this one, via the same peer-query mechanism the cluster-wide
-     * service listing handlers use ([de.polocloud.node.services.cluster.PeerServiceQuery]).
-     * A slow or unreachable peer is skipped rather than failing the whole tick, at the
-     * cost of briefly under-counting that peer's services.
+     * Aggregates [group]'s running-service count, used indexes and per-node breakdown
+     * across every node in [eligible] besides this one, via the same peer-query
+     * mechanism the cluster-wide service listing handlers use
+     * ([de.polocloud.node.services.cluster.PeerServiceQuery]). A slow or unreachable peer
+     * is skipped rather than failing the whole tick, at the cost of briefly
+     * under-counting that peer's services.
      */
     private fun clusterState(group: Group, eligible: List<NodeData>): ClusterState {
+        val self = eligible.firstOrNull { it.id.toString() == serviceProvider.nodeId }
         val localRunning = factory.runningCount(group.name)
         val localIndexes = factory.runningIndexes(group.name)
 
         val others = eligible.filter { it.id.toString() != serviceProvider.nodeId }
-        if (others.isEmpty()) return ClusterState(localRunning, localIndexes)
+        if (others.isEmpty()) {
+            val perNodeRunning = self?.let { mapOf(it.name() to localRunning.toInt()) } ?: emptyMap()
+            return ClusterState(localRunning, localIndexes, perNodeRunning)
+        }
 
         val remote = runBlocking {
             coroutineScope {
                 others.map { node ->
                     async {
-                        runCatching { peerQuery.localServicesOf(node, group.name) }
+                        node to runCatching { peerQuery.localServicesOf(node, group.name) }
                             .onFailure { logger.warn("Failed to query services from node {}: {}", node.name(), it.message) }
                             .getOrDefault(emptyList())
                     }
-                }.awaitAll().flatten()
+                }.awaitAll()
             }
         }
 
+        val perNodeRunning = buildMap {
+            self?.let { put(it.name(), localRunning.toInt()) }
+            remote.forEach { (node, services) -> put(node.name(), services.size) }
+        }
+
         return ClusterState(
-            localRunning + remote.size,
-            localIndexes + remote.map { it.index }.toSet(),
+            localRunning + remote.sumOf { it.second.size },
+            localIndexes + remote.flatMap { it.second }.map { it.index }.toSet(),
+            perNodeRunning,
         )
+    }
+
+    /**
+     * Deterministically distributes [count] outstanding replicas of a group across
+     * [eligible] nodes: each replica goes to the currently least-loaded node among those
+     * with memory headroom for it ([hasCapacity]), breaking ties by which of those nodes
+     * already runs the fewest instances of this specific group ([perNodeRunning]), then
+     * by node id for full determinism. A node's simulated running count and memory usage
+     * are updated after each pick (not its heartbeat load — a fresh heartbeat won't
+     * reflect a not-yet-started service anyway) so a multi-replica catch-up burst — e.g.
+     * after a node crash — spreads itself back out and fills each node's capacity
+     * correctly instead of piling onto whichever single node wins the first comparison.
+     *
+     * If no eligible node has room for a given replica, it is simply left unassigned —
+     * [NodeData.maxMemory] is a hard cap, so a group can end up short of `minOnline`
+     * rather than overbooking a node; capacity freeing up (or a new node joining) on a
+     * later tick lets a subsequent pass catch it up.
+     *
+     * Every eligible node runs this exact simulation over the same cluster-wide
+     * snapshot, so they all agree on the same assignment without any locking or leader
+     * RPC — same best-effort, self-healing model as [clusterState].
+     */
+    private fun assignReplicas(
+        eligible: List<NodeData>,
+        perNodeRunning: Map<String, Int>,
+        usedMemoryMb: Map<String, Int>,
+        groupMemoryMb: Int,
+        count: Int,
+    ): Map<String, Int> {
+        val runningSim = perNodeRunning.toMutableMap()
+        val memorySim = usedMemoryMb.toMutableMap()
+        val assigned = mutableMapOf<String, Int>()
+
+        fun hasCapacity(node: NodeData): Boolean =
+            node.maxMemory <= 0 || (memorySim[node.name()] ?: 0) + groupMemoryMb <= node.maxMemory
+
+        repeat(count) {
+            val pick = eligible.filter(::hasCapacity).minWithOrNull(
+                compareBy(
+                    { node: NodeData -> loadProvider.loadOf(node) },
+                    { node: NodeData -> runningSim[node.name()] ?: 0 },
+                    { node: NodeData -> node.id.toString() },
+                )
+            ) ?: return@repeat
+
+            assigned[pick.name()] = (assigned[pick.name()] ?: 0) + 1
+            runningSim[pick.name()] = (runningSim[pick.name()] ?: 0) + 1
+            memorySim[pick.name()] = (memorySim[pick.name()] ?: 0) + groupMemoryMb
+        }
+        return assigned
     }
 
     /**

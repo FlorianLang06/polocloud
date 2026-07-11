@@ -1,13 +1,19 @@
 package de.polocloud.node.terminal
 
-import org.jline.jansi.Ansi
-
 /**
  * Represents legacy Minecraft-style color codes (e.g. `&a`, `&c`, `&r`)
  * and translates them into ANSI escape sequences for use in the CLI terminal.
  *
  * Supports all 16 standard Minecraft color codes as well as a reset (`&r`) instruction.
  * Colors can be rendered in normal or bright mode depending on the entry configuration.
+ *
+ * Escape sequences are built from raw SGR codes rather than jline/jansi's `Ansi` builder:
+ * this class is on the hot path of every log line, including ones emitted while
+ * dependencies (possibly jline/jansi itself) are still being downloaded on other threads
+ * during early bootstrap. Enum class initialization in the JVM is all-or-nothing and
+ * permanent — if touching a jline class here raced ahead of it landing on the classpath,
+ * the whole enum would be irrecoverably broken (`NoClassDefFoundError`) for the rest of
+ * the process, not just that one call. Depending on nothing but core Java sidesteps that.
  *
  * Example:
  * ```kotlin
@@ -22,10 +28,10 @@ enum class AnsiColors(
     val code: String,
 
     /**
-     * The corresponding ANSI color.
+     * The base SGR foreground color number (0-7, standard ANSI order).
      * `null` indicates a reset instruction.
      */
-    color: Ansi.Color?,
+    color: Int?,
 
     /**
      * Whether the ANSI color should be rendered in bright mode.
@@ -33,31 +39,31 @@ enum class AnsiColors(
     bright: Boolean = false
 ) {
 
-    BLACK("&0", Ansi.Color.BLACK),
-    DARK_BLUE("&1", Ansi.Color.BLUE),
-    DARK_GREEN("&2", Ansi.Color.GREEN),
-    DARK_AQUA("&3", Ansi.Color.CYAN),
-    DARK_RED("&4", Ansi.Color.RED),
-    DARK_PURPLE("&5", Ansi.Color.MAGENTA),
-    GOLD("&6", Ansi.Color.YELLOW),
-    GRAY("&7", Ansi.Color.WHITE),
-    DARK_GRAY("&8", Ansi.Color.BLACK, true),
-    BLUE("&9", Ansi.Color.BLUE, true),
-    GREEN("&a", Ansi.Color.GREEN, true),
-    AQUA("&b", Ansi.Color.CYAN, true),
-    RED("&c", Ansi.Color.RED, true),
-    LIGHT_PURPLE("&d", Ansi.Color.MAGENTA, true),
-    YELLOW("&e", Ansi.Color.YELLOW, true),
-    WHITE("&f", Ansi.Color.WHITE, true),
+    BLACK("&0", 0),
+    DARK_BLUE("&1", 4),
+    DARK_GREEN("&2", 2),
+    DARK_AQUA("&3", 6),
+    DARK_RED("&4", 1),
+    DARK_PURPLE("&5", 5),
+    GOLD("&6", 3),
+    GRAY("&7", 7),
+    DARK_GRAY("&8", 0, true),
+    BLUE("&9", 4, true),
+    GREEN("&a", 2, true),
+    AQUA("&b", 6, true),
+    RED("&c", 1, true),
+    LIGHT_PURPLE("&d", 5, true),
+    YELLOW("&e", 3, true),
+    WHITE("&f", 7, true),
     RESET("&r", null);
 
     /**
      * Precomputed ANSI escape sequence for this color.
      */
     val ansi: String = when {
-        color == null -> Ansi.ansi().reset().toString()
-        bright -> Ansi.ansi().fgBright(color).toString()
-        else -> Ansi.ansi().fg(color).toString()
+        color == null -> "[0m"
+        bright -> "[9${color}m"
+        else -> "[3${color}m"
     }
 
     companion object {

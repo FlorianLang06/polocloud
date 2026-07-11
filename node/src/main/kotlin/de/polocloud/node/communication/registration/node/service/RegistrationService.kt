@@ -54,7 +54,8 @@ class RegistrationService(
                 request.group,
                 Address(request.hostname, request.port),
                 request.details.version,
-                request.details.gitHash
+                request.details.gitHash,
+                maxMemory = request.maxMemory,
             )
         )
 

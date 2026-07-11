@@ -37,7 +37,7 @@ class RegistrationClient {
      * @param publicKey The node's public key for secure communication.
      * @return The response from the cluster node registration service.
      */
-    fun tryRegister(address: Address, token: String, hostname: String, port: Int, localId: UUID, group: String, publicKey: String): RegisterNodeResponse {
+    fun tryRegister(address: Address, token: String, hostname: String, port: Int, localId: UUID, group: String, publicKey: String, maxMemory: Int): RegisterNodeResponse {
         val channel = createChannel(address)
 
         try {
@@ -56,6 +56,7 @@ class RegistrationClient {
                         .build()
                 )
                 .setToken(token)
+                .setMaxMemory(maxMemory)
                 .build()
 
             logger.trInfo("cluster", "cluster.registration.sendingRequest", "address" to address)

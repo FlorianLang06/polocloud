@@ -45,4 +45,8 @@ message ProtoNodeData {
 
   int64 first_connection = 10;
   int64 last_connection = 11;
+
+  // Total system memory (MB) reported by the node at registration. 0 means unknown/not
+  // reported (older nodes) — treated as unlimited capacity, never as zero capacity.
+  int32 max_memory = 12;
 }

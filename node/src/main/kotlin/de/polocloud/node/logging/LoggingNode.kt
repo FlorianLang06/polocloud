@@ -29,9 +29,19 @@ class LoggingNode(
 ) : AbstractAppender(name, filter, layout, true, null) {
 
     override fun append(event: LogEvent) {
+        val raw = layout.toSerializable(event).toString()
+
         // Translate legacy `&x` colour codes (used in command help and command output)
         // into ANSI here, on the console path only — the file appender keeps the raw text.
-        val formatted = AnsiColors.translate(layout.toSerializable(event).toString())
+        // AnsiColors touches org.jline.jansi classes on first use; during early bootstrap
+        // those may still be downloading on another thread, which permanently breaks the
+        // enum's static init (NoClassDefFoundError). Fall back to the raw, uncoloured text
+        // rather than let that escape and take the whole appender down with it.
+        val formatted = try {
+            AnsiColors.translate(raw)
+        } catch (_: Throwable) {
+            raw
+        }
 
         try {
             NodeEnvironment.instance.context.cli.displayApproved(formatted)

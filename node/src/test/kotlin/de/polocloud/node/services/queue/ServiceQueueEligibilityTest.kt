@@ -21,8 +21,8 @@ import java.io.File
 import java.util.UUID
 
 /**
- * Covers [ServiceQueue]'s node-eligibility and cluster-wide round-robin `minOnline`
- * math. [ServiceQueue.groups] and [ServiceQueue.onlineNodes] are injected directly
+ * Covers [ServiceQueue]'s node-eligibility and cluster-wide `minOnline` placement math.
+ * [ServiceQueue.groups] and [ServiceQueue.onlineNodes] are injected directly
  * (mirroring how `ListServicesServerHandler`/`FindServicesServerHandler` inject their
  * `peers` supplier for the same reason), but queuing a service still persists the
  * placeholder via [ServiceProvider.update] like it does in production, so this needs a
@@ -59,8 +59,10 @@ class ServiceQueueEligibilityTest {
     private val peerAId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val peerBId = UUID.fromString("00000000-0000-0000-0000-000000000003")
 
-    private fun node(id: UUID, name: String) =
-        NodeData(id = id, index = 1, groupName = name, hostname = "10.0.0.1", port = 4240, state = NodeState.ONLINE, version = "3", gitCommitHash = "abc")
+    // maxMemory defaults to 0 ("unknown/unlimited" — see NodeData.maxMemory) so existing
+    // tests aren't affected by the memory-capacity cap; the capacity tests below opt in.
+    private fun node(id: UUID, name: String, maxMemory: Int = 0) =
+        NodeData(id = id, index = 1, groupName = name, hostname = "10.0.0.1", port = 4240, state = NodeState.ONLINE, version = "3", gitCommitHash = "abc", maxMemory = maxMemory)
 
     private fun group(name: String = "lobby", minOnline: Long = 1, nodes: List<String> = emptyList()) =
         Group(name, 512, 0.0, minOnline, 10, "PAPER", "1.21", nodesJson = TemplateCodec.encode(nodes))
@@ -70,12 +72,16 @@ class ServiceQueueEligibilityTest {
         online: List<NodeData>,
         groups: List<Group>,
         peerQuery: PeerServiceQuery = PeerServiceQuery { _, _ -> emptyList() },
+        // Defaults to "every node equally idle" so existing tests only need to reason
+        // about running counts; load-aware placement gets its own dedicated test below.
+        loadProvider: NodeLoadProvider = NodeLoadProvider { 0.0 },
     ) = ServiceQueue(
         factory = FactoryService(PlatformService(), provider),
         serviceProvider = provider,
         groups = { groups },
         onlineNodes = { online },
         peerQuery = peerQuery,
+        loadProvider = loadProvider,
     )
 
     private fun peerService(groupName: String, index: Int) = ProtoServiceProcessData.newBuilder()
@@ -96,14 +102,15 @@ class ServiceQueueEligibilityTest {
     }
 
     @Test
-    fun `a node whose share is already covered by cluster running count enqueues nothing`() {
+    fun `the 2 missing replicas go to the 2 nodes not already running one`() {
         val self = node(selfId, "node-a")
         val peerA = node(peerAId, "node-b")
         val peerB = node(peerBId, "node-c")
         val g = group(minOnline = 3)
 
-        // peerA already runs one instance; self (position 0) and peerB (position 2) don't
-        // own any of the round-robin slots that follow from clusterRunning=1.
+        // peerA already runs one instance; with all nodes equally (un)loaded, placement
+        // ties break on running-count-for-this-group first, so the 2 still-needed
+        // replicas go to self and peerB (both at 0), not to peerA (already at 1).
         val q = queue(
             online = listOf(self, peerA, peerB),
             groups = listOf(g),
@@ -111,7 +118,8 @@ class ServiceQueueEligibilityTest {
         )
         q.enqueueRequiredForTest()
 
-        assertTrue(q.queuedIndexes("lobby").isEmpty())
+        // Index 1 is already taken by peerA's existing instance, so self's replica lands on 2.
+        assertEquals(listOf(2), q.queuedIndexes("lobby"))
     }
 
     @Test
@@ -146,6 +154,57 @@ class ServiceQueueEligibilityTest {
         val g = group(minOnline = 3, nodes = listOf("node-does-not-exist"))
 
         val q = queue(online = listOf(peerA), groups = listOf(g))
+        q.enqueueRequiredForTest()
+
+        assertTrue(q.queuedIndexes("lobby").isEmpty())
+    }
+
+    @Test
+    fun `a heavily loaded node is skipped in favor of an idle one, even with equal running counts`() {
+        val self = node(selfId, "node-a")
+        val peerA = node(peerAId, "node-b")
+        val g = group(minOnline = 1)
+
+        // Neither node runs an instance of this group yet, so without load data this
+        // would tie-break to self (lower id). A 90%-loaded self should lose that tie to
+        // an idle peerA instead.
+        val q = queue(
+            online = listOf(self, peerA),
+            groups = listOf(g),
+            loadProvider = NodeLoadProvider { node -> if (node.id == selfId) 90.0 else 5.0 },
+        )
+        q.enqueueRequiredForTest()
+
+        assertTrue(q.queuedIndexes("lobby").isEmpty())
+    }
+
+    @Test
+    fun `a node at capacity is skipped in favor of one with room`() {
+        val self = node(selfId, "node-a", maxMemory = 400) // group needs 512MB — no room
+        val peerA = node(peerAId, "node-b", maxMemory = 1000)
+        val g = group(minOnline = 1)
+
+        val selfQueue = queue(online = listOf(self, peerA), groups = listOf(g))
+        selfQueue.enqueueRequiredForTest()
+        assertTrue(selfQueue.queuedIndexes("lobby").isEmpty())
+
+        // Confirm it's not simply lost: peerA's own perspective claims the replica.
+        val peerAsSelfQueue = queue(
+            provider = ServiceProvider(nodeId = peerAId.toString()),
+            online = listOf(self, peerA),
+            groups = listOf(g),
+        )
+        peerAsSelfQueue.enqueueRequiredForTest()
+        assertEquals(listOf(1), peerAsSelfQueue.queuedIndexes("lobby"))
+    }
+
+    @Test
+    fun `no eligible node has room, so the replica is left unassigned rather than overbooking anyone`() {
+        val self = node(selfId, "node-a", maxMemory = 100)
+        val peerA = node(peerAId, "node-b", maxMemory = 100)
+        val g = group(minOnline = 1)
+
+        val q = queue(online = listOf(self, peerA), groups = listOf(g))
         q.enqueueRequiredForTest()
 
         assertTrue(q.queuedIndexes("lobby").isEmpty())

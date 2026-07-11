@@ -21,7 +21,14 @@ data class NodeData(
     val version: String,
     val gitCommitHash: String,
     val firstConnection: Instant = Clock.System.now(),
-    var lastConnection: Instant = Clock.System.now()
+    var lastConnection: Instant = Clock.System.now(),
+    /**
+     * Total system memory (MB) this node reported at registration. 0 means unknown/not
+     * reported (e.g. a node registered before this field existed) and is treated as
+     * unlimited capacity by [de.polocloud.node.services.queue.ServiceQueue], never as
+     * zero capacity.
+     */
+    val maxMemory: Int = 0,
 ) {
 
     fun name(): String {
@@ -42,5 +49,6 @@ fun NodeData.toProto(): ProtoNodeData {
         .setGitCommitHash(this.gitCommitHash)
         .setFirstConnection(this.firstConnection.toEpochMilliseconds())
         .setLastConnection(this.lastConnection.toEpochMilliseconds())
+        .setMaxMemory(this.maxMemory)
         .build()
 }

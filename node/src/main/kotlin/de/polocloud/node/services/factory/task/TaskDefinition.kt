@@ -66,12 +66,16 @@ data class TaskDefinition(
  * ```
  *
  * @param name  Human-readable description of what the step does.
- * @param file  Relative path (to the service work directory) of the file to edit.
- * @param type  How the value is applied. Currently only [TaskStepType.REPLACE].
+ * @param file  Relative path (to the service work directory) of the file to edit. For
+ *              [TaskStepType.COPY_FILE_IF_NOT_EXISTS] this same relative path is also
+ *              used to locate the source file inside the platform's cache directory.
+ * @param type  How the step is applied, see [TaskStepType].
  * @param key   The property/field key to locate inside [file]. For structured formats
  *              this may be a `.`-separated path into nested objects. When `null`, the
- *              whole file content is replaced with [value].
+ *              whole file content is replaced with [value]. Unused for
+ *              [TaskStepType.COPY_FILE_IF_NOT_EXISTS].
  * @param value New value to set. May contain placeholders such as `%server_port%`.
+ *              Unused for [TaskStepType.COPY_FILE_IF_NOT_EXISTS].
  */
 @Serializable
 data class TaskStep(
@@ -79,16 +83,22 @@ data class TaskStep(
     val file: String,
     val type: TaskStepType = TaskStepType.REPLACE,
     val key: String? = null,
-    val value: String
+    val value: String = ""
 )
 
 /**
- * Strategy describing how a [TaskStep] applies its value to a key.
- *
- * Currently only [REPLACE] exists: the existing value of the key is overwritten
- * (the key is created if it does not yet exist).
+ * Strategy describing how a [TaskStep] is applied.
  */
 @Serializable
 enum class TaskStepType {
-    REPLACE
+    /** The existing value of [TaskStep.key] is overwritten (created if absent). */
+    REPLACE,
+
+    /**
+     * Copies [TaskStep.file] from the platform's cache directory into the service work
+     * directory, but only if no file already sits at that path. Used to seed a config
+     * file (e.g. `velocity.toml`) that a template did not already provide, without
+     * clobbering layout changes an operator made to an existing one.
+     */
+    COPY_FILE_IF_NOT_EXISTS
 }

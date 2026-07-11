@@ -124,6 +124,7 @@ class FactoryService(
             tasks = platform.tasks,
             version = version.version,
             definitions = platformService.taskDefinitions(),
+            platformDir = platformService.directoryFor(platform),
             placeholders = mapOf(
                 "server_port" to service.port.toString(),
                 "service_name" to "${group.name}-${service.index}",

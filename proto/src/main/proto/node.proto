@@ -20,6 +20,9 @@ message RegisterNodeRequest {
   string token = 5;
   string csr_pem = 6;
   NodeVersion details = 7;
+  // Total system memory (MB) of the joining node, so the cluster can enforce a
+  // per-node capacity cap during service placement (see ServiceQueue).
+  int32 max_memory = 8;
 }
 
 message RegisterNodeResponse {

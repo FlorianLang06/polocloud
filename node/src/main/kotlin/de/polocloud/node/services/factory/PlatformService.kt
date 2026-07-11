@@ -43,6 +43,10 @@ class PlatformService {
 
     fun all(): Collection<Platform> = platforms.values
 
+    /** The platform's own cache directory (e.g. `.cache/platforms/velocity`), used as
+     *  the source for [de.polocloud.node.services.factory.task.TaskStepType.COPY_FILE_IF_NOT_EXISTS] steps. */
+    fun directoryFor(platform: Platform): File = File(cacheDir, platform.name)
+
     /** All loaded task definitions, keyed by [TaskDefinition.key]. */
     fun taskDefinitions(): Map<String, TaskDefinition> = taskDefinitions
 }

@@ -1,6 +1,7 @@
 package de.polocloud.node.cluster.node
 
 import de.polocloud.common.Address
+import de.polocloud.common.os.SystemResources
 import de.polocloud.common.version.PolocloudVersion
 import de.polocloud.node.core.environment.NodeEnvironment
 import de.polocloud.proto.NodeState
@@ -11,7 +12,11 @@ import kotlin.time.Instant
 object NodeFactory {
 
     fun createInitial(address: Address, group: String): NodeData =
-        create(NodeEnvironment.runtime.nodeId.get(), 1, group, address, PolocloudVersion.CURRENT.toVersionString(), PolocloudVersion.CURRENT.commitId, true, now())
+        create(
+            NodeEnvironment.runtime.nodeId.get(), 1, group, address,
+            PolocloudVersion.CURRENT.toVersionString(), PolocloudVersion.CURRENT.commitId,
+            true, now(), SystemResources.maxMemory().toInt(),
+        )
 
     fun create(
         id: UUID,
@@ -22,6 +27,7 @@ object NodeFactory {
         gitCommitHash: String,
         head: Boolean = false,
         electedAt: Instant? = null,
+        maxMemory: Int = 0,
     ): NodeData =
         NodeData(
             id = id,
@@ -33,6 +39,7 @@ object NodeFactory {
             head = head,
             electedAt = electedAt,
             version = version,
-            gitCommitHash = gitCommitHash
+            gitCommitHash = gitCommitHash,
+            maxMemory = maxMemory,
         )
 }
