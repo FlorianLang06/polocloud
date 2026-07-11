@@ -20,6 +20,30 @@ class ServiceMappersTest {
     }
 
     @Test
+    fun `player counts default to zero until a ping has landed`() {
+        val service = local()
+        assertEquals(0, ServiceProtoMapper.toProto(service).onlinePlayers)
+        assertEquals(0, ServiceProtoMapper.toProto(service).maxPlayers)
+    }
+
+    @Test
+    fun `mappers carry player counts set by the ping loop`() {
+        val service = local()
+        service.onlinePlayers = 7
+        service.maxPlayers = 20
+
+        assertEquals(7, ServiceProtoMapper.toProto(service).onlinePlayers)
+        assertEquals(20, ServiceProtoMapper.toProto(service).maxPlayers)
+
+        assertEquals(7, ServiceProcessProtoMapper.toProto(service).onlinePlayers)
+        assertEquals(20, ServiceProcessProtoMapper.toProto(service).maxPlayers)
+
+        val shared = ServiceEventMapper.toShared(service)
+        assertEquals(7, shared.onlinePlayers)
+        assertEquals(20, shared.maxPlayers)
+    }
+
+    @Test
     fun `ServiceProtoMapper maps fields, host and properties`() {
         val service = local()
         val data = ServiceProtoMapper.toProto(service)

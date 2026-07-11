@@ -49,6 +49,12 @@ message ServiceData {
   string host = 7;
   // Free-form key/value properties attached to this service.
   map<string, string> properties = 8;
+  // Players currently connected, as last reported by the node's SLP ping. 0 until
+  // the first successful ping. Read-only: only the node's ping loop updates this.
+  int32 online_players = 9;
+  // Configured player slots, as last reported by the node's SLP ping. 0 until the
+  // first successful ping. Read-only: only the node's ping loop updates this.
+  int32 max_players = 10;
 }
 
 message ListServicesRequest {
@@ -79,6 +85,12 @@ message ProtoServiceProcessData {
   string state = 7;
   // Free-form key/value properties attached to this service.
   map<string, string> properties = 8;
+  // Players currently connected, as last reported by the node's SLP ping. 0 until
+  // the first successful ping. Read-only: only the node's ping loop updates this.
+  int32 online_players = 9;
+  // Configured player slots, as last reported by the node's SLP ping. 0 until the
+  // first successful ping. Read-only: only the node's ping loop updates this.
+  int32 max_players = 10;
 }
 
 message ProtoServiceControlPlan {

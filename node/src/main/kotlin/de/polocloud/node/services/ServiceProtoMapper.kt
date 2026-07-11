@@ -17,5 +17,7 @@ object ServiceProtoMapper {
         .setPid(service.process?.pid() ?: -1L)
         .setHost(service.hostname)
         .putAllProperties(service.properties)
+        .setOnlinePlayers(service.onlinePlayers)
+        .setMaxPlayers(service.maxPlayers)
         .build()
 }

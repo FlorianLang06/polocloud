@@ -27,15 +27,17 @@ class ServicesCommand(
                         return@runBlocking
                     }
 
-                    logger.info("STATE      PLAN            UUID                                 PORT     PID")
+                    logger.info("STATE      PLAN            UUID                                 PORT     PID    PLAYERS")
                     services.forEach { service ->
                         logger.info(
-                            "%-10s %-15s %-36s %-8s %-6s".format(
+                            "%-10s %-15s %-36s %-8s %-6s %s/%s".format(
                                 service.state,
                                 service.plan,
                                 service.uuid,
                                 service.boundPort,
-                                service.pid
+                                service.pid,
+                                service.onlinePlayers,
+                                service.maxPlayers,
                             )
                         )
                     }

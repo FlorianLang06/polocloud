@@ -21,5 +21,7 @@ object ServiceProcessProtoMapper {
             // coarser common.ServiceState enum.
             .setState(service.state.name)
             .putAllProperties(service.properties)
+            .setOnlinePlayers(service.onlinePlayers)
+            .setMaxPlayers(service.maxPlayers)
             .build()
 }

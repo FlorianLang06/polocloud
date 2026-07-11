@@ -60,7 +60,7 @@ class ServiceQueue(
 
     private fun tick() {
         enqueueRequired()
-        processNext()
+        drainQueue()
     }
 
     private fun enqueueRequired() {
@@ -88,13 +88,24 @@ class ServiceQueue(
         }
     }
 
-    private fun processNext() {
-        val (service, group) = queue.poll() ?: return
-        logger.info("Starting {}-{} [memory: {}MB, platform: {}/{}]", group.name, service.index, group.memory, group.platform, group.version)
-        try {
-            factory.start(service, group)
-        } catch (e: Exception) {
-            logger.error("Failed to start {}-{}: {}", group.name, service.index, e.message)
+    /**
+     * Starts every service currently queued, back-to-back, instead of throttling to one
+     * per [run] tick. A single service typically starts in well under a second once its
+     * platform JAR is cached, so waiting a full tick interval between each one only adds
+     * dead time when several services are queued at once (e.g. `minOnline > 1`, or many
+     * groups needing services after a node restart).
+     *
+     * One service failing to start must not block the rest of the batch.
+     */
+    private fun drainQueue() {
+        while (true) {
+            val (service, group) = queue.poll() ?: return
+            logger.info("Starting {}-{} [memory: {}MB, platform: {}/{}]", group.name, service.index, group.memory, group.platform, group.version)
+            try {
+                factory.start(service, group)
+            } catch (e: Exception) {
+                logger.error("Failed to start {}-{}: {}", group.name, service.index, e.message)
+            }
         }
     }
 

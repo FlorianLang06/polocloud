@@ -162,7 +162,7 @@ class FactoryService(
         val target = File(workDir, "plugins/polocloud-bridge.jar")
         target.parentFile.mkdirs()
         bridgeJar.copyTo(target, overwrite = true)
-        logger.info("  ⇄ Installed Polocloud bridge into {}", target.path)
+        logger.info("Installed Polocloud bridge into {}", target.path)
     }
 
     fun runningCount(groupName: String): Long {

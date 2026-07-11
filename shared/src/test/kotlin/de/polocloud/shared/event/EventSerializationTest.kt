@@ -1,6 +1,7 @@
 package de.polocloud.shared.event
 
 import de.polocloud.shared.event.group.GroupUpdatedEvent
+import de.polocloud.shared.event.server.PlayerCountChangedEvent
 import de.polocloud.shared.event.server.ServerStartedEvent
 import de.polocloud.shared.event.server.ServerStoppedEvent
 import de.polocloud.shared.property.Properties
@@ -26,6 +27,7 @@ class EventSerializationTest {
         assertNotNull(EventRegistry.serializer("ServerStartedEvent"))
         assertNotNull(EventRegistry.serializer("ServerStoppedEvent"))
         assertNotNull(EventRegistry.serializer("GroupUpdatedEvent"))
+        assertNotNull(EventRegistry.serializer("PlayerCountChangedEvent"))
     }
 
     @Test
@@ -55,6 +57,18 @@ class EventSerializationTest {
         val decoded = EventCodec.decode(encoded.name, encoded.data)
         val event = assertInstanceOf(ServerStoppedEvent::class.java, decoded)
         assertEquals(service.name(), event.service.name())
+    }
+
+    @Test
+    fun `PlayerCountChangedEvent round-trips with its player counts`() {
+        val withPlayers = service.copy(onlinePlayers = 7, maxPlayers = 20)
+        val encoded = EventCodec.encode(PlayerCountChangedEvent(withPlayers))
+        assertEquals("PlayerCountChangedEvent", encoded.name)
+
+        val decoded = EventCodec.decode(encoded.name, encoded.data)
+        val event = assertInstanceOf(PlayerCountChangedEvent::class.java, decoded)
+        assertEquals(7, event.service.onlinePlayers)
+        assertEquals(20, event.service.maxPlayers)
     }
 
     @Test

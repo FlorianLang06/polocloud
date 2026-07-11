@@ -131,7 +131,10 @@ class GroupCommand(
     }
 
     private fun info(group: Group) {
-        val running = serviceProvider.findAll().count { it.groupName.equals(group.name, ignoreCase = true) }
+        // Live, in-memory count (mirrors FactoryService.runningCount) rather than a DB
+        // read: this only needs "how many are running right now on this node", and the
+        // persisted table also holds queued/starting rows the DB alone can't distinguish.
+        val running = serviceProvider.localServices.count { it.groupName.equals(group.name, ignoreCase = true) }
         logger.info("Group ${group.name}:")
         logger.info("  platform: ${group.platform}/${group.version}")
         logger.info("  memory: ${group.memory}MB")

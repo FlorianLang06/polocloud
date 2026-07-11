@@ -5,6 +5,7 @@ import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.ServiceEventMapper
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.shared.service.ServiceState
+import de.polocloud.shared.event.server.PlayerCountChangedEvent
 import de.polocloud.shared.event.server.ServerStartedEvent
 import org.slf4j.LoggerFactory
 
@@ -18,9 +19,12 @@ import org.slf4j.LoggerFactory
  * marks it online (`RUNNING`) and evaluates the returned status (version, player counts,
  * MOTD).
  *
- * Only services in a pre-online state are pinged; already `RUNNING` or stopping/stopped
- * services are skipped so the poll cost scales with the number of *starting* services,
- * not the whole cluster.
+ * Once a service is `RUNNING`, it keeps being pinged — at a much lower cadence — purely
+ * to refresh [LocalService.onlinePlayers] / [LocalService.maxPlayers]. That keeps the
+ * player count live for as long as the service runs, without the per-service poll cost
+ * scaling past what a handful of pings per second can handle: starting services are
+ * checked every tick (state changes should be picked up fast), running services only
+ * every [PLAYER_POLL_INTERVAL_MILLIS]. Stopping/stopped services are skipped entirely.
  */
 class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
@@ -51,16 +55,48 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
     }
 
     private fun tick() {
+        val now = System.currentTimeMillis()
         for (service in serviceProvider.localServices) {
-            if (!isAwaitingOnline(service)) continue
             if (service.process?.isAlive != true) continue
             if (service.port <= 0) continue
 
-            // Pinged over loopback: the pinger is co-located with the service on this node,
-            // so it never depends on the (possibly public) advertised hostname being reachable
-            // from here.
-            val result = MinecraftServerPing.ping(PING_HOST, service.port) ?: continue
-            markOnline(service, result)
+            when {
+                isAwaitingOnline(service) -> pingStarting(service)
+                service.state == ServiceState.RUNNING -> pingPlayerCount(service, now)
+            }
+        }
+    }
+
+    // Pinged over loopback: the pinger is co-located with the service on this node, so it
+    // never depends on the (possibly public) advertised hostname being reachable from here.
+
+    private fun pingStarting(service: LocalService) {
+        val result = MinecraftServerPing.ping(PING_HOST, service.port) ?: return
+        markOnline(service, result)
+    }
+
+    /**
+     * Refreshes [LocalService.onlinePlayers] / [LocalService.maxPlayers] for a service that
+     * is already running, at most once every [PLAYER_POLL_INTERVAL_MILLIS]. A failed ping
+     * (e.g. a momentary hiccup) leaves the last known counts in place rather than resetting
+     * them to zero — the service's actual `RUNNING`/stopped state is tracked elsewhere.
+     *
+     * Fires [PlayerCountChangedEvent] only when a count actually differs from what was last
+     * reported, so a sign/monitor system can react live without itself polling every
+     * service on an interval — and the event bus isn't flooded once per service every
+     * [PLAYER_POLL_INTERVAL_MILLIS] regardless of whether anything changed.
+     */
+    private fun pingPlayerCount(service: LocalService, now: Long) {
+        if (now - service.lastPlayerPollAt < PLAYER_POLL_INTERVAL_MILLIS) return
+        service.lastPlayerPollAt = now
+
+        val result = MinecraftServerPing.ping(PING_HOST, service.port) ?: return
+        val changed = service.onlinePlayers != result.onlinePlayers || service.maxPlayers != result.maxPlayers
+        service.onlinePlayers = result.onlinePlayers
+        service.maxPlayers = result.maxPlayers
+
+        if (changed) {
+            ClusterEventService.call(PlayerCountChangedEvent(ServiceEventMapper.toShared(service)))
         }
     }
 
@@ -70,6 +106,9 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
     private fun markOnline(service: LocalService, result: MinecraftPingResult) {
         service.state = ServiceState.RUNNING
+        service.onlinePlayers = result.onlinePlayers
+        service.maxPlayers = result.maxPlayers
+        service.lastPlayerPollAt = System.currentTimeMillis()
         // Persist the RUNNING transition so the database no longer shows the service as
         // STARTING once it is actually online.
         serviceProvider.persist(service)
@@ -86,6 +125,9 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
     private companion object {
         const val POLL_INTERVAL_MILLIS = 1000L
+
+        /** How often an already-`RUNNING` service is re-pinged to refresh its player count. */
+        const val PLAYER_POLL_INTERVAL_MILLIS = 5000L
 
         /** Loopback host used to reach co-located services from the node's own ping thread. */
         const val PING_HOST = "127.0.0.1"

@@ -18,6 +18,8 @@ object ServiceMapper {
         port = data.port,
         host = data.host,
         pid = data.pid,
+        onlinePlayers = data.onlinePlayers,
+        maxPlayers = data.maxPlayers,
         properties = Properties.of(data.propertiesMap),
     )
 }

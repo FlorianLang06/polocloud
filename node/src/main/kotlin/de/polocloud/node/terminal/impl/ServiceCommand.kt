@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
  * Terminal command for inspecting and controlling the services running on this node.
  *
  * Runs in-process, so it talks to the [ServiceProvider] directly (no gRPC): `list`,
- * `<name> info`, `<name> shutdown`, `<name> logs` (live tail) and `<name> execute <command>`.
+ * `<name>` (info), `<name> shutdown`, `<name> logs` (live tail) and `<name> execute <command>`.
  */
 class ServiceCommand(
     private val serviceProvider: ServiceProvider,
@@ -41,7 +41,7 @@ class ServiceCommand(
 
         syntax({ context ->
             info(context.arg(serviceArgument))
-        }, "Show detailed information about a service", serviceArgument, KeywordArgument("info"))
+        }, "Show detailed information about a service", serviceArgument)
 
         syntax({ context ->
             shutdown(context.arg(serviceArgument))
@@ -64,6 +64,9 @@ class ServiceCommand(
         logger.info("  state: ${service.state}")
         logger.info("  host: ${service.hostname}:${service.port}")
         logger.info("  pid: ${local?.process?.pid() ?: "-"}")
+        // Only a co-located LocalService carries a live ping result; a service known only
+        // from the DB (e.g. running on another node) has no player count to report here.
+        logger.info("  players: ${local?.let { "${it.onlinePlayers}/${it.maxPlayers}" } ?: "-"}")
         val properties = local?.properties.orEmpty()
         if (properties.isEmpty()) {
             logger.info("  properties: (none)")

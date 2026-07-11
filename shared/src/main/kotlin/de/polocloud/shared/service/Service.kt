@@ -26,6 +26,13 @@ data class Service(
     /** Host the service is reachable on, e.g. `127.0.0.1`. */
     val host: String,
     val pid: Long,
+    /**
+     * Players currently connected / configured player slots, as last reported by the
+     * node's Minecraft Server List Ping. `0` until the first successful ping. Read-only:
+     * only the node's ping loop updates these, there is no way to set them from the API.
+     */
+    val onlinePlayers: Int = 0,
+    val maxPlayers: Int = 0,
     /** Free-form key/value properties attached to this service. */
     override val properties: Properties = Properties(),
 ) : PropertyHolder() {

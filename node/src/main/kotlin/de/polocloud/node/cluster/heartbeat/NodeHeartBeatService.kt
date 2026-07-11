@@ -37,7 +37,16 @@ class NodeHeartBeatService {
      * @param interval The interval between heartbeats (default: 1 second).
      */
     fun startScheduler(interval: Duration = 1.seconds) {
-        cleanUp() // Clean old heartbeats before starting
+        // Off the startup critical path: cleanUp() scans this node's entire heartbeat
+        // history, which only grows the longer the node stays up between restarts, and
+        // deletes stale rows one at a time. Blocking startup on it means every restart
+        // gets slower as the node accumulates more uptime — running it in the background
+        // instead means "Node is up" no longer waits on however large that table has
+        // gotten since the last restart.
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching { cleanUp() }
+                .onFailure { logger.error("Heartbeat cleanup failed", it) }
+        }
 
         val nodeId = NodeEnvironment.runtime.nodeId.get()
 

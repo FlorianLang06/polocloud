@@ -19,6 +19,8 @@ class ServiceMapperTest {
             .setPort(30001)
             .setHost("127.0.0.1")
             .setPid(4321)
+            .setOnlinePlayers(7)
+            .setMaxPlayers(20)
             .putProperties(Properties.FALLBACK, "true")
             .build()
 
@@ -32,6 +34,8 @@ class ServiceMapperTest {
         assertEquals(30001, service.port)
         assertEquals("127.0.0.1", service.host)
         assertEquals(4321, service.pid)
+        assertEquals(7, service.onlinePlayers)
+        assertEquals(20, service.maxPlayers)
         assertTrue(service.isFallback())
     }
 
