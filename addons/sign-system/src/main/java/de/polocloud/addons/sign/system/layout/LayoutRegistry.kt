@@ -37,17 +37,16 @@ class LayoutRegistry {
             borders.map { border -> LayoutFrame(listOf(border, top, bottom, border)) }
 
         val searching = SignAnimations.slidingDot()
-        val runningBorder = SignAnimations.staticDots(color = "§a")
         val stoppingBorder = SignAnimations.staticDots(color = "§c")
         val stoppedBorder = SignAnimations.staticDots(color = "§8")
 
         return SignLayout("default", SignEntryType.SIGN)
-            .set(ServiceState.UNKNOWN, StateAnimation(bordered("§7Server", "§7wird gesucht", searching), tickInterval = 4L))
+            .set(ServiceState.UNKNOWN, StateAnimation(bordered("§0Server", "§0wird gesucht", searching), tickInterval = 4L))
             .set(ServiceState.QUEUED, StateAnimation(bordered("§7%group%", "§7in Warteschlange", searching), tickInterval = 4L))
             .set(ServiceState.STARTING, StateAnimation(bordered("§7%group%", "§estartet ...", searching), tickInterval = 4L))
             .set(
                 ServiceState.RUNNING,
-                StateAnimation(listOf(LayoutFrame(listOf(runningBorder, "§a%service%", "§7%online%§8/§7%max% Spieler", runningBorder))))
+                StateAnimation(listOf(LayoutFrame(listOf("§8► §0%service% §8◄", "§a§lBetreten", "§0%state%", "§8⚫ §0%online%/%max% §8⚫"))))
             )
             .set(
                 ServiceState.STOPPING,

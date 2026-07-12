@@ -12,6 +12,8 @@ import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.process.PlatformProcess
 import de.polocloud.node.services.factory.task.TaskExecutor
 import de.polocloud.node.security.ServiceIdentityProvisioner
+import de.polocloud.node.utils.PortDetector
+import de.polocloud.shared.service.Service
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -32,9 +34,6 @@ class FactoryService(
     private val forwardingHandler = ForwardingHandler()
 
     private companion object {
-        const val SERVER_BASE_PORT = 30000
-        const val PROXY_BASE_PORT = 25565
-
         // A service always connects *back* to its own node over loopback: it is started
         // by, and co-located with, that node. This is independent of [nodeHost], which is
         // the address the service is *advertised* under to remote consumers.
@@ -53,7 +52,7 @@ class FactoryService(
         val process = PlatformProcess(platform, version)
         val jar = process.download(workDir)
 
-         service.port = assignPort(platform, service.index)
+         service.port = assignPort(service, platform)
          service.hostname = nodeHost
          service.static = group.static
 
@@ -159,13 +158,9 @@ class FactoryService(
 
     /**
      * Derives a deterministic port for a service from its platform role and index.
-     *
-     * Proxies start at [PROXY_BASE_PORT], all other platforms at [SERVER_BASE_PORT];
-     * the 1-based service index is added so co-located services never collide.
      */
-    private fun assignPort(platform: Platform, index: Int): Int {
-        val base = if (platform.type.equals("PROXY", ignoreCase = true)) PROXY_BASE_PORT else SERVER_BASE_PORT
-        return base + (index - 1)
+    private fun assignPort(service: LocalService, platform: Platform): Int {
+        return PortDetector.nextPort(service, platform);
     }
 
     /**
