@@ -13,6 +13,7 @@ object PortDetector {
 
     fun nextPort(service: LocalService, platform: Platform): Int {
         var port = if (platform.type.equals("PROXY", ignoreCase = true)) PROXY_BASE_PORT else SERVER_BASE_PORT
+        if(service.properties.containsKey("startPort")) port = service.properties["startPort"]!!.toInt()
 
         while (isPortUsed(service.nodeId, port)) {
             port += 1
