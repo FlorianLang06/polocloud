@@ -52,13 +52,13 @@ class FactoryService(
         val process = PlatformProcess(platform, version)
         val jar = process.download(workDir)
 
-         service.port = assignPort(service, platform)
-         service.hostname = nodeHost
-         service.static = group.static
-
         // Seed the service's properties from its group so group-level flags (e.g. `fallback`)
         // are visible on the service without overwriting any already set on it.
         group.properties.forEach { (key, value) -> service.properties.putIfAbsent(key, value) }
+
+         service.port = assignPort(service, platform)
+         service.hostname = nodeHost
+         service.static = group.static
 
         // Templates are laid down first — tasks below then patch specific keys in
         // whatever files the templates (or the platform itself, on first launch) left
@@ -148,6 +148,7 @@ class FactoryService(
             platformDir = platformService.directoryFor(platform),
             placeholders = mapOf(
                 "server_port" to service.port.toString(),
+                "server_hostname" to service.hostname,
                 "service_name" to "${group.name}-${service.index}",
                 "service_id" to service.id.toString(),
                 "group_name" to group.name,
