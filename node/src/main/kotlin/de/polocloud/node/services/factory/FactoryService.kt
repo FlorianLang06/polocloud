@@ -148,6 +148,7 @@ class FactoryService(
             platformDir = platformService.directoryFor(platform),
             placeholders = mapOf(
                 "server_port" to service.port.toString(),
+                "server_hostname" to service.hostname,
                 "service_name" to "${group.name}-${service.index}",
                 "service_id" to service.id.toString(),
                 "group_name" to group.name,
