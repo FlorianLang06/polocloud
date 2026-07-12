@@ -80,14 +80,13 @@ class ServiceProvider(
         this.localServices.clear()
     }
 
-    /**
-     * Finds a service by its cluster-wide `group-index` [name] (e.g. `lobby-1`).
-     *
-     * Not a repository `findById`: the persisted identifier is the service UUID, so
-     * looking a service up by name means scanning by [Service.name] instead — passing a
-     * name to `findById` would hit the UUID id column and fail to convert.
-     */
     fun find(name: String) : Service? {
+        val index = name.substringAfterLast('-', "").toIntOrNull()
+        if (index != null) {
+            val groupName = name.substringBeforeLast('-')
+            val narrowed = ServiceRepository.findByGroup(groupName).firstOrNull { it.index == index }
+            if (narrowed != null) return narrowed
+        }
         return findAll().firstOrNull { it.name().equals(name, ignoreCase = true) }
     }
 

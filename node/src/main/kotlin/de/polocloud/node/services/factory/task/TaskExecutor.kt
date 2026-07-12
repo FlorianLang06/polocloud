@@ -95,7 +95,7 @@ object TaskExecutor {
         val key = step.key
         if (key == null) {
             target.writeText(value)
-            logger.info("  &8↳ {} ({})", step.name, target.name)
+            logger.debug("  ↳ {} ({})", step.name, target.name)
             return
         }
 
@@ -109,7 +109,7 @@ object TaskExecutor {
                 target.extension, step.name
             )
         }
-        logger.info("  ↳ {} ({} {}={})", step.name, target.name, key, value)
+        logger.debug("  ↳ {} ({} {}={})", step.name, target.name, key, value)
     }
 
     /**
@@ -120,7 +120,7 @@ object TaskExecutor {
      */
     private fun copyIfNotExists(platformDir: File, target: File, step: TaskStep) {
         if (target.exists()) {
-            logger.info("  &8↳ {} ({} already present, skipped)", step.name, target.name)
+            logger.debug("  &8↳ {} ({} already present, skipped)", step.name, target.name)
             return
         }
         val source = File(platformDir, step.file)
@@ -129,7 +129,7 @@ object TaskExecutor {
             return
         }
         source.copyTo(target)
-        logger.info("  ↳ {} ({} copied from platform cache)", step.name, target.name)
+        logger.debug("  ↳ {} ({} copied from platform cache)", step.name, target.name)
     }
 
     /**

@@ -7,25 +7,12 @@ import de.polocloud.node.services.ServiceProvider
 import de.polocloud.shared.service.ServiceState
 import de.polocloud.shared.event.server.PlayerCountChangedEvent
 import de.polocloud.shared.event.server.ServerStartedEvent
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 
-/**
- * Watches the node's local services and promotes them to [ServiceState.RUNNING] once
- * they answer a Minecraft Server List Ping.
- *
- * A freshly launched service is [ServiceState.STARTING]: the process is alive but the
- * server is still loading worlds/plugins and not yet accepting connections. This factory
- * polls those services on a background thread and, as soon as one responds to a ping,
- * marks it online (`RUNNING`) and evaluates the returned status (version, player counts,
- * MOTD).
- *
- * Once a service is `RUNNING`, it keeps being pinged — at a much lower cadence — purely
- * to refresh [LocalService.onlinePlayers] / [LocalService.maxPlayers]. That keeps the
- * player count live for as long as the service runs, without the per-service poll cost
- * scaling past what a handful of pings per second can handle: starting services are
- * checked every tick (state changes should be picked up fast), running services only
- * every [PLAYER_POLL_INTERVAL_MILLIS]. Stopping/stopped services are skipped entirely.
- */
 class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
     private val logger = LoggerFactory.getLogger(ServicePingFactory::class.java)
@@ -56,18 +43,26 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
     private fun tick() {
         val now = System.currentTimeMillis()
-        for (service in serviceProvider.localServices) {
-            if (service.process?.isAlive != true) continue
-            // Refreshed here (not just on demand) because a process's descendants can
-            // only be enumerated while it's still alive — if we waited until it crashed
-            // to look, it would already be too late. See LocalService.lastKnownDescendants.
-            service.sampleDescendants()
-            if (service.port <= 0) continue
+        val services = serviceProvider.localServices.filter { it.process?.isAlive == true }
+        if (services.isEmpty()) return
 
-            when {
-                isAwaitingOnline(service) -> pingStarting(service)
-                service.state == ServiceState.RUNNING -> pingPlayerCount(service, now)
-            }
+        runBlocking {
+            services.map { service ->
+                async(PING_DISPATCHER) { tickOne(service, now) }
+            }.awaitAll()
+        }
+    }
+
+    private fun tickOne(service: LocalService, now: Long) {
+        // Refreshed here (not just on demand) because a process's descendants can
+        // only be enumerated while it's still alive — if we waited until it crashed
+        // to look, it would already be too late. See LocalService.lastKnownDescendants.
+        service.sampleDescendants()
+        if (service.port <= 0) return
+
+        when {
+            isAwaitingOnline(service) -> pingStarting(service)
+            service.state == ServiceState.RUNNING -> pingPlayerCount(service, now)
         }
     }
 
@@ -79,17 +74,6 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
         markOnline(service, result)
     }
 
-    /**
-     * Refreshes [LocalService.onlinePlayers] / [LocalService.maxPlayers] for a service that
-     * is already running, at most once every [PLAYER_POLL_INTERVAL_MILLIS]. A failed ping
-     * (e.g. a momentary hiccup) leaves the last known counts in place rather than resetting
-     * them to zero — the service's actual `RUNNING`/stopped state is tracked elsewhere.
-     *
-     * Fires [PlayerCountChangedEvent] only when a count actually differs from what was last
-     * reported, so a sign/monitor system can react live without itself polling every
-     * service on an interval — and the event bus isn't flooded once per service every
-     * [PLAYER_POLL_INTERVAL_MILLIS] regardless of whether anything changed.
-     */
     private fun pingPlayerCount(service: LocalService, now: Long) {
         if (now - service.lastPlayerPollAt < PLAYER_POLL_INTERVAL_MILLIS) return
         service.lastPlayerPollAt = now
@@ -137,5 +121,8 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
         /** Loopback host used to reach co-located services from the node's own ping thread. */
         const val PING_HOST = "127.0.0.1"
+
+        /** Bounds how many pings run at once — plenty for cheap loopback socket calls. */
+        val PING_DISPATCHER = Dispatchers.IO.limitedParallelism(16)
     }
 }

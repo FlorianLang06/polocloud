@@ -16,6 +16,8 @@ object ServiceRepository {
     fun findAll() = DatabaseAccess.executor().findAll(serviceDatabaseKey)
 
     fun findAllForNode(nodeId: String) = DatabaseAccess.executor().find(serviceDatabaseKey, Eq("nodeId", nodeId))
+
+    fun findByGroup(groupName: String) = DatabaseAccess.executor().find(serviceDatabaseKey, Eq("groupName", groupName))
     
     fun findById(id: UUID) = DatabaseAccess.executor().findById(serviceDatabaseKey, id)
 

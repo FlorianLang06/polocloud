@@ -8,6 +8,7 @@ import de.polocloud.service.factory.process.PlatformRuntime
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URI
+import java.nio.file.Paths
 
 /**
  * Manages downloading and launching a specific [PlatformVersion] of a [Platform].
@@ -27,6 +28,13 @@ class PlatformProcess(
     private companion object {
         /** Shared cache holding downloaded platform JARs, reused across services. */
         val CACHE_DIR = File(".cache/platforms/versions")
+
+        // Services now start concurrently (see ServiceQueue.drainQueue), so two services on
+        // the same platform/version can race into cachedJar() at once. Without a lock, both
+        // would see the cache miss and write the same tmp/cache file in parallel, corrupting
+        // it. One process-wide lock is enough — downloads only happen on a cache miss, which
+        // is rare and short-lived compared to the process lifetime.
+        private val downloadLock = Any()
     }
 
     /**
@@ -55,12 +63,12 @@ class PlatformProcess(
      * The download goes to a temporary file that is only moved into place on success,
      * so an interrupted download never leaves a corrupt JAR in the cache.
      */
-    private fun cachedJar(): File {
+    private fun cachedJar(): File = synchronized(downloadLock) {
         CACHE_DIR.mkdirs()
         val cached = File(CACHE_DIR, jarName)
         if (cached.exists()) {
-            logger.info("$jarName already cached")
-            return cached
+            logger.debug("$jarName already cached")
+            return@synchronized cached
         }
 
         logger.info("Downloading $jarName ...")
@@ -71,7 +79,7 @@ class PlatformProcess(
         tmp.copyTo(cached, overwrite = true)
         tmp.delete()
         logger.info("done (${cached.length() / 1024} KB)")
-        return cached
+        cached
     }
 
     /**
@@ -107,9 +115,19 @@ class PlatformProcess(
      * Downloads the matching JRE via [JavaRuntimeManager] if [Platform.javaVersionRanges]
      * contains a matching breakpoint; otherwise returns `"java"` (system default).
      */
+    private fun currentJavaExecutable(): String {
+        val executable = if (System.getProperty("os.name").startsWith("Windows")) {
+            "java.exe"
+        } else {
+            "java"
+        }
+
+        return Paths.get(System.getProperty("java.home"), "bin", executable).toString()
+    }
+
     private fun resolveExecutable(): String {
         val requiredJava = resolveJavaVersion(version.version, platform.javaVersionRanges)
-            ?: return "java"
-        return JavaRuntimeManager.ensure(requiredJava).absolutePath
+        return requiredJava?.let(JavaRuntimeManager::ensure)?.absolutePath
+            ?: currentJavaExecutable()
     }
 }

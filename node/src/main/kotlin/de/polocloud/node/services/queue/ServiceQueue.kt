@@ -12,6 +12,7 @@ import de.polocloud.node.services.cluster.PeerServiceQuery
 import de.polocloud.proto.NodeState
 import de.polocloud.shared.service.ServiceState
 import de.polocloud.node.services.factory.FactoryService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -20,6 +21,8 @@ import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.Queue
 import java.util.UUID
+
+private val SERVICE_START_DISPATCHER = Dispatchers.IO.limitedParallelism(4)
 
 class ServiceQueue(
     private val factory: FactoryService,
@@ -80,21 +83,6 @@ class ServiceQueue(
         drainQueue()
     }
 
-    /**
-     * Tops each group up to its cluster-wide `minOnline`, restricted to the nodes it is
-     * allowed to run on ([GroupNodeEligibility]).
-     *
-     * `minOnline` is a cluster-wide target, not per-node: every eligible online node
-     * independently computes the same eligible-node list and the same cluster-wide
-     * running count (via [clusterState], which fans out to peers exactly like
-     * [de.polocloud.node.communication.handler.services.ListServicesServerHandler]
-     * does), then deterministically assigns the outstanding deficit across that list via
-     * [assignReplicas] so only one node claims each missing replica. No locks or leader
-     * RPC are involved — like head election and the heartbeat monitor, this is
-     * best-effort and self-healing rather than transactionally exact; a brief
-     * over/under-shoot is possible only in the sub-second window between two nodes
-     * ticking concurrently.
-     */
     /** The groups and indexes currently queued, e.g. `lobby-1`. Exposed for testing. */
     internal fun queuedIndexes(groupName: String): List<Int> =
         queue.filter { it.second.name == groupName }.map { it.first.index }
@@ -288,24 +276,23 @@ class ServiceQueue(
         return assigned
     }
 
-    /**
-     * Starts every service currently queued, back-to-back, instead of throttling to one
-     * per [run] tick. A single service typically starts in well under a second once its
-     * platform JAR is cached, so waiting a full tick interval between each one only adds
-     * dead time when several services are queued at once (e.g. `minOnline > 1`, or many
-     * groups needing services after a node restart).
-     *
-     * One service failing to start must not block the rest of the batch.
-     */
     private fun drainQueue() {
-        while (true) {
-            val (service, group) = queue.poll() ?: return
-            logger.info("Starting {}-{} [memory: {}MB, platform: {}/{}]", group.name, service.index, group.memory, group.platform, group.version)
-            try {
-                factory.start(service, group)
-            } catch (e: Exception) {
-                logger.error("Failed to start {}-{}: {}", group.name, service.index, e.message)
-            }
+        val batch = generateSequence { queue.poll() }.toList()
+        if (batch.isEmpty()) return
+
+        runBlocking {
+            batch.map { (service, group) ->
+                async(SERVICE_START_DISPATCHER) { startOne(service, group) }
+            }.awaitAll()
+        }
+    }
+
+    private fun startOne(service: LocalService, group: Group) {
+        logger.info("Starting {}-{} [memory: {}MB, platform: {}/{}]", group.name, service.index, group.memory, group.platform, group.version)
+        try {
+            factory.start(service, group)
+        } catch (e: Exception) {
+            logger.error("Failed to start {}-{}: {}", group.name, service.index, e.message)
         }
     }
 
