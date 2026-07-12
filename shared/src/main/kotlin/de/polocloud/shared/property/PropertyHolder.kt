@@ -14,4 +14,10 @@ abstract class PropertyHolder {
 
     /** Whether this holder is flagged as a fallback target (see [Properties.FALLBACK]). */
     fun isFallback(): Boolean = properties.getBoolean(Properties.FALLBACK)
+
+    /**
+     * This holder's rank among other fallback targets (see [Properties.FALLBACK_PRIORITY]).
+     * Higher values are preferred first. Defaults to `0` when unset.
+     */
+    fun fallbackPriority(): Int = properties.getInt(Properties.FALLBACK_PRIORITY)
 }

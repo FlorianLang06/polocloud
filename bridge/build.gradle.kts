@@ -17,6 +17,14 @@ dependencies {
     // Provided by the proxy at runtime — never bundled.
     compileOnly(libs.velocity.api)
     compileOnly(libs.waterfall.api)
+
+    // testing
+    testImplementation(libs.bundles.testing)
+    testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 java {

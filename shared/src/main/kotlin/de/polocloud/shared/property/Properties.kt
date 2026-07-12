@@ -22,6 +22,13 @@ class Properties(
         /** Well-known property marking a group as a fallback target for the bridge. */
         const val FALLBACK = "fallback"
 
+        /**
+         * Well-known property ranking a fallback group against other fallback groups.
+         * Higher values are tried first; groups without this property default to `0`.
+         * Only meaningful on groups/services that also carry [FALLBACK].
+         */
+        const val FALLBACK_PRIORITY = "fallback-priority"
+
         /** Builds [Properties] from a plain map (e.g. decoded from protobuf). */
         fun of(map: Map<String, String>): Properties = Properties(LinkedHashMap(map))
     }

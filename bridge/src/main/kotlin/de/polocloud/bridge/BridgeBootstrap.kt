@@ -2,6 +2,7 @@ package de.polocloud.bridge
 
 import de.polocloud.api.Polocloud
 import de.polocloud.api.event.subscribe
+import de.polocloud.api.group.GroupFilterType
 import de.polocloud.shared.event.group.GroupUpdatedEvent
 import de.polocloud.shared.event.server.ServerStartedEvent
 import de.polocloud.shared.event.server.ServerStoppedEvent
@@ -20,15 +21,9 @@ import java.util.concurrent.CopyOnWriteArrayList
  */
 class BridgeBootstrap<T>(private val instance: BridgeInstance<T>) {
 
-    private companion object {
-        // The proxy must not register itself as one of its own backend servers.
-        // TODO: derive this from the proxy's own identity/group type instead of a
-        //       hard-coded name so multiple proxies don't register each other.
-        const val OWN_SERVICE_NAME = "proxy-1"
-    }
-
-    // Names of groups currently flagged as fallback targets. Kept live via GroupUpdatedEvent.
-    private val fallbackGroups: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    // Names of groups currently flagged as fallback targets, mapped to their priority
+    // (higher tried first). Kept live via GroupUpdatedEvent.
+    private val fallbackGroups: MutableMap<String, Int> = ConcurrentHashMap()
 
     // Services currently registered on this proxy — used to pick a fallback on connect.
     private val registeredServices = CopyOnWriteArrayList<Service>()
@@ -52,7 +47,7 @@ class BridgeBootstrap<T>(private val instance: BridgeInstance<T>) {
         runCatching {
             Polocloud.groupService.findAll()
                 .filter { it.isFallback() }
-                .forEach { fallbackGroups += it.name.lowercase() }
+                .forEach { fallbackGroups[it.name.lowercase()] = it.fallbackPriority() }
         }
 
         // Register everything already running when this proxy boots.
@@ -75,31 +70,40 @@ class BridgeBootstrap<T>(private val instance: BridgeInstance<T>) {
         // Keep the fallback-group set current when group properties change at runtime.
         Polocloud.eventService.subscribe<GroupUpdatedEvent> { event ->
             val isFallback = event.properties.getBoolean(Properties.FALLBACK)
-            if (isFallback) fallbackGroups += event.name.lowercase()
-            else fallbackGroups -= event.name.lowercase()
+            if (isFallback) {
+                fallbackGroups[event.name.lowercase()] = event.properties.getInt(Properties.FALLBACK_PRIORITY)
+            } else {
+                fallbackGroups -= event.name.lowercase()
+            }
             log("Group ${event.name} fallback=${isFallback}")
         }
     }
 
-    /** Registers [service] on this proxy unless it is the proxy's own instance. */
+    /**
+     * Registers [service] on this proxy, unless it belongs to a proxy group itself —
+     * a proxy only ever registers backend (sub-)servers, never other proxies.
+     */
     private fun registerIfEligible(service: Service) {
-        if (service.name().equals(OWN_SERVICE_NAME, ignoreCase = true)) return
+        val group = Polocloud.groupService.find(service.group)
+        if (group == null || GroupFilterType.PROXY.matches(group.platform)) return
+
         registeredServices.removeIf { it.name().equals(service.name(), ignoreCase = true) }
         registeredServices += service
         instance.registerService(instance.mapService(service), service)
     }
 
     /**
-     * Picks a running service that belongs to a fallback group, or `null` if none is
-     * available. Used by the proxy to route a connecting player to a sensible default.
+     * Picks the best running fallback service to route a player to, or `null` if none
+     * is available — a proxy must never send a player anywhere else, so a `null`
+     * result means the player cannot be connected/redirected at all.
      *
-     * A service counts as fallback either because its own group is flagged or because
-     * the service itself carries the flag (services inherit their group's properties).
+     * See [FallbackSelector] for the selection rules (priority tiering, least players).
+     *
+     * @param excludeServiceName a service name to skip, e.g. the server a player was
+     *   just kicked from, so they are never redirected right back to it.
      */
-    fun fallbackService(): Service? = registeredServices.firstOrNull { service ->
-        service.state == ServiceState.RUNNING &&
-            (service.group.lowercase() in fallbackGroups || service.isFallback())
-    }
+    fun bestFallback(excludeServiceName: String? = null): Service? =
+        FallbackSelector.select(registeredServices, fallbackGroups, excludeServiceName)
 
     /**
      * Releases the underlying node connection. Called from the platform shutdown hook.

@@ -2,6 +2,7 @@ package de.polocloud.bridge.velocity
 
 import com.google.inject.Inject
 import com.velocitypowered.api.event.Subscribe
+import com.velocitypowered.api.event.player.KickedFromServerEvent
 import com.velocitypowered.api.event.player.PlayerChooseInitialServerEvent
 import com.velocitypowered.api.event.player.ServerPreConnectEvent
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent
@@ -53,13 +54,23 @@ class VelocityBridgePlugin @Inject constructor(
 
     @Subscribe
     fun onConnect(event: PlayerChooseInitialServerEvent) {
-        // Prefer a running service from a fallback group; fall back to any registered
-        // server so a player is never left without a target if none is flagged.
-        val fallback = bootstrap.fallbackService()
+        // A player may only join through this proxy if a fallback group has a running
+        // service. If none is found, the initial server is left unset and Velocity
+        // disconnects the player instead of dropping them onto an arbitrary server.
+        bootstrap.bestFallback()
             ?.let { service -> server.getServer(service.name()).orElse(null) }
-            ?: server.allServers.firstOrNull()
+            ?.let { event.setInitialServer(it) }
+    }
 
-        fallback?.let { event.setInitialServer(it) }
+    @Subscribe
+    fun onKick(event: KickedFromServerEvent) {
+        // Send a kicked player to the emptiest fallback (by priority) instead of just
+        // disconnecting them, excluding the server that just kicked them.
+        val target = bootstrap.bestFallback(excludeServiceName = event.server.serverInfo.name)
+            ?.let { service -> server.getServer(service.name()).orElse(null) }
+            ?: return
+
+        event.result = KickedFromServerEvent.RedirectPlayer.create(target)
     }
 
     override fun registerService(

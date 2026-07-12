@@ -42,6 +42,17 @@ class GroupBuilder internal constructor(
     fun fallback(fallback: Boolean = true): GroupBuilder =
         apply { this.properties.set(Properties.FALLBACK, fallback.toString()) }
 
+    /**
+     * Marks this group as a fallback target and ranks it against other fallback
+     * groups: when a proxy has to pick among several, higher [priority] values are
+     * tried first. Implies [fallback].
+     */
+    fun fallbackPriority(priority: Int): GroupBuilder =
+        apply {
+            this.properties.set(Properties.FALLBACK, true.toString())
+            this.properties.set(Properties.FALLBACK_PRIORITY, priority.toString())
+        }
+
     /** Restricts this group to a single node (by its cluster name, e.g. `node-1`). */
     fun node(name: String): GroupBuilder = apply { this.nodes.add(name) }
 
