@@ -16,7 +16,8 @@ object SignPlaceholders {
                     .replace("%online%", (service?.onlinePlayers ?: 0).toString())
                     .replace("%max%", (service?.maxPlayers ?: 0).toString())
                     .replace("%state%", (service?.state?.toString() ?: "UNKNOWN"))
-            }
+            },
+            frame.backgroundBlock
         )
     }
 }
