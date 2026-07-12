@@ -3,10 +3,12 @@ package de.polocloud.node.terminal.impl
 import de.polocloud.common.commands.Command
 import de.polocloud.common.commands.type.KeywordArgument
 import de.polocloud.common.commands.type.StringArrayArgument
+import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.Service
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.terminal.CliTerminal
 import de.polocloud.node.terminal.types.ServiceArgument
+import de.polocloud.node.terminal.types.TemplateArgument
 import org.jline.reader.UserInterruptException
 import org.slf4j.LoggerFactory
 
@@ -14,7 +16,8 @@ import org.slf4j.LoggerFactory
  * Terminal command for inspecting and controlling the services running on this node.
  *
  * Runs in-process, so it talks to the [ServiceProvider] directly (no gRPC): `list`,
- * `<name>` (info), `<name> shutdown`, `<name> logs` (live tail) and `<name> execute <command>`.
+ * `<name>` (info), `<name> shutdown`, `<name> logs` (live tail), `<name> execute <command>`
+ * and `<name> copy <templateName>` (re-apply a template onto the running work directory).
  */
 class ServiceCommand(
     private val serviceProvider: ServiceProvider,
@@ -25,6 +28,7 @@ class ServiceCommand(
 
     private val serviceArgument = ServiceArgument("name", serviceProvider)
     private val commandArgument = StringArrayArgument("command")
+    private val templateArgument = TemplateArgument("templateName")
 
     init {
         syntax({
@@ -54,6 +58,10 @@ class ServiceCommand(
         syntax({ context ->
             execute(context.arg(serviceArgument), context.arg(commandArgument))
         }, "Execute a command in a service's console", serviceArgument, KeywordArgument("execute"), commandArgument)
+
+        syntax({ context ->
+            copy(context.arg(serviceArgument), context.arg(templateArgument))
+        }, "Copy a template into a service's work directory", serviceArgument, KeywordArgument("copy"), templateArgument)
     }
 
     private fun info(service: Service) {
@@ -103,6 +111,22 @@ class ServiceCommand(
         } else {
             logger.info("Could not send the command to ${service.name()} (process not running).")
         }
+    }
+
+    private fun copy(service: Service, templateName: String) {
+        val local = serviceProvider.findLocal(service.name())
+        if (local == null) {
+            logger.info("Service ${service.name()} is not running on this node.")
+            return
+        }
+        val workDir = local.workDir
+        if (workDir == null) {
+            logger.info("Service ${service.name()} has no work directory yet.")
+            return
+        }
+        GroupTemplateService.copyInto(listOf(templateName), workDir.toFile())
+        local.templates = local.templates + templateName
+        logger.info("Copied template '$templateName' into ${service.name()}.")
     }
 
     private fun tailLogs(service: Service) {

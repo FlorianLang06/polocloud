@@ -45,6 +45,13 @@ object GroupTemplateService {
     /** The folder backing template [name], regardless of whether it currently exists. */
     fun directoryOf(name: String): File = File(root, name)
 
+    /** Names of every template folder currently under [root], sorted alphabetically. */
+    fun listAll(): List<String> =
+        (root.listFiles { file -> file.isDirectory } ?: emptyArray()).map { it.name }.sorted()
+
+    /** Deletes template [name]'s folder and its contents. No-op (returns `false`) if it didn't exist. */
+    fun delete(name: String): Boolean = directoryOf(name).deleteRecursively()
+
     /**
      * Copies the contents of every named template into [targetDir], in [templates] order,
      * so a later template's files overwrite an earlier one's on conflict.
