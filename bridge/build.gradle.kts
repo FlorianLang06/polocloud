@@ -40,7 +40,7 @@ tasks.processResources {
 }
 
 tasks.shadowJar {
-    // Merge ServiceLoader descriptors (grpc load-balancer / name-resolver providers, …)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     mergeServiceFiles()
 
     // The runner identifies embedded jars by these manifest attributes (see Expender).

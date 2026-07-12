@@ -58,6 +58,10 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
         val now = System.currentTimeMillis()
         for (service in serviceProvider.localServices) {
             if (service.process?.isAlive != true) continue
+            // Refreshed here (not just on demand) because a process's descendants can
+            // only be enumerated while it's still alive — if we waited until it crashed
+            // to look, it would already be too late. See LocalService.lastKnownDescendants.
+            service.sampleDescendants()
             if (service.port <= 0) continue
 
             when {

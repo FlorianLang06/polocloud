@@ -11,7 +11,7 @@ import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
 class LocalService(private val service: Service) : Service(
-    service.id, service.index, service.groupName, service.state, service.hostname, service.port
+    service.id, service.index, service.groupName, service.state, service.hostname, service.port, service.nodeId
 ) {
 
     private companion object {
@@ -23,6 +23,37 @@ class LocalService(private val service: Service) : Service(
 
     var process: Process? = null
     var workDir: Path? = null
+
+    /**
+     * Millis timestamp of when [process] was actually started. Used by
+     * [de.polocloud.node.services.queue.CrashLoopGuard] to tell a service that crashed
+     * moments after launch from one that ran fine for a while and then legitimately
+     * stopped — not a persisted [Service] column, only meaningful for the lifetime of this
+     * in-memory instance.
+     */
+    var startedAt: Long = 0
+
+    /**
+     * Most recently sampled snapshot of this process's descendant OS processes, refreshed
+     * by [de.polocloud.node.services.ping.ServicePingFactory] while [process] is alive.
+     *
+     * A process's descendants can only be enumerated while it is still running — once it
+     * exits (which is exactly when a crash is detected; see [de.polocloud.node.services.factory.FactoryService]'s
+     * `onExit` hook), the OS no longer reports what its children were, so
+     * `process.toHandle().descendants()` comes back empty from that point on. Keeping this
+     * rolling snapshot lets [shutdown] still reap children the process spawned before it
+     * died, instead of only ever seeing an empty tree for a root that was already dead by
+     * the time cleanup ran.
+     */
+    @Volatile
+    var lastKnownDescendants: List<ProcessHandle> = emptyList()
+
+    /** Refreshes [lastKnownDescendants] from the live process tree; a no-op once [process] has exited. */
+    fun sampleDescendants() {
+        val proc = process ?: return
+        if (!proc.isAlive) return
+        lastKnownDescendants = proc.toHandle().descendants().toList()
+    }
 
     /**
      * Whether this service belongs to a static group. Static services keep their work
@@ -149,10 +180,14 @@ class LocalService(private val service: Service) : Service(
         logListeners.clear()
         process?.let { process ->
             val handle = process.toHandle()
-            // Capture the full process tree up front: once the root exits its
-            // descendants can no longer be enumerated, and Windows does not
-            // cascade termination — leftover children would be orphaned.
-            val tree = handle.descendants().toList() + handle
+            // If the root already exited on its own (a crash, or `/stop` in the service's
+            // console — this same method also runs from FactoryService's onExit hook,
+            // after the fact), its descendants can no longer be enumerated at all; only
+            // lastKnownDescendants (sampled while it was still alive) still knows what to
+            // kill. Merge both so a still-live commanded shutdown gets the fully current
+            // tree, while a reactive crash cleanup gets whatever was last seen. Windows
+            // does not cascade termination — leftover children would be orphaned otherwise.
+            val tree = (lastKnownDescendants + handle.descendants().toList() + handle).distinct()
 
             // Ask the whole tree to terminate gracefully, then give it a moment.
             tree.forEach { runCatching { it.destroy() } }
@@ -166,7 +201,17 @@ class LocalService(private val service: Service) : Service(
         }
 
         // Best-effort: a failing repository delete must not skip the work-directory cleanup below.
-        runCatching { ServiceRepository.delete(service) }
+        runCatching { ServiceRepository.delete(service) }.onFailure {
+            logger.warn("Failed to delete service {} (id={}) from the database: {}", service.name(), service.id, it.message)
+        }
+        // The database library silently discards the affected-row count from its DELETE —
+        // a WHERE clause matching zero rows produces no exception or log anywhere in it.
+        // Reading the row back is the only way to notice a delete that quietly did nothing
+        // (e.g. a stale schema after a column was added) instead of it only ever surfacing
+        // later as an unexplained stale row.
+        if (runCatching { ServiceRepository.findById(service.id) != null }.getOrDefault(false)) {
+            logger.warn("Service {} (id={}) still exists in the database after delete — the row may now be stale", service.name(), service.id)
+        }
 
         // Give the OS a moment to release file handles before deleting the work
         // directory (Windows keeps the jar locked briefly after the process exits).
@@ -175,9 +220,13 @@ class LocalService(private val service: Service) : Service(
         }
 
         // Static services keep their work directory (persistent world/config); only
-        // ephemeral services get their directory wiped on shutdown.
+        // ephemeral services get their directory wiped on shutdown. Best-effort: a locked
+        // file (Windows) must not fail the whole shutdown — cleanup elsewhere (DB row,
+        // localServices removal) is already done and must stand regardless.
         if (!static) {
-            workDir?.deleteRecursively()
+            runCatching { workDir?.deleteRecursively() }.onFailure {
+                logger.warn("Failed to delete work directory {} for {}: {}", workDir, service.name(), it.message)
+            }
         }
         return true
     }

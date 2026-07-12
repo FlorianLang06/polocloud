@@ -86,6 +86,7 @@ class FactoryService(
 
         service.process = proc
         service.workDir = workDir.toPath()
+        service.startedAt = System.currentTimeMillis()
         // Start pumping the process console into the service log buffer so `service <name> logs`
         // can tail it.
         service.startLogCapture()
@@ -110,10 +111,15 @@ class FactoryService(
             // CAS guard first, in which case this is a harmless no-op and logging here
             // would misleadingly call a commanded stop "unexpected".
             if (serviceProvider.shutdownLocal(service)) {
+                val ranForMillis = System.currentTimeMillis() - service.startedAt
                 logger.info(
-                    "Service {} process exited unexpectedly (crash, or `/stop` in its console) — cleaned up",
-                    service.name()
+                    "Service {} process exited unexpectedly after {}ms (crash, or `/stop` in its console) — cleaned up",
+                    service.name(), ranForMillis
                 )
+                // Feeds the crash-loop backoff: repeatedly dying moments after start (bad
+                // platform args, a plugin erroring on load, a port collision) must not be
+                // restarted as fast as start+detect-exit allows — see CrashLoopGuard.
+                serviceProvider.crashLoopGuard.recordExit(group.name, ranForMillis)
             }
         }
         logger.info("Service {}-{} started (pid: {})", group.name, service.index, proc.pid())

@@ -108,10 +108,6 @@ class ServiceQueue(
 
         val online = onlineNodes()
         val groupMemoryMb = allGroups.associate { it.name to it.memory }
-        // Computed once per tick (not per group, unlike clusterState) since a node's
-        // total memory footprint doesn't depend on which group is being placed right
-        // now. Mutable so a placement made earlier in this same tick's loop is reflected
-        // for the next group considered, instead of only becoming visible next tick.
         val usedMemoryMb = nodeMemoryUsage(online, groupMemoryMb).toMutableMap()
 
         for (group in allGroups) {
@@ -121,6 +117,12 @@ class ServiceQueue(
             // This node isn't (or is no longer) allowed to run this group — leave it to
             // whichever node(s) are actually eligible.
             val self = eligible.firstOrNull { it.id.toString() == serviceProvider.nodeId } ?: continue
+
+            // A group crashing repeatedly right after start is backed off by
+            // CrashLoopGuard (fed from FactoryService's exit hook) — skip placing more of
+            // it until the backoff window elapses, instead of restarting it as fast as
+            // start+detect-exit allows.
+            if (serviceProvider.crashLoopGuard.isBackingOff(group.name)) continue
 
             val cluster = clusterState(group, eligible)
             val queued = queue.count { it.second.name == group.name }.toLong()
@@ -146,7 +148,9 @@ class ServiceQueue(
             }
             repeat(myShare) {
                 val index = nextIndex(group, cluster.usedIndexes)
-                val service = LocalService(Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED, "127.0.0.1", -1))
+                val service = LocalService(
+                    Service(UUID.randomUUID(), index, group.name, ServiceState.QUEUED, "127.0.0.1", -1, serviceProvider.nodeId)
+                )
 
                 serviceProvider.update(service)
                 queue.offer(Pair(service, group))
