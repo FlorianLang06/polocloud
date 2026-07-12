@@ -2,8 +2,10 @@ package de.polocloud.node.terminal
 
 import de.polocloud.common.commands.CommandService
 import de.polocloud.node.core.context.NodeRuntimeContext
+import de.polocloud.node.terminal.impl.ClearCommand
 import de.polocloud.node.terminal.impl.ClusterCommand
 import de.polocloud.node.terminal.impl.GroupCommand
+import de.polocloud.node.terminal.impl.InfoCommand
 import de.polocloud.node.terminal.impl.ServiceCommand
 import de.polocloud.node.terminal.impl.ShutdownCommand
 import org.jline.jansi.Ansi
@@ -78,7 +80,16 @@ class CliTerminal(val context: NodeRuntimeContext) {
                 this.context.serviceProvider,
             )
         )
+        this.commandService.registerCommand(
+            InfoCommand(
+                this.context.localNodeContainer,
+                this.context.holder,
+                this.context.groupService,
+                this.context.serviceProvider,
+            )
+        )
         this.commandService.registerCommand(ShutdownCommand())
+        this.commandService.registerCommand(ClearCommand(this))
     }
 
     /**
