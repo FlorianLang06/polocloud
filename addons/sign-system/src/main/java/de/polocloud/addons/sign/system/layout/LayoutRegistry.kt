@@ -2,6 +2,7 @@ package de.polocloud.addons.sign.system.layout
 
 import de.polocloud.addons.sign.system.SignEntryType
 import de.polocloud.shared.service.ServiceState
+import org.bukkit.Material
 
 /**
  * Holds every registered [Layout], keyed by id + [SignEntryType].
@@ -34,7 +35,7 @@ class LayoutRegistry {
      */
     private fun defaultSignLayout(): SignLayout {
         fun bordered(top: String, bottom: String, borders: List<String>) =
-            borders.map { border -> LayoutFrame(listOf(border, top, bottom, border)) }
+            borders.map { border -> LayoutFrame(listOf(border, top, bottom, border), Material.CYAN_TERRACOTTA.toString()) }
 
         val searching = SignAnimations.slidingDot()
         val stoppingBorder = SignAnimations.staticDots(color = "§c")
@@ -46,15 +47,16 @@ class LayoutRegistry {
             .set(ServiceState.STARTING, StateAnimation(bordered("§7%group%", "§estartet ...", searching), tickInterval = 4L))
             .set(
                 ServiceState.RUNNING,
-                StateAnimation(listOf(LayoutFrame(listOf("§8► §0%service% §8◄", "§a§lBetreten", "§0%state%", "§8⚫ §0%online%/%max% §8⚫"))))
+                StateAnimation(listOf(LayoutFrame(listOf("§8► §0%service% §8◄", "§a§lBetreten", "§0%state%", "§8⚫ §0%online%/%max% §8⚫"),
+                    Material.LIME_TERRACOTTA.toString())))
             )
             .set(
                 ServiceState.STOPPING,
-                StateAnimation(listOf(LayoutFrame(listOf(stoppingBorder, "§7%service%", "§cstoppt ...", stoppingBorder))))
+                StateAnimation(listOf(LayoutFrame(listOf(stoppingBorder, "§7%service%", "§cstoppt ...", stoppingBorder), Material.RED_TERRACOTTA.toString())))
             )
             .set(
                 ServiceState.STOPPED,
-                StateAnimation(listOf(LayoutFrame(listOf(stoppedBorder, "§7%group%", "§8offline", stoppedBorder))))
+                StateAnimation(listOf(LayoutFrame(listOf(stoppedBorder, "§7%group%", "§8offline", stoppedBorder),Material.RED_TERRACOTTA.toString())))
             )
     }
 }

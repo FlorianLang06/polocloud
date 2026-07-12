@@ -10,7 +10,7 @@ package de.polocloud.addons.sign.system.layout
 class StateAnimation(private val frames: List<LayoutFrame>, private val tickInterval: Long = 10L) {
 
     fun frameAt(tick: Long): LayoutFrame {
-        if (frames.isEmpty()) return LayoutFrame(emptyList())
+        if (frames.isEmpty()) return LayoutFrame(emptyList(), null)
         if (frames.size == 1) return frames[0]
 
         val index = ((tick / tickInterval) % frames.size).toInt()

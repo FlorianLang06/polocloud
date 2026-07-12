@@ -20,6 +20,27 @@ class BukkitSignRenderer : SignEntryRenderer(SignEntryType.SIGN), BukkitBlockMat
         frame.lines.forEachIndexed { index, line ->
             sign.getSide(Side.FRONT).setLine(index, line)
         }
+
+        if(frame.backgroundBlock != null) {
+            val block = sign.block
+
+            val behind = when (block.blockData) {
+                is org.bukkit.block.data.type.WallSign -> {
+                    val data = block.blockData as org.bukkit.block.data.type.WallSign
+                    block.getRelative(data.facing.oppositeFace)
+                }
+
+                is org.bukkit.block.data.type.Sign -> {
+                    val data = block.blockData as org.bukkit.block.data.type.Sign
+                    block.getRelative(data.rotation.oppositeFace)
+                }
+
+                else -> return
+            }
+
+            behind.type = Material.valueOf(frame.backgroundBlock!!)
+        }
+
         sign.update()
     }
 
