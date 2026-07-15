@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URI
 import java.util.zip.ZipInputStream
@@ -17,6 +18,7 @@ import java.util.zip.ZipInputStream
  */
 object JavaRuntimeManager {
 
+    private val logger = LoggerFactory.getLogger(JavaRuntimeManager::class.java)
     private val runtimesDir = File("runtimes")
 
     /**
@@ -32,16 +34,20 @@ object JavaRuntimeManager {
         val runtimeDir = File(runtimesDir, "java-$javaVersion")
         findExecutable(runtimeDir)?.let { return it }
 
-        println("  ☕ Java $javaVersion not found — fetching from Adoptium ...")
+        findSystemJava(javaVersion)?.let {
+            logger.info("☕ Using system-installed Java {} at {}", javaVersion, it.absolutePath)
+            return it
+        }
+
+        logger.info("☕ Java {} not found — fetching from Adoptium ...", javaVersion)
         val (downloadUrl, fileName) = fetchDownloadInfo(javaVersion)
         val archive = File(runtimeDir.also { it.mkdirs() }, fileName)
 
-        print("  ↓ Downloading $fileName ...")
-        System.out.flush()
+        logger.info("↓ Downloading {} ...", fileName)
         URI(downloadUrl).toURL().openStream().use { input ->
             archive.outputStream().use { input.copyTo(it) }
         }
-        println("  done (${archive.length() / 1024 / 1024} MB)")
+        logger.info("↓ Downloaded {} ({} MB)", fileName, archive.length() / 1024 / 1024)
 
         extractArchive(archive, runtimeDir)
         archive.delete()
@@ -77,6 +83,49 @@ object JavaRuntimeManager {
             .firstOrNull { it.name == execName && it.parentFile?.name == "bin" }
             ?.also { if (!isWindows()) it.setExecutable(true) }
     }
+
+    /**
+     * Looks for an already-installed JRE/JDK matching [javaVersion] via `JAVA_HOME`
+     * and the `PATH`, so a machine that already has the right Java doesn't get a
+     * redundant private copy downloaded from Adoptium into `runtimes/`.
+     *
+     * @return The matching java executable [File], or null if none of the candidates
+     * exist or none report the requested major version.
+     */
+    private fun findSystemJava(javaVersion: Int): File? {
+        val execName = if (isWindows()) "java.exe" else "java"
+
+        val javaHomeCandidate = System.getenv("JAVA_HOME")?.let { File(it, "bin/$execName") }
+        val pathCandidates = System.getenv("PATH")
+            ?.split(File.pathSeparator)
+            ?.filter { it.isNotBlank() }
+            ?.map { File(it, execName) }
+            .orEmpty()
+
+        return (listOfNotNull(javaHomeCandidate) + pathCandidates)
+            .filter { it.isFile }
+            .distinctBy { runCatching { it.canonicalPath }.getOrDefault(it.absolutePath) }
+            .firstOrNull { majorVersionOf(it) == javaVersion }
+    }
+
+    /**
+     * Runs `<executable> -version` and parses the major version from its output,
+     * handling both the legacy `1.8.0_381` scheme and the modern `17.0.2`/`25-ea` one.
+     *
+     * @return The major version, or null if the executable can't be run or its
+     * output doesn't contain a recognizable version string.
+     */
+    private fun majorVersionOf(executable: File): Int? = runCatching {
+        val process = ProcessBuilder(executable.absolutePath, "-version")
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText()
+        process.waitFor()
+
+        val match = Regex("version \"(\\d+)(?:\\.(\\d+))?").find(output) ?: return@runCatching null
+        val (major, minor) = match.destructured
+        if (major == "1" && minor.isNotEmpty()) minor.toInt() else major.toInt()
+    }.getOrNull()
 
     private fun extractArchive(archive: File, targetDir: File) {
         if (archive.name.endsWith(".zip")) extractZip(archive, targetDir)
