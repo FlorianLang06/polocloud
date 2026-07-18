@@ -10,6 +10,7 @@ import de.polocloud.node.terminal.impl.ServiceCommand
 import de.polocloud.node.terminal.impl.ShutdownCommand
 import de.polocloud.node.terminal.impl.TemplateCommand
 import org.jline.jansi.Ansi
+import org.jline.reader.Completer
 import org.jline.reader.LineReader
 import org.jline.reader.LineReaderBuilder
 import org.jline.reader.impl.LineReaderImpl
@@ -28,13 +29,16 @@ import java.nio.charset.StandardCharsets
  * Use [readingThread] to start the background input loop and [shutdown] to gracefully
  * close the terminal and stop the reading thread.
  */
-class CliTerminal(val context: NodeRuntimeContext) {
+class CliTerminal(val context: NodeRuntimeContext) : WizardPrompt {
 
     /**
      * The currently displayed prompt string (ANSI-translated).
      */
     var prompt: String? = AnsiColors.translate("&bpolocloud&8@&7${context.localNodeContainer.data.name()} &8» &7")
     val commandService = CommandService()
+
+    private val defaultCompleter = CommandCompleter(this.commandService)
+    private val delegatingCompleter = DelegatingCompleter(this.defaultCompleter)
 
     private val terminal = TerminalBuilder.builder()
         .system(true)
@@ -44,7 +48,7 @@ class CliTerminal(val context: NodeRuntimeContext) {
 
     private val lineReader: LineReaderImpl = LineReaderBuilder.builder()
         .terminal(this.terminal)
-        .completer(CommandCompleter(this.commandService))
+        .completer(this.delegatingCompleter)
         .option(LineReader.Option.AUTO_MENU_LIST, true)
         .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
         .option(LineReader.Option.AUTO_PARAM_SLASH, false)
@@ -63,12 +67,20 @@ class CliTerminal(val context: NodeRuntimeContext) {
     // interleave their escape sequences and corrupt the prompt line.
     private val writeLock = Any()
 
+    // While quiet (e.g. a wizard is running), background log output is held here instead
+    // of being printed, so it doesn't interleave with the wizard's questions, then flushed
+    // once the wizard ends.
+    @Volatile
+    private var quiet = false
+    private val quietBuffer = mutableListOf<String>()
+
     init {
         this.commandService.registerCommand(
             GroupCommand(
                 this.context.groupService,
                 this.context.serviceProvider.platformService,
                 this.context.serviceProvider,
+                this,
             )
         )
         this.commandService.registerCommand(
@@ -97,17 +109,21 @@ class CliTerminal(val context: NodeRuntimeContext) {
     /**
      * Clears the entire terminal screen.
      */
-    fun clearScreen() = synchronized(writeLock) {
+    override fun clearScreen() = synchronized(writeLock) {
         this.terminal.puts(InfoCmp.Capability.clear_screen)
         this.terminal.flush()
     }
 
     /**
-     * Prints [message] above the current input line. Kept as a separate name for
-     * call-site clarity, but routed through the same lock-guarded, JLine-safe path as
-     * [displayApproved] so it can never race with it and corrupt the prompt.
+     * Prints [message] above the current input line, always immediately — unlike
+     * [displayApproved], this never gets held back by [quiet]. It's the path a wizard
+     * uses for its own questions, which must stay visible even while quiet is suppressing
+     * unrelated background log output.
      */
-    fun display(message: String) = displayApproved(message)
+    override fun display(message: String) = synchronized(writeLock) {
+        this.lineReader.printAbove(AnsiColors.translate(message))
+        this.updateLocked()
+    }
 
     /**
      * Prints a single blank line above the current input line.
@@ -117,11 +133,52 @@ class CliTerminal(val context: NodeRuntimeContext) {
     }
 
     /**
-     * Prints [message] above the current input line without disturbing the prompt.
+     * Prints [message] above the current input line without disturbing the prompt. Used
+     * by the log appender for background output: while [quiet] is active (e.g. a wizard
+     * is running), the message is held in [quietBuffer] instead, so unrelated log lines
+     * don't interleave with the wizard's questions; [endQuiet] flushes it afterwards.
      */
     fun displayApproved(message: String) = synchronized(writeLock) {
+        if (this.quiet) {
+            this.quietBuffer.add(message)
+            return@synchronized
+        }
         this.lineReader.printAbove(message)
         this.updateLocked()
+    }
+
+    /**
+     * Suppresses background output (e.g. log lines) so an interactive wizard's questions
+     * stay uninterrupted; buffered messages are flushed once [endQuiet] is called.
+     */
+    override fun beginQuiet() = synchronized(writeLock) {
+        this.quiet = true
+    }
+
+    /**
+     * Resumes background output and flushes anything buffered while quiet.
+     */
+    override fun endQuiet() = synchronized(writeLock) {
+        this.quiet = false
+        this.quietBuffer.forEach { this.lineReader.printAbove(it) }
+        this.quietBuffer.clear()
+        this.updateLocked()
+    }
+
+    /**
+     * Temporarily swaps the line reader's completer, e.g. so a wizard step can offer its
+     * own tab-completion suggestions instead of command completion. Pair with
+     * [resetCompleter] once the step (or the wizard) is done.
+     */
+    override fun setCompleter(completer: Completer) {
+        this.delegatingCompleter.delegate = completer
+    }
+
+    /**
+     * Restores the default command completer, undoing [setCompleter].
+     */
+    override fun resetCompleter() {
+        this.delegatingCompleter.delegate = this.defaultCompleter
     }
 
     /**
@@ -172,7 +229,7 @@ class CliTerminal(val context: NodeRuntimeContext) {
      * @throws org.jline.reader.UserInterruptException on Ctrl+C, which callers may catch
      *         to leave the sub-mode without terminating the node.
      */
-    fun awaitInput(prompt: String): String = this.lineReader.readLine(AnsiColors.translate(prompt))
+    override fun awaitInput(prompt: String): String = this.lineReader.readLine(AnsiColors.translate(prompt))
 
     /**
      * Closes the terminal and interrupts the [readingThread] thread.

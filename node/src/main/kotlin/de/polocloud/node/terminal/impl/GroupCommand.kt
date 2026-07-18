@@ -17,6 +17,7 @@ import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.PlatformService
 import de.polocloud.node.services.queue.GroupNodeEligibility
+import de.polocloud.node.terminal.WizardPrompt
 import de.polocloud.node.terminal.types.GroupArgument
 import de.polocloud.node.terminal.types.NodeArgument
 import de.polocloud.node.terminal.types.PlatformArgument
@@ -28,6 +29,7 @@ class GroupCommand(
     val groupService: GroupService,
     platformService: PlatformService,
     private val serviceProvider: ServiceProvider,
+    private val wizardPrompt: WizardPrompt,
 ) : Command("group", "Manage all group things here") {
 
     private val logger = LoggerFactory.getLogger(GroupCommand::class.java)
@@ -59,6 +61,11 @@ class GroupCommand(
             groupService.create(name, memory, startThreshold, minOnline, maxOnline, platform.name, version.version)
             logger.trInfo("node", "node.command.group.created", Pair("name", name))
         }, "Create a new group", KeywordArgument("create"), nameArgument, memoryArgument, startThresholdArgument, maxOnlineArgument, minOnlineArgument, platformArgument, versionArgument)
+
+        syntax({
+            val group = GroupSetupWizard(groupService, platformService, wizardPrompt).run() ?: return@syntax
+            logger.trInfo("node", "node.command.group.created", Pair("name", group.name))
+        }, "Interactively create a new group", KeywordArgument("setup"))
 
         syntax({
             val group = it.arg(groupArgument)

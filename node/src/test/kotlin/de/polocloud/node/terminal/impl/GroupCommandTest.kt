@@ -7,11 +7,14 @@ import de.polocloud.node.group.GroupService
 import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.services.factory.PlatformService
+import de.polocloud.node.terminal.WizardPrompt
+import org.jline.reader.Completer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,6 +30,23 @@ private class InMemoryGroupService(initial: List<Group>) : GroupService() {
     override fun find(name: String) = storage[name]
     override fun update(group: Group): Group = group.also { storage[it.name] = it }
     override fun delete(group: Group) { storage.remove(group.name) }
+}
+
+/**
+ * Scripted [WizardPrompt]: [answers] are handed out one by one on every [awaitInput] call,
+ * so a `group setup` run can be driven without a real JLine terminal. Every [display]ed
+ * line is recorded in [displayed] so a test can assert on what the wizard would have shown.
+ */
+private class FakeWizardPrompt(answers: List<String>) : WizardPrompt {
+    private val queue = ArrayDeque(answers)
+    val displayed = mutableListOf<String>()
+    override fun beginQuiet() {}
+    override fun endQuiet() {}
+    override fun clearScreen() {}
+    override fun display(message: String) { displayed.add(message) }
+    override fun setCompleter(completer: Completer) {}
+    override fun resetCompleter() {}
+    override fun awaitInput(prompt: String): String = queue.removeFirst()
 }
 
 /**
@@ -52,7 +72,7 @@ class GroupCommandTest {
     fun setUp() {
         groups = InMemoryGroupService(listOf(Group("lobby", 512, 0.5, 1, 3, "velocity", "3.5.0")))
         commands = CommandService()
-        commands.registerCommand(GroupCommand(groups, PlatformService(), ServiceProvider()))
+        commands.registerCommand(GroupCommand(groups, PlatformService(), ServiceProvider(), FakeWizardPrompt(emptyList())))
     }
 
     @AfterEach
@@ -156,5 +176,44 @@ class GroupCommandTest {
     fun `delete removes the group`() {
         assertNotNull(exec("delete", "lobby"))
         assertFalse(groups.storage.containsKey("lobby"))
+    }
+
+    @Test
+    fun `setup wizard creates nothing when exited on the first question`() {
+        val setupCommands = CommandService()
+        setupCommands.registerCommand(GroupCommand(groups, PlatformService(), ServiceProvider(), FakeWizardPrompt(listOf("exit"))))
+
+        assertNotNull(setupCommands.parser.findSyntaxCommand(setupCommands.commandsByName("group").single(), arrayOf("setup")))
+        assertEquals(1, groups.storage.size)
+    }
+
+    @Test
+    fun `setup wizard back returns to the previous step instead of advancing`() {
+        val setupCommands = CommandService()
+        // "newgroup" answers the name step, "back" (asked for the platform) returns to the
+        // name step, and "exit" (asked for the name again) cancels — so the group must
+        // never actually get created despite "newgroup" having been a valid answer.
+        setupCommands.registerCommand(
+            GroupCommand(groups, PlatformService(), ServiceProvider(), FakeWizardPrompt(listOf("newgroup", "back", "exit")))
+        )
+
+        assertNotNull(setupCommands.parser.findSyntaxCommand(setupCommands.commandsByName("group").single(), arrayOf("setup")))
+        assertFalse(groups.storage.containsKey("newgroup"))
+        assertEquals(1, groups.storage.size)
+    }
+
+    @Test
+    fun `setup wizard shows already answered steps as a checklist`() {
+        val setupCommands = CommandService()
+        val fakePrompt = FakeWizardPrompt(listOf("newgroup", "exit"))
+        setupCommands.registerCommand(GroupCommand(groups, PlatformService(), ServiceProvider(), fakePrompt))
+
+        setupCommands.parser.findSyntaxCommand(setupCommands.commandsByName("group").single(), arrayOf("setup"))
+
+        // Once the name step is answered, the platform question (the next one asked)
+        // must render it back as a checked-off "Name: ... newgroup" line. Colour codes
+        // sit between the label and the value in the raw (untranslated) string, so check
+        // for both rather than one contiguous substring.
+        assertTrue(fakePrompt.displayed.any { it.contains("Name:") && it.contains("newgroup") })
     }
 }
