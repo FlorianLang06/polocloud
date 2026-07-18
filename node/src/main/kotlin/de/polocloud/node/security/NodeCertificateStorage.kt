@@ -31,7 +31,7 @@ import java.util.Date
  *     public-key.pem
  *     certificate.pem   ← signed by CA (written after registration or bootstrapped)
  *   ca/
- *     private-key.pem   ← CA private key  (only on the head/master node)
+ *     private-key.pem   ← cluster CA private key
  *     public-key.pem
  *     certificate.pem   ← CA self-signed cert
  * ```
@@ -39,7 +39,13 @@ import java.util.Date
  * On first start [onInitialized] bootstraps the CA and a node certificate so
  * the node is immediately operational even before any other node joins.
  * Joining nodes overwrite `node/certificate.pem` and `ca/certificate.pem`
- * via [saveCertificates] once the registration handshake completes.
+ * via [saveCertificates] once the registration handshake completes, then adopt the
+ * *real* `ca/private-key.pem` from the current head via [adoptClusterCaKeyPair] — the
+ * one [onInitialized] generated locally in the meantime was only ever a throwaway used
+ * to self-sign this node's own bootstrap certificate before it had joined anything.
+ * Every node ends up holding the real CA key pair so leader election (see
+ * `NodeElectionService`) can promote any of them to head without breaking certificate
+ * issuance for the rest of the cluster.
  */
 object NodeCertificateStorage : CertificateStorage() {
 
@@ -82,6 +88,26 @@ object NodeCertificateStorage : CertificateStorage() {
 
     fun certificateAuthority(): CertificateAuthority =
         CertificateAuthority(caKeyPair, loadCaCertificate())
+
+    /**
+     * Replaces the local CA key pair with the cluster's real one, received from a peer
+     * that already holds it (see `NodeService.FetchClusterCa`).
+     *
+     * A joining node's own [onInitialized] always generates a throwaway CA key pair for
+     * its own bootstrap before it has even attempted registration — fine for a node that
+     * stays a regular member, but useless the moment leader election (see
+     * `NodeElectionService`) promotes this node to head: signing with that throwaway key
+     * would produce certificates nothing else in the cluster trusts, since only the
+     * *certificate* (not the key) it received via [saveCertificates] is the real one.
+     * Every node adopts the real key pair right after joining so any of them can safely
+     * become head later.
+     */
+    fun adoptClusterCaKeyPair(privateKeyPem: String, publicKeyPem: String) {
+        Files.createDirectories(caPath)
+        caPrivateKeyFile.writeText(privateKeyPem)
+        caPublicKeyFile.writeText(publicKeyPem)
+        caKeyPair = loadKeyPairFromPem(caPrivateKeyFile, caPublicKeyFile)
+    }
 
     private fun loadCaCertificate(): X509Certificate {
         PEMParser(FileReader(caCertificateFile())).use { parser ->

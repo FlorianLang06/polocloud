@@ -44,6 +44,22 @@ service NodeService {
   // event to its peers, which re-broadcast it to their own local subscribers only
   // (no re-relay), giving the cluster a single live event view without loops.
   rpc RelayEvent (RelayEventRequest) returns (RelayEventResponse);
+  // Lets a newly-joined node adopt the real cluster CA key pair from a peer that
+  // already holds it, instead of only ever keeping the throwaway one it self-signed
+  // during its own bootstrap. Required so that a node promoted to head by
+  // leader election (see NodeElectionService) is actually able to sign certificates
+  // the rest of the cluster trusts. Only served to callers whose peer certificate CN
+  // resolves to a known node id — see NodeServiceImpl.fetchClusterCa.
+  rpc FetchClusterCa (FetchClusterCaRequest) returns (FetchClusterCaResponse);
+}
+
+message FetchClusterCaRequest {}
+
+message FetchClusterCaResponse {
+  bool available = 1;
+  string message = 2;
+  string ca_private_key = 3;
+  string ca_public_key = 4;
 }
 
 message RelayEventRequest {

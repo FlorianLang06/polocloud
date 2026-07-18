@@ -19,6 +19,9 @@ import de.polocloud.node.group.GroupService
 import de.polocloud.node.identity.provider.NodeIdProvider
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.security.NodeCertificateStorage
+import de.polocloud.proto.FetchClusterCaRequest
+import de.polocloud.proto.NodeServiceGrpcKt
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import java.time.Instant
 import java.time.ZoneId
@@ -118,6 +121,7 @@ class NodeIdentityService(
 
 
         registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, launchProperties.group)
+        adoptClusterCaKeyPair()
 
         grpc.start()
         serviceGrpc.start()
@@ -129,6 +133,38 @@ class NodeIdentityService(
         container = LocalNodeContainer(nodeData!!)
 
         return NodeRuntimeContext(holder, container, registrationManager, grpc, serviceGrpc, headConnection, groupService, serviceProvider)
+    }
+
+    /**
+     * Adopts the real cluster CA key pair from the current head right after this node
+     * joins, over the already-mTLS-secured [NodeGrpcClient] channel (the join handshake
+     * itself only transports the CA *certificate*, never the key — see
+     * [de.polocloud.node.security.NodeCertificateStorage.adoptClusterCaKeyPair]).
+     *
+     * Best-effort: a failure here only means this node can't yet safely be promoted to
+     * head by leader election — it can still serve as a regular cluster member and will
+     * retry on its next restart, so a transient failure here must not abort the join.
+     */
+    private fun adoptClusterCaKeyPair() {
+        val head = NodeRepository.findAll().firstOrNull { it.head }
+        if (head == null) {
+            logger.warn("Could not adopt the cluster CA key pair — no head node is currently known")
+            return
+        }
+
+        val client = NodeGrpcClient()
+        runCatching {
+            client.connect(Address(head.hostname, head.port))
+            val stub = NodeServiceGrpcKt.NodeServiceCoroutineStub(client.channel())
+            val response = runBlocking { stub.fetchClusterCa(FetchClusterCaRequest.getDefaultInstance()) }
+            if (!response.available) {
+                error(response.message)
+            }
+            NodeCertificateStorage.adoptClusterCaKeyPair(response.caPrivateKey, response.caPublicKey)
+        }.onFailure { ex ->
+            logger.warn("Could not adopt the cluster CA key pair from head '{}' — this node cannot safely become head until a later restart succeeds: {}", head.name(), ex.message)
+        }
+        client.disconnect()
     }
 
     /**

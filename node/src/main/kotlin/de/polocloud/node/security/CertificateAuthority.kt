@@ -87,4 +87,18 @@ class CertificateAuthority(
         org.bouncycastle.openssl.jcajce.JcaPEMWriter(writer).use { it.writeObject(caCertificate) }
         return writer.toString()
     }
+
+    /** Return the PEM encoded CA private key — only ever sent over an already-mTLS-secured
+     *  channel to another verified node identity, see [de.polocloud.node.communication.impl.node.NodeServiceImpl.fetchClusterCa]. */
+    fun getCaPrivateKeyPem(): String = pemEncode(caKeyPair.private)
+
+    /** Return the PEM encoded CA public key, sent alongside [getCaPrivateKeyPem] so the
+     *  receiving node can reconstruct a [KeyPair] without deriving the public key itself. */
+    fun getCaPublicKeyPem(): String = pemEncode(caKeyPair.public)
+
+    private fun pemEncode(key: java.security.Key): String {
+        val writer = java.io.StringWriter()
+        org.bouncycastle.openssl.jcajce.JcaPEMWriter(writer).use { it.writeObject(key) }
+        return writer.toString()
+    }
 }

@@ -12,7 +12,7 @@ service ServiceRegistrationService {
 
 message RegisterServiceRequest {
   string service_id = 1;
-  string token      = 2;
+  string plan_name  = 2;
   string csr_pem    = 3;
 }
 

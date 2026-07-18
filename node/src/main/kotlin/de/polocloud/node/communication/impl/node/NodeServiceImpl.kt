@@ -1,9 +1,14 @@
 package de.polocloud.node.communication.impl.node
 
 import de.polocloud.common.communication.server.executor.GrpcServerExecutor
+import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.communication.grpc.GrpcContextFactory
+import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.event.ClusterEventService
+import de.polocloud.node.security.NodeCertificateStorage
 import de.polocloud.proto.EventContext
+import de.polocloud.proto.FetchClusterCaRequest
+import de.polocloud.proto.FetchClusterCaResponse
 import de.polocloud.proto.NodeEvent
 import de.polocloud.proto.NodeEventRequest
 import de.polocloud.proto.NodeInformationRequest
@@ -15,6 +20,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import java.util.UUID
 
 class NodeServiceImpl(
     private val executor: GrpcServerExecutor,
@@ -45,6 +51,32 @@ class NodeServiceImpl(
                 .build()
         )
         return RelayEventResponse.newBuilder().setSuccess(true).build()
+    }
+
+    /**
+     * Hands the real cluster CA key pair to a peer node so it can safely be promoted to
+     * head later — see [NodeCertificateStorage.adoptClusterCaKeyPair].
+     *
+     * Restricted to callers whose peer certificate CN resolves to a known node id: the
+     * mTLS port here also serves CLI and service clients trusted by the same CA (see
+     * [de.polocloud.node.communication.grpc.NodeGrpcEndpoint]'s doc comment), and neither
+     * of those should ever be able to obtain the CA private key just by asking for it.
+     */
+    override suspend fun fetchClusterCa(request: FetchClusterCaRequest): FetchClusterCaResponse {
+        val callerId = runCatching { UUID.fromString(CliSessionInterceptor.SUBJECT_CTX_KEY.get()) }.getOrNull()
+        if (callerId == null || NodeRepository.find(callerId) == null) {
+            return FetchClusterCaResponse.newBuilder()
+                .setAvailable(false)
+                .setMessage("Caller is not a known node identity")
+                .build()
+        }
+
+        val ca = NodeCertificateStorage.certificateAuthority()
+        return FetchClusterCaResponse.newBuilder()
+            .setAvailable(true)
+            .setCaPrivateKey(ca.getCaPrivateKeyPem())
+            .setCaPublicKey(ca.getCaPublicKeyPem())
+            .build()
     }
 
     fun broadcastShutdown() {

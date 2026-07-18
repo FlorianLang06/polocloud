@@ -11,6 +11,7 @@ import de.polocloud.node.communication.impl.cluster.ClusterServiceImpl
 import de.polocloud.node.communication.impl.node.NodeServiceImpl
 import de.polocloud.node.communication.impl.services.ServiceApiServiceImpl
 import de.polocloud.node.communication.impl.services.ServiceManagerImpl
+import de.polocloud.node.communication.impl.services.ServiceRegistrationServiceImpl
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.communication.interceptor.IpWhitelistInterceptor
 import de.polocloud.node.communication.registration.cli.CliRegistrationService
@@ -47,6 +48,9 @@ class NodeGrpcEndpoint(
     // Also exposed here (not only on ServiceGrpcEndpoint) so a peer node can fetch this
     // node's local ServiceData when assembling the cluster-wide FindServices view.
     private val serviceApiService = ServiceApiServiceImpl(executor)
+    // Lets a non-head node forward a locally-launched service's CSR to whichever node
+    // currently holds the cluster CA's private key — see ServiceRegistrationServiceImpl.
+    private val serviceRegistrationService = ServiceRegistrationServiceImpl()
 
     private val sessionCleanup = CliSessionCleanup(cliSessionManager)
 
@@ -80,6 +84,11 @@ class NodeGrpcEndpoint(
         )
         .interceptedService(
             serviceApiService,
+            IpWhitelistInterceptor(),
+            CliSessionInterceptor(cliSessionManager)
+        )
+        .interceptedService(
+            serviceRegistrationService,
             IpWhitelistInterceptor(),
             CliSessionInterceptor(cliSessionManager)
         )

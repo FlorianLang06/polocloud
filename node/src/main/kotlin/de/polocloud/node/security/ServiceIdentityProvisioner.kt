@@ -1,6 +1,13 @@
 package de.polocloud.node.security
 
+import de.polocloud.common.Address
 import de.polocloud.common.communication.certificate.certToPem
+import de.polocloud.common.communication.security.toPem
+import de.polocloud.node.cluster.node.NodeRepository
+import de.polocloud.node.communication.grpc.NodeGrpcClient
+import de.polocloud.proto.RegisterServiceRequest
+import de.polocloud.proto.ServiceRegistrationServiceGrpcKt
+import kotlinx.coroutines.runBlocking
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
@@ -10,14 +17,24 @@ import java.io.File
 import java.io.FileWriter
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.util.UUID
 
 /**
  * Provisions the mTLS identity a locally launched service needs to talk back to
  * the node via the standalone API.
  *
- * The node owns the CA, so instead of having the service perform a CSR handshake
- * it directly generates a key pair, signs a certificate with the node CA and lays
- * the PEM files out in the directory layout the API's
+ * Certificate issuance is still centralized on the head by policy — every node does end
+ * up holding a copy of the real cluster CA key pair (see [NodeCertificateStorage]'s doc
+ * comment / [NodeCertificateStorage.adoptClusterCaKeyPair], needed so leader election can
+ * promote any node to head), but a non-head node forwards the CSR to the current head over
+ * [de.polocloud.node.communication.impl.services.ServiceRegistrationServiceImpl] rather
+ * than signing locally, so it never depends on this node's own copy actually being
+ * up to date. Only the head signs directly. That mismatch (a node self-signing with a CA
+ * key that didn't match the certificate the rest of the cluster trusted) previously made
+ * every service launched on a
+ * non-head node fail its first mTLS handshake with a generic `TLSV1_ALERT_INTERNAL_ERROR`).
+ *
+ * Either way the PEM files end up laid out in the directory layout the API's
  * [de.polocloud.api.connection.ServiceCertificateStorage] expects:
  *
  * ```
@@ -47,16 +64,52 @@ object ServiceIdentityProvisioner {
         identityDir.mkdirs()
 
         val keyPair = generateKeyPair()
-        val ca = NodeCertificateStorage.certificateAuthority()
-        val signed = ca.signCsr(
-            buildCsr(keyPair, serviceId),
-            subjectAltNames = SanBuilder.forService(serviceId, planName),
-        )
+        val csr = buildCsr(keyPair, serviceId)
+        val (certificatePem, caCertificatePem) = if (isHead()) {
+            val ca = NodeCertificateStorage.certificateAuthority()
+            val signed = ca.signCsr(csr, subjectAltNames = SanBuilder.forService(serviceId, planName))
+            certToPem(signed) to ca.getCaCertificatePem()
+        } else {
+            signViaHead(csr, serviceId, planName)
+        }
 
         writePem(File(identityDir, "private-key.pem"), keyPair.private)
         writePem(File(identityDir, "public-key.pem"), keyPair.public)
-        File(identityDir, "certificate.pem").writeText(certToPem(signed))
-        File(identityDir, "ca.pem").writeText(ca.getCaCertificatePem())
+        File(identityDir, "certificate.pem").writeText(certificatePem)
+        File(identityDir, "ca.pem").writeText(caCertificatePem)
+    }
+
+    private fun isHead(): Boolean =
+        runCatching { UUID.fromString(NodeCertificateStorage.nodeId) }
+            .getOrNull()
+            ?.let { NodeRepository.find(it) }
+            ?.head == true
+
+    /** Forwards [csr] to whichever node is currently head and returns (certificate, CA) PEMs. */
+    private fun signViaHead(csr: PKCS10CertificationRequest, serviceId: String, planName: String): Pair<String, String> {
+        val head = NodeRepository.findAll().firstOrNull { it.head }
+            ?: error("Cannot provision identity for service '$serviceId' — no cluster head is currently known")
+
+        val client = NodeGrpcClient()
+        client.connect(Address(head.hostname, head.port))
+        try {
+            val stub = ServiceRegistrationServiceGrpcKt.ServiceRegistrationServiceCoroutineStub(client.channel())
+            val response = runBlocking {
+                stub.registerService(
+                    RegisterServiceRequest.newBuilder()
+                        .setServiceId(serviceId)
+                        .setPlanName(planName)
+                        .setCsrPem(csr.toPem())
+                        .build()
+                )
+            }
+            if (!response.accepted) {
+                error("Head node '${head.name()}' refused to sign service '$serviceId': ${response.message}")
+            }
+            return response.certificate to response.caCertificate
+        } finally {
+            client.disconnect()
+        }
     }
 
     private fun buildCsr(keyPair: KeyPair, serviceId: String): PKCS10CertificationRequest {
