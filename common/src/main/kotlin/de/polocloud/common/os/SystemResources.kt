@@ -13,7 +13,8 @@ object SystemResources : ResourceProvider {
     override fun cpuUsage(): Double {
         val load = processor.getSystemCpuLoadBetweenTicks(prevTicks)
         prevTicks = processor.systemCpuLoadTicks
-        return load * 100.0
+        if (load.isNaN()) return 0.0
+        return (load * 100.0).coerceIn(0.0, 100.0)
     }
 
     override fun usedMemory(): Double {

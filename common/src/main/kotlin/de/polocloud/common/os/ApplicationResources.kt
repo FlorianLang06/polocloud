@@ -13,7 +13,8 @@ object ApplicationResources : ResourceProvider {
 
     override fun cpuUsage(): Double {
         val load = osBean.processCpuLoad
-        return if (load < 0) -1.0 else (load * 10000).roundToInt() / 100.0
+        if (load < 0) return 0.0
+        return ((load * 10000).roundToInt() / 100.0).coerceIn(0.0, 100.0)
     }
 
     override fun usedMemory(): Double {
