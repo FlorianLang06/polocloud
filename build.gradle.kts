@@ -1,3 +1,9 @@
+plugins {
+    alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.kotlin.kapt) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+}
+
 allprojects {
     apply(from = rootProject.file("gradle/version.gradle.kts"))
 
@@ -6,7 +12,6 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven { url = uri("https://repo1.maven.org/maven2") }
 
         maven {
             name = "polocloud-snapshots"

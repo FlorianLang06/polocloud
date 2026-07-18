@@ -28,6 +28,9 @@ velocity-api            = "3.3.0-SNAPSHOT"
 waterfall-api           = "1.20-R0.1-SNAPSHOT"
 shadow                  = "9.5.1"
 
+# ── Minecraft server  -------──────────────────────────────────────────────────
+spigot-api              = "26.1.2-R0.1-SNAPSHOT"
+
 # ── Security ──────────────────────────────────────────────────────────────────
 bcprov                  = "1.84"
 argon2                  = "2.12"
@@ -80,6 +83,7 @@ oshi                        = { group = "com.github.oshi",  name = "oshi-core", 
 # ── Proxy bridge ──────────────────────────────────────────────────────────────
 velocity-api                = { group = "com.velocitypowered",   name = "velocity-api",   version.ref = "velocity-api" }
 waterfall-api               = { group = "io.github.waterfallmc", name = "waterfall-api",  version.ref = "waterfall-api" }
+spigot-api                  = { group = "org.spigotmc",           name = "spigot-api",     version.ref = "spigot-api" }
 
 # ── Security ───── ─────────────────────────────────────────────────────────────
 bcprov                      = { group = "org.bouncycastle", name = "bcprov-jdk18on",      version.ref = "bcprov" }

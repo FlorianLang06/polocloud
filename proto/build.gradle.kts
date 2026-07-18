@@ -1,7 +1,7 @@
 import com.google.protobuf.gradle.*
 
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    id("org.jetbrains.kotlin.jvm")
     alias(libs.plugins.protobuf.plugin)
     alias(libs.plugins.polocloud.gradle.plugin)
 }
