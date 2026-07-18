@@ -66,11 +66,16 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
         }
     }
 
-    // Pinged over loopback: the pinger is co-located with the service on this node, so it
-    // never depends on the (possibly public) advertised hostname being reachable from here.
+    // Pinged over service.hostname (== general.serviceHostname), not a hardcoded loopback:
+    // a service only ever *listens* on the address it was told to bind to (e.g. Velocity's
+    // `bind` is derived from the same value — see task_velocity_config.json in
+    // polocloud-platforms), which for a VPN-only or multi-host deployment can be a specific
+    // non-loopback interface. Pinging loopback unconditionally would never reach such a
+    // service even though it is healthy. Defaults to 127.0.0.1 for a single-host setup, so
+    // behavior there is unchanged.
 
     private fun pingStarting(service: LocalService) {
-        val result = MinecraftServerPing.ping(PING_HOST, service.port) ?: return
+        val result = MinecraftServerPing.ping(service.hostname, service.port) ?: return
         markOnline(service, result)
     }
 
@@ -78,7 +83,7 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
         if (now - service.lastPlayerPollAt < PLAYER_POLL_INTERVAL_MILLIS) return
         service.lastPlayerPollAt = now
 
-        val result = MinecraftServerPing.ping(PING_HOST, service.port) ?: return
+        val result = MinecraftServerPing.ping(service.hostname, service.port) ?: return
         val changed = service.onlinePlayers != result.onlinePlayers || service.maxPlayers != result.maxPlayers
         service.onlinePlayers = result.onlinePlayers
         service.maxPlayers = result.maxPlayers
@@ -118,9 +123,6 @@ class ServicePingFactory(private val serviceProvider: ServiceProvider) {
 
         /** How often an already-`RUNNING` service is re-pinged to refresh its player count. */
         const val PLAYER_POLL_INTERVAL_MILLIS = 5000L
-
-        /** Loopback host used to reach co-located services from the node's own ping thread. */
-        const val PING_HOST = "127.0.0.1"
 
         /** Bounds how many pings run at once — plenty for cheap loopback socket calls. */
         val PING_DISPATCHER = Dispatchers.IO.limitedParallelism(16)
