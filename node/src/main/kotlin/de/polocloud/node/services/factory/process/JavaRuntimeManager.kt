@@ -35,11 +35,11 @@ object JavaRuntimeManager {
         findExecutable(runtimeDir)?.let { return it }
 
         findSystemJava(javaVersion)?.let {
-            logger.info("☕ Using system-installed Java {} at {}", javaVersion, it.absolutePath)
+            logger.info("Using system-installed Java {} at {}", javaVersion, it.absolutePath)
             return it
         }
 
-        logger.info("☕ Java {} not found — fetching from Adoptium ...", javaVersion)
+        logger.info("Java {} not found — fetching from Adoptium ...", javaVersion)
         val (downloadUrl, fileName) = fetchDownloadInfo(javaVersion)
         val archive = File(runtimeDir.also { it.mkdirs() }, fileName)
 
