@@ -3,6 +3,7 @@ package de.polocloud.node.terminal.impl
 import de.polocloud.common.commands.Command
 import de.polocloud.common.commands.type.KeywordArgument
 import de.polocloud.common.commands.type.StringArrayArgument
+import de.polocloud.node.cluster.node.NodeRepository
 import de.polocloud.node.group.template.GroupTemplateService
 import de.polocloud.node.services.Service
 import de.polocloud.node.services.ServiceProvider
@@ -11,6 +12,7 @@ import de.polocloud.node.terminal.types.ServiceArgument
 import de.polocloud.node.terminal.types.TemplateArgument
 import org.jline.reader.UserInterruptException
 import org.slf4j.LoggerFactory
+import java.util.UUID
 
 /**
  * Terminal command for inspecting and controlling the services running on this node.
@@ -70,6 +72,7 @@ class ServiceCommand(
         logger.info("  id: ${service.id}")
         logger.info("  group: ${service.groupName}")
         logger.info("  state: ${service.state}")
+        logger.info("  node: ${resolveNodeLabel(service.nodeId)}")
         logger.info("  host: ${service.hostname}:${service.port}")
         logger.info("  pid: ${local?.process?.pid() ?: "-"}")
         // Only a co-located LocalService carries a live ping result; a service known only
@@ -87,6 +90,15 @@ class ServiceCommand(
             logger.info("  properties:")
             properties.forEach { (key, value) -> logger.info("    - $key=$value") }
         }
+    }
+
+    /** Resolves a service's owning `nodeId` to that node's human-readable name (e.g. `node-0`),
+     *  falling back to the raw id if the node is unknown (e.g. it left the cluster) or the id
+     *  is blank (a service placed before [Service.nodeId] existed). */
+    private fun resolveNodeLabel(nodeId: String): String {
+        if (nodeId.isBlank()) return "-"
+        val node = runCatching { UUID.fromString(nodeId) }.getOrNull()?.let { NodeRepository.find(it) }
+        return node?.let { "${it.name()} (${it.hostname})" } ?: nodeId
     }
 
     private fun shutdown(service: Service) {
