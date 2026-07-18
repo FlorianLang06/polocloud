@@ -40,6 +40,7 @@ class NodeIdentityService(
         val localId = nodeId.get()
 
         NodeCertificateStorage.nodeId = localId.toString()
+        NodeCertificateStorage.configuredHostname = holder.value.general.hostname
         NodeCertificateStorage.initialize()
 
         val bindAddress = resolveBindAddress(launchProperties)

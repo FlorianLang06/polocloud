@@ -64,6 +64,9 @@ object NodeCertificateStorage : CertificateStorage() {
     /** Node ID used when building SANs for the bootstrap certificate. */
     var nodeId: String = ""
 
+    /** `general.hostname`, added to the bootstrap certificate's SAN — see [NodeIdentityPolicy]. */
+    var configuredHostname: String? = null
+
     /**
      * Called by the base class at the end of [initialize].
      * Loads or generates the CA key pair and bootstraps certificates if needed.
@@ -139,7 +142,7 @@ object NodeCertificateStorage : CertificateStorage() {
                 KeyUsage(KeyUsage.digitalSignature or KeyUsage.keyEncipherment))
 
             if (nodeId.isNotBlank()) {
-                val spec = NodeIdentityPolicy.resolve(nodeId)
+                val spec = NodeIdentityPolicy.resolve(nodeId, configuredHostname)
                 builder.addExtension(Extension.subjectAlternativeName, false, SanBuilder.build(spec))
             }
         }
