@@ -20,6 +20,7 @@ import de.polocloud.node.identity.provider.NodeIdProvider
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.security.NodeCertificateStorage
 import de.polocloud.proto.FetchClusterCaRequest
+import de.polocloud.proto.FetchForwardingSecretRequest
 import de.polocloud.proto.NodeServiceGrpcKt
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
@@ -122,6 +123,7 @@ class NodeIdentityService(
 
         registrationManager.tryJoinCluster(launchProperties.clusterRegistration, localId, launchProperties.group)
         adoptClusterCaKeyPair()
+        adoptForwardingSecret(serviceProvider)
 
         grpc.start()
         serviceGrpc.start()
@@ -163,6 +165,39 @@ class NodeIdentityService(
             NodeCertificateStorage.adoptClusterCaKeyPair(response.caPrivateKey, response.caPublicKey)
         }.onFailure { ex ->
             logger.warn("Could not adopt the cluster CA key pair from head '{}' — this node cannot safely become head until a later restart succeeds: {}", head.name(), ex.message)
+        }
+        client.disconnect()
+    }
+
+    /**
+     * Adopts the cluster's real forwarding secret from the current head right after this
+     * node joins, over the already-mTLS-secured [NodeGrpcClient] channel — otherwise this
+     * node would keep the random secret [de.polocloud.node.forwarding.ForwardingHandler]
+     * generated for itself on first start, and the proxy/services it launches would never
+     * agree with the rest of the cluster on the shared forwarding token.
+     *
+     * Best-effort like [adoptClusterCaKeyPair]: a failure here is logged and retried on
+     * the next restart rather than aborting the join, since the node can still function —
+     * just without working forwarding to/from services on other nodes until it succeeds.
+     */
+    private fun adoptForwardingSecret(serviceProvider: ServiceProvider) {
+        val head = NodeRepository.findAll().firstOrNull { it.head }
+        if (head == null) {
+            logger.warn("Could not adopt the cluster forwarding secret — no head node is currently known")
+            return
+        }
+
+        val client = NodeGrpcClient()
+        runCatching {
+            client.connect(Address(head.hostname, head.port))
+            val stub = NodeServiceGrpcKt.NodeServiceCoroutineStub(client.channel())
+            val response = runBlocking { stub.fetchForwardingSecret(FetchForwardingSecretRequest.getDefaultInstance()) }
+            if (!response.available) {
+                error(response.message)
+            }
+            serviceProvider.forwardingHandler.adopt(response.secret)
+        }.onFailure { ex ->
+            logger.warn("Could not adopt the cluster forwarding secret from head '{}' — services on this node may not be able to forward to/from peers until a later restart succeeds: {}", head.name(), ex.message)
         }
         client.disconnect()
     }

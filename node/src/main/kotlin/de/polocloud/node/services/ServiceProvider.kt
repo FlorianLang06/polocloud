@@ -34,6 +34,9 @@ class ServiceProvider(
     private val factory = FactoryService(platformService, this, nodePort, nodeHost)
     private val queue = ServiceQueue(factory, this)
 
+    /** The node-wide forwarding secret shared by every service this node starts. */
+    val forwardingHandler get() = factory.forwardingHandler
+
     // Pings starting services and flips them to RUNNING once they are reachable.
     private val pingFactory = ServicePingFactory(this)
 

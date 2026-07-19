@@ -51,6 +51,12 @@ service NodeService {
   // the rest of the cluster trusts. Only served to callers whose peer certificate CN
   // resolves to a known node id — see NodeServiceImpl.fetchClusterCa.
   rpc FetchClusterCa (FetchClusterCaRequest) returns (FetchClusterCaResponse);
+  // Lets a newly-joined node adopt the cluster's shared player-forwarding secret from a
+  // peer that already holds it, instead of keeping the random one it generated locally
+  // on first start. Required so that the proxy on one node and the backend services on
+  // another agree on the same secret. Only served to callers whose peer certificate CN
+  // resolves to a known node id — see NodeServiceImpl.fetchForwardingSecret.
+  rpc FetchForwardingSecret (FetchForwardingSecretRequest) returns (FetchForwardingSecretResponse);
 }
 
 message FetchClusterCaRequest {}
@@ -60,6 +66,14 @@ message FetchClusterCaResponse {
   string message = 2;
   string ca_private_key = 3;
   string ca_public_key = 4;
+}
+
+message FetchForwardingSecretRequest {}
+
+message FetchForwardingSecretResponse {
+  bool available = 1;
+  string message = 2;
+  string secret = 3;
 }
 
 message RelayEventRequest {

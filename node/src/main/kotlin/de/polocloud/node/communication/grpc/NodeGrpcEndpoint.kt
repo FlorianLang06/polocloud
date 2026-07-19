@@ -42,7 +42,7 @@ class NodeGrpcEndpoint(
 
     private val executor = GrpcModule.createExecutor(groupService, serviceProvider)
 
-    private val nodeService = NodeServiceImpl(executor)
+    private val nodeService = NodeServiceImpl(executor, serviceProvider)
     private val clusterService = ClusterServiceImpl(executor)
     private val serviceManager = ServiceManagerImpl(executor)
     // Also exposed here (not only on ServiceGrpcEndpoint) so a peer node can fetch this

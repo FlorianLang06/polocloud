@@ -6,9 +6,12 @@ import de.polocloud.node.communication.grpc.GrpcContextFactory
 import de.polocloud.node.communication.interceptor.CliSessionInterceptor
 import de.polocloud.node.event.ClusterEventService
 import de.polocloud.node.security.NodeCertificateStorage
+import de.polocloud.node.services.ServiceProvider
 import de.polocloud.proto.EventContext
 import de.polocloud.proto.FetchClusterCaRequest
 import de.polocloud.proto.FetchClusterCaResponse
+import de.polocloud.proto.FetchForwardingSecretRequest
+import de.polocloud.proto.FetchForwardingSecretResponse
 import de.polocloud.proto.NodeEvent
 import de.polocloud.proto.NodeEventRequest
 import de.polocloud.proto.NodeInformationRequest
@@ -24,6 +27,7 @@ import java.util.UUID
 
 class NodeServiceImpl(
     private val executor: GrpcServerExecutor,
+    private val serviceProvider: ServiceProvider,
 ) : NodeServiceGrpcKt.NodeServiceCoroutineImplBase() {
 
     private val listeners = mutableSetOf<SendChannel<NodeEvent>>()
@@ -76,6 +80,29 @@ class NodeServiceImpl(
             .setAvailable(true)
             .setCaPrivateKey(ca.getCaPrivateKeyPem())
             .setCaPublicKey(ca.getCaPublicKeyPem())
+            .build()
+    }
+
+    /**
+     * Hands this node's forwarding secret to a peer that just joined the cluster, so the
+     * services it starts (proxy or backend) agree with everyone else's — see
+     * [de.polocloud.node.forwarding.ForwardingHandler.adopt].
+     *
+     * Restricted the same way as [fetchClusterCa]: only callers whose peer certificate CN
+     * resolves to a known node id.
+     */
+    override suspend fun fetchForwardingSecret(request: FetchForwardingSecretRequest): FetchForwardingSecretResponse {
+        val callerId = runCatching { UUID.fromString(CliSessionInterceptor.SUBJECT_CTX_KEY.get()) }.getOrNull()
+        if (callerId == null || NodeRepository.find(callerId) == null) {
+            return FetchForwardingSecretResponse.newBuilder()
+                .setAvailable(false)
+                .setMessage("Caller is not a known node identity")
+                .build()
+        }
+
+        return FetchForwardingSecretResponse.newBuilder()
+            .setAvailable(true)
+            .setSecret(serviceProvider.forwardingHandler.secret)
             .build()
     }
 

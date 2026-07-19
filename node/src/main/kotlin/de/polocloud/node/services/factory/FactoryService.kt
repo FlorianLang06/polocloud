@@ -30,8 +30,11 @@ class FactoryService(
     private val logger = LoggerFactory.getLogger(FactoryService::class.java)
 
     // Owns the shared player-forwarding secret; the same token is written into every
-    // backend server and the proxy so modern forwarding can be established.
-    private val forwardingHandler = ForwardingHandler()
+    // backend server and the proxy so modern forwarding can be established. Exposed via
+    // ServiceProvider so a newly-joined node can adopt the real cluster-wide secret from
+    // its head before any service is actually placed — see
+    // NodeIdentityService.adoptForwardingSecret.
+    val forwardingHandler = ForwardingHandler()
 
     private companion object {
         // A service always connects *back* to its own node over loopback: it is started
