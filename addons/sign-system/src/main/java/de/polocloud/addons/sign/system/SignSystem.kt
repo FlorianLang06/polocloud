@@ -1,6 +1,7 @@
 package de.polocloud.addons.sign.system
 
 import de.polocloud.addons.sign.system.layout.LayoutRegistry
+import de.polocloud.addons.sign.system.layout.LayoutStorage
 import de.polocloud.addons.sign.system.layout.SignPlaceholders
 import de.polocloud.api.Polocloud
 import de.polocloud.api.event.subscribe
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong
 class SignSystem(private val platform: SignPlatform) {
 
     val registry = SignRegistry()
-    val layouts = LayoutRegistry()
+    val layouts = LayoutRegistry(LayoutStorage(platform.dataDirectory.resolve("layouts.json")))
 
     private val storage = SignStorage(platform.dataDirectory.resolve("signs.json"))
     private val tick = AtomicLong(0)
@@ -65,8 +66,8 @@ class SignSystem(private val platform: SignPlatform) {
         return true
     }
 
-    /** Releases whatever the platform owns; the scheduler itself is the platform's responsibility. */
-    fun stop() = Unit
+    /** Releases what this class itself owns; the scheduler and any live entities are the platform's responsibility. */
+    fun stop() = layouts.stop()
 
     private fun bind(service: Service) {
         val entry = registry.findFree(service.group) ?: return
@@ -106,9 +107,9 @@ class SignSystem(private val platform: SignPlatform) {
         val renderer = platform.renderer(entry.type) ?: return
         val layout = layouts.find(entry.layoutId, entry.type) ?: return
         val state = entry.service?.state ?: ServiceState.UNKNOWN
-        val frame = SignPlaceholders.apply(layout.animation(state).frameAt(tick.get()), entry)
+        val frame = layout.animation(state).frameAt(tick.get()) ?: return
 
-        renderer.render(entry, frame)
+        renderer.render(entry, SignPlaceholders.apply(frame, entry))
     }
 
     private companion object {

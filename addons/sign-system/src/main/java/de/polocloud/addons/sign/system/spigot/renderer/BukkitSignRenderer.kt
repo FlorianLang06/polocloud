@@ -4,7 +4,7 @@ import de.polocloud.addons.sign.system.SignEntry
 import de.polocloud.addons.sign.system.SignEntryRenderer
 import de.polocloud.addons.sign.system.SignEntryType
 import de.polocloud.addons.sign.system.layout.LayoutFrame
-import org.bukkit.Bukkit
+import de.polocloud.addons.sign.system.layout.SignFrame
 import org.bukkit.Material
 import org.bukkit.block.Sign
 import org.bukkit.block.sign.Side
@@ -15,13 +15,14 @@ class BukkitSignRenderer : SignEntryRenderer(SignEntryType.SIGN), BukkitBlockMat
     override fun matches(material: Material): Boolean = material.name.endsWith("_SIGN")
 
     override fun render(entry: SignEntry, frame: LayoutFrame) {
-        val sign = signAt(entry) ?: return
+        val signFrame = frame as? SignFrame ?: return
+        val sign = entry.position.blockStateAt<Sign>() ?: return
 
-        frame.lines.forEachIndexed { index, line ->
+        signFrame.lines.forEachIndexed { index, line ->
             sign.getSide(Side.FRONT).setLine(index, line)
         }
 
-        if(frame.backgroundBlock != null) {
+        signFrame.backgroundBlock?.let { material ->
             val block = sign.block
 
             val behind = when (block.blockData) {
@@ -35,25 +36,19 @@ class BukkitSignRenderer : SignEntryRenderer(SignEntryType.SIGN), BukkitBlockMat
                     block.getRelative(data.rotation.oppositeFace)
                 }
 
-                else -> return
+                else -> return@let
             }
 
-            behind.type = Material.valueOf(frame.backgroundBlock!!)
+            behind.type = Material.valueOf(material)
         }
 
         sign.update()
     }
 
     override fun remove(entry: SignEntry) {
-        val sign = signAt(entry) ?: return
+        val sign = entry.position.blockStateAt<Sign>() ?: return
 
         repeat(4) { sign.getSide(Side.FRONT).setLine(it, "") }
         sign.update()
-    }
-
-    private fun signAt(entry: SignEntry): Sign? {
-        val world = Bukkit.getWorld(entry.position.world) ?: return null
-        val block = world.getBlockAt(entry.position.x, entry.position.y, entry.position.z)
-        return block.state as? Sign
     }
 }
