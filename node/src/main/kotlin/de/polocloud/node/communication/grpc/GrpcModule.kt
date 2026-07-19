@@ -14,6 +14,7 @@ import de.polocloud.node.communication.handler.group.UpdateGroupServerHandler
 import de.polocloud.node.communication.handler.node.GetNodeInformationServerHandler
 import de.polocloud.node.communication.handler.services.FindServicesServerHandler
 import de.polocloud.node.communication.handler.services.ListServicesServerHandler
+import de.polocloud.node.communication.handler.services.StopServiceServerHandler
 import de.polocloud.node.group.GroupService
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.proto.CreateGroupRequest
@@ -24,6 +25,7 @@ import de.polocloud.proto.ListNodesRequest
 import de.polocloud.proto.ListServicesRequest
 import de.polocloud.proto.NodeInformationRequest
 import de.polocloud.proto.ServiceListRequest
+import de.polocloud.proto.StopServiceRequest
 import de.polocloud.proto.UpdateGroupRequest
 
 object GrpcModule {
@@ -34,6 +36,7 @@ object GrpcModule {
             register(NodeInformationRequest::class.java, GetNodeInformationServerHandler())
             register(ListServicesRequest::class.java, ListServicesServerHandler(serviceProvider))
             register(ServiceListRequest::class.java, FindServicesServerHandler(serviceProvider))
+            register(StopServiceRequest::class.java, StopServiceServerHandler(serviceProvider))
             register(CreateTokenRequest::class.java, CreateTokenServerHandler())
             register(GroupListRequest::class.java, GetGroupInformationServerHandler(groupService))
             register(CreateGroupRequest::class.java, CreateGroupServerHandler(groupService))

@@ -1,15 +1,30 @@
 package de.polocloud.node.terminal.impl
 
+import de.polocloud.common.Address
 import de.polocloud.common.commands.Command
 import de.polocloud.common.commands.type.KeywordArgument
 import de.polocloud.common.commands.type.StringArrayArgument
+import de.polocloud.node.cluster.node.NodeData
 import de.polocloud.node.cluster.node.NodeRepository
+import de.polocloud.node.communication.grpc.NodeGrpcClient
 import de.polocloud.node.group.template.GroupTemplateService
+import de.polocloud.node.services.LocalService
 import de.polocloud.node.services.Service
 import de.polocloud.node.services.ServiceProvider
 import de.polocloud.node.terminal.CliTerminal
 import de.polocloud.node.terminal.types.ServiceArgument
 import de.polocloud.node.terminal.types.TemplateArgument
+import de.polocloud.proto.ServiceManagerGrpcKt
+import de.polocloud.proto.StopServiceRequest
+import de.polocloud.proto.StreamServiceLogsRequest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.jline.reader.UserInterruptException
 import org.slf4j.LoggerFactory
 import java.util.UUID
@@ -17,9 +32,12 @@ import java.util.UUID
 /**
  * Terminal command for inspecting and controlling the services running on this node.
  *
- * Runs in-process, so it talks to the [ServiceProvider] directly (no gRPC): `list`,
- * `<name>` (info), `<name> shutdown`, `<name> logs` (live tail), `<name> execute <command>`
- * and `<name> copy <templateName>` (re-apply a template onto the running work directory).
+ * Runs in-process, so it talks to the [ServiceProvider] directly (no gRPC) for a service
+ * running here: `list`, `<name>` (info), `<name> shutdown`, `<name> logs` (live tail),
+ * `<name> execute <command>` and `<name> copy <templateName>` (re-apply a template onto
+ * the running work directory). `shutdown` and `logs` fall back to a [NodeGrpcClient] call
+ * to the service's owning node (see [Service.nodeId]) when it isn't running here, so both
+ * work cluster-wide regardless of which node's terminal the command is typed in.
  */
 class ServiceCommand(
     private val serviceProvider: ServiceProvider,
@@ -107,15 +125,43 @@ class ServiceCommand(
         return node?.let { "${it.name()} (${it.hostname})" } ?: nodeId
     }
 
+    /** The [NodeData] a service is running on, or `null` if [Service.nodeId] is blank/unknown. */
+    private fun resolveOwningNode(service: Service): NodeData? {
+        val id = runCatching { UUID.fromString(service.nodeId) }.getOrNull() ?: return null
+        return NodeRepository.find(id)
+    }
+
     private fun shutdown(service: Service) {
         val local = serviceProvider.findLocal(service.name())
-        if (local == null) {
-            logger.info("Service ${service.name()} is not running on this node.")
+        if (local != null) {
+            logger.info("Shutting down ${service.name()} ...")
+            serviceProvider.shutdownLocal(local)
+            logger.info("Service ${service.name()} was stopped.")
             return
         }
-        logger.info("Shutting down ${service.name()} ...")
-        serviceProvider.shutdownLocal(local)
-        logger.info("Service ${service.name()} was stopped.")
+
+        val node = resolveOwningNode(service)
+        if (node == null) {
+            logger.info("Service ${service.name()} is not running on this node and its owning node is unknown.")
+            return
+        }
+
+        logger.info("Shutting down ${service.name()} on ${node.name()} ...")
+        val client = NodeGrpcClient()
+        runCatching {
+            client.connect(Address(node.hostname, node.port))
+            val stub = ServiceManagerGrpcKt.ServiceManagerCoroutineStub(client.channel())
+            val request = StopServiceRequest.newBuilder().setServiceName(service.name()).build()
+            val response = runBlocking { stub.stopService(request) }
+            if (response.stopped) {
+                logger.info("Service ${service.name()} was stopped.")
+            } else {
+                logger.info("Could not stop ${service.name()}: ${response.message}")
+            }
+        }.onFailure { ex ->
+            logger.info("Could not reach ${node.name()} to stop ${service.name()}: ${ex.message}")
+        }
+        client.disconnect()
     }
 
     private fun execute(service: Service, command: String) {
@@ -149,11 +195,21 @@ class ServiceCommand(
 
     private fun tailLogs(service: Service) {
         val local = serviceProvider.findLocal(service.name())
-        if (local == null) {
-            logger.info("Service ${service.name()} is not running on this node.")
+        if (local != null) {
+            tailLocalLogs(service, local)
             return
         }
 
+        val node = resolveOwningNode(service)
+        if (node == null) {
+            logger.info("Service ${service.name()} is not running on this node and its owning node is unknown.")
+            return
+        }
+
+        tailRemoteLogs(service, node)
+    }
+
+    private fun tailLocalLogs(service: Service, local: LocalService) {
         logger.info("Tailing logs of ${service.name()} — press Ctrl+C or type 'exit' to stop.")
         // Print the buffered history first, then follow live lines above the input prompt.
         local.recentLogs().forEach { terminal.display(it) }
@@ -161,15 +217,57 @@ class ServiceCommand(
         val listener: (String) -> Unit = { line -> terminal.display(line) }
         local.addLogListener(listener)
         try {
+            awaitExit(service)
+        } finally {
+            local.removeLogListener(listener)
+            logger.info("Stopped tailing ${service.name()}.")
+        }
+    }
+
+    /**
+     * Same as [tailLocalLogs], but the buffered history + live lines come from
+     * [ServiceManagerGrpcKt.ServiceManagerCoroutineStub.streamServiceLogs] on the service's
+     * owning node instead of a co-located [de.polocloud.node.services.LocalService].
+     */
+    private fun tailRemoteLogs(service: Service, node: NodeData) {
+        logger.info("Tailing logs of ${service.name()} on ${node.name()} — press Ctrl+C or type 'exit' to stop.")
+
+        val client = NodeGrpcClient()
+        try {
+            client.connect(Address(node.hostname, node.port))
+            val stub = ServiceManagerGrpcKt.ServiceManagerCoroutineStub(client.channel())
+            val request = StreamServiceLogsRequest.newBuilder().setServiceName(service.name()).build()
+
+            val job = CoroutineScope(Dispatchers.IO).launch {
+                stub.streamServiceLogs(request)
+                    .onEach { terminal.display(it.line) }
+                    .catch { ex -> terminal.display("&cLost log stream from ${node.name()}: ${ex.message}") }
+                    .collect()
+            }
+
+            try {
+                awaitExit(service)
+            } finally {
+                // Join, not just cancel: waits for the streaming call to actually unwind
+                // before the channel below is torn down, avoiding a benign "channel
+                // shutting down" error racing the cancellation.
+                runBlocking { job.cancelAndJoin() }
+                logger.info("Stopped tailing ${service.name()}.")
+            }
+        } finally {
+            client.disconnect()
+        }
+    }
+
+    /** Blocks on terminal input until the user types `exit`; returns early (without throwing) on Ctrl+C. */
+    private fun awaitExit(service: Service) {
+        try {
             while (true) {
                 val input = terminal.awaitInput("&8[logs:${service.name()}]&r ").trim()
                 if (input.equals("exit", ignoreCase = true)) break
             }
         } catch (_: UserInterruptException) {
             // Ctrl+C leaves the tail without terminating the node.
-        } finally {
-            local.removeLogListener(listener)
-            logger.info("Stopped tailing ${service.name()}.")
         }
     }
 }

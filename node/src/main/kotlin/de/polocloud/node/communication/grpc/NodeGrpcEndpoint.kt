@@ -44,7 +44,7 @@ class NodeGrpcEndpoint(
 
     private val nodeService = NodeServiceImpl(executor, serviceProvider)
     private val clusterService = ClusterServiceImpl(executor)
-    private val serviceManager = ServiceManagerImpl(executor)
+    private val serviceManager = ServiceManagerImpl(executor, serviceProvider)
     // Also exposed here (not only on ServiceGrpcEndpoint) so a peer node can fetch this
     // node's local ServiceData when assembling the cluster-wide FindServices view.
     private val serviceApiService = ServiceApiServiceImpl(executor)
