@@ -27,17 +27,26 @@ class ServicesCommand(
                         return@runBlocking
                     }
 
-                    logger.info("STATE      PLAN            UUID                                 PORT     PID    PLAYERS")
-                    services.forEach { service ->
+                    // Resolve each service's nodeId to a human-readable node label (e.g.
+                    // "node-0"), mirroring the node terminal's service inspection command.
+                    val nodeLabels = Cli.session.clusterClient.listNodes()
+                        .associate { it.id to "${it.groupName}-${it.index}" }
+
+                    val rows = services
+                        .map { service -> service to (nodeLabels[service.nodeId] ?: service.nodeId.ifBlank { "-" }) }
+                        .sortedBy { (_, node) -> node }
+
+                    logger.info("STATE      PLAN            UUID                                 PORT     PID    PLAYERS  NODE")
+                    rows.forEach { (service, node) ->
                         logger.info(
-                            "%-10s %-15s %-36s %-8s %-6s %s/%s".format(
+                            "%-10s %-15s %-36s %-8s %-6s %-8s %s".format(
                                 service.state,
                                 service.plan,
                                 service.uuid,
                                 service.boundPort,
                                 service.pid,
-                                service.onlinePlayers,
-                                service.maxPlayers,
+                                "${service.onlinePlayers}/${service.maxPlayers}",
+                                node,
                             )
                         )
                     }

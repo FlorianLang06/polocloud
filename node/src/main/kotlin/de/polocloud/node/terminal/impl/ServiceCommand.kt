@@ -40,9 +40,15 @@ class ServiceCommand(
                 return@syntax
             }
             logger.info("Services (${services.size}):")
-            services.forEach { service ->
-                logger.info("  ${service.name()} | state: ${service.state} | port: ${service.port}")
-            }
+            services
+                .groupBy { resolveNodeLabel(it.nodeId) }
+                .toSortedMap()
+                .forEach { (nodeLabel, nodeServices) ->
+                    logger.info("[3m&8$nodeLabel:&r")
+                    nodeServices.forEach { service ->
+                        logger.info("  ${service.name()} &8|&r state: ${service.state} &8|&r port: ${service.port}")
+                    }
+                }
         }, "List all services", KeywordArgument("list"))
 
         syntax({ context ->
