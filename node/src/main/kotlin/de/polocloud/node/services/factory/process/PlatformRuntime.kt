@@ -1,10 +1,9 @@
-package de.polocloud.service.factory.process
+package de.polocloud.node.services.factory.process
 
-import de.polocloud.node.services.factory.process.JavaRuntime
 import java.io.File
 
 /**
- * Defines how a specific programming language executes a platform JAR.
+ * Defines how a specific programming language executes a platform artifact.
  *
  * Each implementation is responsible for constructing the full launch command
  * from the given executable path, artifact, and arguments. Runtimes are
@@ -16,20 +15,20 @@ interface PlatformRuntime {
     val language: String
 
     /**
-     * Builds the full command list used to launch [jarFile].
+     * Builds the full command list used to launch [artifact].
      *
-     * @param executable Absolute path or name of the runtime executable (e.g. "java" or "/runtimes/java-21/bin/java").
-     * @param jarFile    The artifact to execute.
-     * @param jvmArgs    JVM arguments placed before `-jar`, sourced from the platform configuration.
-     * @param args       Global arguments sourced from the platform configuration.
+     * @param executable Absolute path or name of the runtime executable, if required.
+     * @param artifact   The artifact to execute.
+     * @param args       Arguments sourced from the platform configuration.
      * @return Ordered list of command tokens passed to [ProcessBuilder].
      */
-    fun buildCommand(executable: String, jarFile: File, jvmArgs: List<String>, args: List<String>): List<String>
+    fun buildCommand(executable: String?, artifact: File, args: List<String>): List<String>
 
     companion object {
 
         private val registry: MutableMap<String, PlatformRuntime> = mutableMapOf(
-            JavaRuntime.language to JavaRuntime
+            JavaRuntime.language to JavaRuntime,
+            BinaryRuntime.language to BinaryRuntime
         )
 
         /**

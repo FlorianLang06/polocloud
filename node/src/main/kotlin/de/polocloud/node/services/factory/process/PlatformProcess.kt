@@ -5,7 +5,6 @@ import de.polocloud.node.services.factory.platform.PlatformVersion
 import de.polocloud.node.services.factory.platform.PlatformVersionSource
 import de.polocloud.node.services.factory.template.resolveJavaVersion
 import de.polocloud.service.factory.process.JavaRuntimeManager
-import de.polocloud.service.factory.process.PlatformRuntime
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.net.URI
@@ -96,7 +95,7 @@ class PlatformProcess(
     }
 
     /**
-     * Starts the platform process from the given [jarFile].
+     * Starts the platform process from the given [artifact].
      *
      * The required Java version is resolved from [Platform.javaVersionRanges].
      * If a range matches, [JavaRuntimeManager] downloads the appropriate JRE
@@ -106,18 +105,18 @@ class PlatformProcess(
      * this is how the provisioned mTLS identity directory is handed to the
      * service via `POLOCLOUD_IDENTITY_DIR`.
      *
-     * @param jarFile The JAR file to execute.
+     * @param artifact The artifact file to execute.
      * @param environment Extra environment variables to expose to the process.
      * @return The running [Process].
      * @throws IllegalStateException if no runtime is registered for the platform language.
      */
-    fun start(jarFile: File, environment: Map<String, String> = emptyMap()): Process {
-        val executable = resolveExecutable()
+    fun start(artifact: File, environment: Map<String, String> = emptyMap()): Process {
+        val executable = if (platform.language == "JAVA") resolveExecutable() else null
         val runtime = PlatformRuntime.forLanguage(platform.language)
-        val command = runtime.buildCommand(executable, jarFile, platform.jvmArgs, platform.globalArgs)
+        val command = runtime.buildCommand(executable, artifact, platform.globalArgs)
         logger.info("Starting ${platform.name} ${version.version} (build ${version.build})")
         return ProcessBuilder(command)
-            .directory(jarFile.parentFile)
+            .directory(artifact.parentFile)
             .redirectErrorStream(true)
             .apply { environment().putAll(environment) }
             .start()

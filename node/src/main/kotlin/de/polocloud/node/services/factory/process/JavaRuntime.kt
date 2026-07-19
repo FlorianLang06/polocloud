@@ -1,6 +1,5 @@
 package de.polocloud.node.services.factory.process
 
-import de.polocloud.service.factory.process.PlatformRuntime
 import java.io.File
 
 /**
@@ -20,11 +19,12 @@ object JavaRuntime : PlatformRuntime {
 
     override val language = "JAVA"
 
-    override fun buildCommand(executable: String, jarFile: File, jvmArgs: List<String>, args: List<String>): List<String> {
+    override fun buildCommand(executable: String?, artifact: File, args: List<String>): List<String> {
+        val exec = executable ?: "java"
         val (globalJvmArgs, programArgs) = args.partition { arg ->
             arg.startsWith("-X") || arg.startsWith("-D") ||
             arg.startsWith("--enable-") || arg.startsWith("--add-") || arg.startsWith("--patch-")
         }
-        return listOf(executable) + jvmArgs + globalJvmArgs + listOf("-jar", jarFile.absolutePath) + programArgs
+        return listOf(exec) + globalJvmArgs + listOf("-jar", artifact.absolutePath) + programArgs
     }
 }
