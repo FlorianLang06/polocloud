@@ -2,6 +2,7 @@ package de.polocloud.node.services.factory.process
 
 import de.polocloud.node.services.factory.platform.Platform
 import de.polocloud.node.services.factory.platform.PlatformVersion
+import de.polocloud.node.services.factory.platform.PlatformVersionSource
 import de.polocloud.node.services.factory.template.resolveJavaVersion
 import de.polocloud.service.factory.process.JavaRuntimeManager
 import de.polocloud.service.factory.process.PlatformRuntime
@@ -26,9 +27,6 @@ class PlatformProcess(
     private val jarName = "${platform.name}-${version.version}-${version.build}.jar"
 
     private companion object {
-        /** Shared cache holding downloaded platform JARs, reused across services. */
-        val CACHE_DIR = File(".cache/platforms/versions")
-
         // Services now start concurrently (see ServiceQueue.drainQueue), so two services on
         // the same platform/version can race into cachedJar() at once. Without a lock, both
         // would see the cache miss and write the same tmp/cache file in parallel, corrupting
@@ -40,7 +38,7 @@ class PlatformProcess(
     /**
      * Ensures the platform JAR is available inside [targetDir].
      *
-     * The JAR is downloaded once into a shared cache ([CACHE_DIR]) and reused across
+     * The JAR is downloaded once into a shared cache ([PlatformJarCache]) and reused across
      * services; on each start it is copied from that cache into [targetDir] (the
      * service work directory, which is wiped on shutdown, so the JAR itself must live
      * there for the process to run in the right directory).
@@ -64,15 +62,30 @@ class PlatformProcess(
      * so an interrupted download never leaves a corrupt JAR in the cache.
      */
     private fun cachedJar(): File = synchronized(downloadLock) {
-        CACHE_DIR.mkdirs()
-        val cached = File(CACHE_DIR, jarName)
+        PlatformJarCache.DIRECTORY.mkdirs()
+        val cached = PlatformJarCache.fileFor(platform.name, version.version, version.build)
         if (cached.exists()) {
             logger.debug("$jarName already cached")
             return@synchronized cached
         }
 
+        if (version.source == PlatformVersionSource.LOCAL_FILE) {
+            // Custom local-file versions are copied into this cache the moment they're
+            // attached (see CustomPlatformService.addVersion), specifically so a live jar
+            // never depends on the operator's original file surviving until a service is
+            // actually started. Reaching this branch means that cache entry was lost after
+            // the fact (e.g. someone cleared .cache/platforms/versions by hand) — there is
+            // no original download URL to fall back to, so fail clearly instead of the
+            // confusing URISyntaxException an empty downloadUrl would otherwise produce.
+            error(
+                "Cached jar for custom platform '${platform.name}' version '${version.version}' " +
+                    "is missing and was sourced from a local file, so it cannot be re-downloaded " +
+                    "automatically. Re-attach the version via 'platform version add'."
+            )
+        }
+
         logger.info("Downloading $jarName ...")
-        val tmp = File(CACHE_DIR, "$jarName.tmp")
+        val tmp = File(PlatformJarCache.DIRECTORY, "$jarName.tmp")
         URI(version.downloadUrl).toURL().openStream().use { input ->
             tmp.outputStream().use { output -> input.copyTo(output) }
         }

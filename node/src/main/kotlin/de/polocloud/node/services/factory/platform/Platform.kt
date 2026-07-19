@@ -13,6 +13,8 @@ import de.polocloud.node.services.factory.template.ServiceTask
  * @param tasks             Pre-start configuration tasks referenced by key and version range.
  * @param javaVersionRanges Ordered breakpoints mapping version ranges to minimum required Java versions.
  * @param versions          All available versions resolved from the remote API.
+ * @param custom            Whether this platform was hand-defined by an operator (via `platform setup`)
+ *                           rather than shipped in the default `polocloud-platforms` template bundle.
  */
 data class Platform(
     val name: String,
@@ -22,5 +24,6 @@ data class Platform(
     val globalArgs: List<String> = emptyList(),
     val tasks: List<ServiceTask> = emptyList(),
     val javaVersionRanges: List<JavaVersionRange> = emptyList(),
-    val versions: List<PlatformVersion> = emptyList()
+    val versions: List<PlatformVersion> = emptyList(),
+    val custom: Boolean = false
 )

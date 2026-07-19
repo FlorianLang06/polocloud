@@ -6,9 +6,11 @@ import de.polocloud.node.terminal.impl.ClearCommand
 import de.polocloud.node.terminal.impl.ClusterCommand
 import de.polocloud.node.terminal.impl.GroupCommand
 import de.polocloud.node.terminal.impl.InfoCommand
+import de.polocloud.node.terminal.impl.PlatformCommand
 import de.polocloud.node.terminal.impl.ServiceCommand
 import de.polocloud.node.terminal.impl.ShutdownCommand
 import de.polocloud.node.terminal.impl.TemplateCommand
+import de.polocloud.node.services.factory.platform.custom.CustomPlatformService
 import org.jline.jansi.Ansi
 import org.jline.reader.Completer
 import org.jline.reader.LineReader
@@ -104,6 +106,14 @@ class CliTerminal(val context: NodeRuntimeContext) : WizardPrompt {
         this.commandService.registerCommand(ShutdownCommand())
         this.commandService.registerCommand(ClearCommand(this))
         this.commandService.registerCommand(TemplateCommand(this.context.groupService))
+        this.commandService.registerCommand(
+            PlatformCommand(
+                this.context.serviceProvider.platformService,
+                CustomPlatformService(this.context.serviceProvider.platformService),
+                this.context.groupService,
+                this,
+            )
+        )
     }
 
     /**
