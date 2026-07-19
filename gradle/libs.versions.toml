@@ -92,7 +92,6 @@ argon2                      = { group = "de.mkammerer",     name = "argon2-jvm",
 bctls                       = { group = "org.bouncycastle", name = "bctls-jdk18on",       version.ref = "bctls" }
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-gson                        = { group = "com.google.code.gson", name = "gson",            version.ref = "gson" }
 snakeyaml                   = { group = "org.yaml",             name = "snakeyaml",       version.ref = "snakeyaml" }
 toml4j                      = { group = "com.moandjiezana.toml", name = "toml4j",          version.ref = "toml4j" }
 

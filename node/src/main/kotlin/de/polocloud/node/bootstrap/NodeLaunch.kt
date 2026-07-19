@@ -17,16 +17,10 @@ class NodeLaunch(
     val launchProperties: NodeProperties = NodePropertiesParser.parse(args)
 ) {
 
-    //load the logger here for faster startup
-    private val logger = LoggerFactory.getLogger(javaClass)
-
-    // The shaded gRPC-Netty logs through java.util.logging (JUL), not log4j2, so it bypasses the
-    // io.grpc filter in log4j2.xml. Silence its INFO chatter (e.g. TcpMetrics "Epoll available")
-    // here, before any gRPC class is loaded. Kept as a field so the configured JUL logger isn't
-    // garbage-collected and the level sticks.
-    private val grpcJulLogger = JulLogger.getLogger("io.grpc").apply { level = Level.WARNING }
-
     init {
+        // disable logging
+        JulLogger.getLogger("io.grpc").apply { level = Level.WARNING }
+
         System.setProperty("PID", ProcessHandle.current().pid().toString())
 
         if (PolocloudVersion.CURRENT.isDebugEnabled) {

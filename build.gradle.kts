@@ -11,11 +11,20 @@ allprojects {
     // version is now set by gradle/version.gradle.kts — do NOT set it here
 
     repositories {
-        mavenCentral()
+        // NOTE: intentionally not using mavenCentral()/trailing-slash URLs here.
+        // The polocloud-gradle-plugin's MavenResolver builds artifact URLs as
+        // "$repo/$groupPath/...", so a trailing slash on the repo URL produces a
+        // double slash that 404s against Maven Central's CDN, silently marking
+        // every polocloudRuntime dependency as unresolvable ("unknown") in
+        // dependencies.index — which is skipped at runtime, causing
+        // NoClassDefFoundError for anything not in the hardcoded bootstrap set.
+        maven {
+            url = uri("https://repo.maven.apache.org/maven2")
+        }
 
         maven {
             name = "polocloud-snapshots"
-            url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+            url = uri("https://central.sonatype.com/repository/maven-snapshots")
         }
     }
 }
